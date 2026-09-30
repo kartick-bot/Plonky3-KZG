@@ -1,0 +1,74 @@
+==============================================
+ Plonky3 MONOLITHIC DEGREE-6 KZG STARK
+ One proof, two BN254 pairings, AIR equality
+==============================================
+
+Polynomial degree       : 6
+tau                     : 11
+z                       : 5
+y = f(z)                : 131836
+tau-z                   : 6
+Polynomial identity     : PASS
+Native KZG relation     : PASS
+
+==============================================
+ Monolithic trace / AIR metrics
+==============================================
+
+Pairings in proof       : 2
+Real rows               : 12225
+Padded height           : 16384
+Trace width             : 32044
+Trace cells             : 525008896
+AIR constraints         : 38366
+Max constraint degree   : 4
+Constraint evaluations  : 628588544
+
+==============================================
+ MONOLITHIC KZG RESULT
+==============================================
+
+Relation proved inside AIR:
+e(C - y*G1, G2) = e(pi, (tau-z)*G2)
+e(C - 131836*G1, G2) = e(pi, 6*G2)
+
+Proof count             : 1
+Proof size              : 26827106 bytes
+Proving time            : 93.73008125s
+Verification time       : 59.99275ms
+AIR constraints         : 38366
+Max constraint degree   : 4
+Constraint evaluations  : 628588544
+
+Key material:
+Proving key (PK)        : N/A -- transparent STARK/FRI
+Verification key (VK)   : N/A -- transparent STARK/FRI
+STARK trusted setup     : none
+KZG setup               : retains KZG SRS (tau = 11 in this test)
+
+RAM measurement:
+Use the release binary with macOS /usr/bin/time -l.
+The 'maximum resident set size' line is peak RSS in bytes.
+
+SUCCESS:
+One Plonky3 STARK proved the complete degree-6 KZG
+pairing equation, including equality of the two
+terminal Fq12 pairing outputs inside the AIR.
+      104.05 real        75.10 user        18.14 sys
+         11735875584  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+            10971139  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+               21422  voluntary context switches
+              160112  involuntary context switches
+       1910395316649  instructions retired
+        378281760469  cycles elapsed
+         25347868792  peak memory footprint
