@@ -1,27 +1,40 @@
+#![allow(dead_code)]
+#![allow(clippy::manual_div_ceil)]
+#![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::redundant_clone)]
+#![allow(clippy::assign_op_pattern)]
+#![allow(clippy::manual_range_contains)]
+#![allow(clippy::erasing_op)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::needless_collect)]
+
 use std::time::Instant;
 
-use ark_bn254::{Bn254, Config, Fq, Fq2, Fq6, Fq12, Fr, G1Affine, G2Affine};
+use ark_bn254::{Bn254, Config, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G2Affine};
 use ark_ec::{
-    AffineRepr, CurveGroup,
     bn::{BnConfig, G2Prepared},
     pairing::Pairing,
+    AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 use num_bigint::{BigInt, BigUint, Sign};
 
-use p3_air::symbolic::{AirLayout, get_max_constraint_degree, get_symbolic_constraints};
+use p3_air::symbolic::{get_max_constraint_degree, get_symbolic_constraints, AirLayout};
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{PrimeCharacteristicRing, extension::BinomialExtensionField};
+use p3_field::{extension::BinomialExtensionField, PrimeCharacteristicRing};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256;
 use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
-use p3_uni_stark::{StarkConfig, prove, verify};
+use p3_uni_stark::{prove, verify, StarkConfig};
 
 type Val = Goldilocks;
 type Challenge = BinomialExtensionField<Val, 2>;
