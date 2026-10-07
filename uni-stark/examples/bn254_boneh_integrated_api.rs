@@ -1,33 +1,27 @@
-
 use std::time::Instant;
 
 use ark_bn254::{Bn254, Config, Fq, Fq2, Fq6, Fq12, Fr, G1Affine, G2Affine};
 use ark_ec::{
+    AffineRepr, CurveGroup,
     bn::{BnConfig, G2Prepared},
     pairing::Pairing,
-    AffineRepr,
-    CurveGroup,
 };
 use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 use num_bigint::{BigInt, BigUint, Sign};
 
+use p3_air::symbolic::{AirLayout, get_max_constraint_degree, get_symbolic_constraints};
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
-use p3_air::symbolic::{
-    AirLayout,
-    get_max_constraint_degree,
-    get_symbolic_constraints,
-};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{extension::BinomialExtensionField, PrimeCharacteristicRing};
+use p3_field::{PrimeCharacteristicRing, extension::BinomialExtensionField};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256;
 use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
-use p3_uni_stark::{prove, verify, StarkConfig};
+use p3_uni_stark::{StarkConfig, prove, verify};
 
 type Val = Goldilocks;
 type Challenge = BinomialExtensionField<Val, 2>;
@@ -50,10 +44,8 @@ const FQ12_COORDS: usize = 12;
 const FQ12_LIMBS: usize = FQ12_COORDS * LIMBS;
 
 const Q_LIMBS: [u64; LIMBS] = [
-    64839, 55420, 35862, 15392,
-    51853, 26737, 27281, 38785,
-    22621, 33153, 17846, 47184,
-    41001, 57649, 20082, 12388,
+    64839, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+    57649, 20082, 12388,
 ];
 
 const MILLER_STEPS: usize = 411;
@@ -133,16 +125,13 @@ const Q_SIGN_START: usize = OP_B_END;
 const Q_SIGN_END: usize = Q_SIGN_START + FQ12_COORDS;
 
 const Q_BITS_START: usize = Q_SIGN_END;
-const Q_BITS_END: usize =
-    Q_BITS_START + FQ12_COORDS * QW_LIMBS * LIMB_BITS;
+const Q_BITS_END: usize = Q_BITS_START + FQ12_COORDS * QW_LIMBS * LIMB_BITS;
 
 const CARRY_SIGN_START: usize = Q_BITS_END;
-const CARRY_SIGN_END: usize =
-    CARRY_SIGN_START + FQ12_COORDS * CARRY_COUNT;
+const CARRY_SIGN_END: usize = CARRY_SIGN_START + FQ12_COORDS * CARRY_COUNT;
 
 const CARRY_BITS_START: usize = CARRY_SIGN_END;
-const PAIR_WIDTH: usize =
-    CARRY_BITS_START + FQ12_COORDS * CARRY_COUNT * CARRY_BITS;
+const PAIR_WIDTH: usize = CARRY_BITS_START + FQ12_COORDS * CARRY_COUNT * CARRY_BITS;
 
 // ============================================================
 // Native row / Miller constants
@@ -196,12 +185,8 @@ struct MillerStepConst {
 
 fn fq12_to_coords(x: &Fq12) -> [Fq; 12] {
     [
-        x.c0.c0.c0, x.c0.c0.c1,
-        x.c0.c1.c0, x.c0.c1.c1,
-        x.c0.c2.c0, x.c0.c2.c1,
-        x.c1.c0.c0, x.c1.c0.c1,
-        x.c1.c1.c0, x.c1.c1.c1,
-        x.c1.c2.c0, x.c1.c2.c1,
+        x.c0.c0.c0, x.c0.c0.c1, x.c0.c1.c0, x.c0.c1.c1, x.c0.c2.c0, x.c0.c2.c1, x.c1.c0.c0,
+        x.c1.c0.c1, x.c1.c1.c0, x.c1.c1.c1, x.c1.c2.c0, x.c1.c2.c1,
     ]
 }
 
@@ -305,16 +290,8 @@ fn sparse_line_fq12(line: &(Fq2, Fq2, Fq2)) -> Fq12 {
     // c1.c0 = c3
     // c1.c1 = c4
     Fq12::new(
-        Fq6::new(
-            line.0,
-            Fq2::zero(),
-            Fq2::zero(),
-        ),
-        Fq6::new(
-            line.1,
-            line.2,
-            Fq2::zero(),
-        ),
+        Fq6::new(line.0, Fq2::zero(), Fq2::zero()),
+        Fq6::new(line.1, line.2, Fq2::zero()),
     )
 }
 
@@ -363,31 +340,18 @@ fn final_exponent_biguint() -> BigUint {
     let x2 = &x * &x;
     let x3 = &x2 * &x;
 
-    let a =
-        BigUint::from(12u64) * &x3
-        + BigUint::from(6u64) * &x2
-        + BigUint::from(4u64) * &x;
+    let a = BigUint::from(12u64) * &x3 + BigUint::from(6u64) * &x2 + BigUint::from(4u64) * &x;
 
-    let b =
-        BigUint::from(12u64) * &x3
-        + BigUint::from(6u64) * &x2
-        + BigUint::from(6u64) * &x;
+    let b = BigUint::from(12u64) * &x3 + BigUint::from(6u64) * &x2 + BigUint::from(6u64) * &x;
 
-    let d =
-        BigUint::from(12u64) * &x3
+    let d = BigUint::from(12u64) * &x3
         + BigUint::from(12u64) * &x2
         + BigUint::from(6u64) * &x
         + BigUint::from(1u64);
 
-    let easy =
-        (q.pow(6u32) - BigUint::from(1u64))
-        * (q.pow(2u32) + BigUint::from(1u64));
+    let easy = (q.pow(6u32) - BigUint::from(1u64)) * (q.pow(2u32) + BigUint::from(1u64));
 
-    let hard =
-        q.pow(3u32) * (&a - BigUint::from(1u64))
-        + q.pow(2u32) * &b
-        + &q * &a
-        + d;
+    let hard = q.pow(3u32) * (&a - BigUint::from(1u64)) + q.pow(2u32) * &b + &q * &a + d;
 
     let e = easy * hard;
 
@@ -419,9 +383,7 @@ fn exp_to_limbs(x: &BigUint) -> [u64; EXP_LIMBS] {
     biguint_to_limbs::<EXP_LIMBS>(x)
 }
 
-fn signed_bigint_abs_limbs<const N: usize>(
-    x: &BigInt,
-) -> (bool, [u64; N]) {
+fn signed_bigint_abs_limbs<const N: usize>(x: &BigInt) -> (bool, [u64; N]) {
     let negative = x.sign() == Sign::Minus;
 
     let abs = match x.sign() {
@@ -443,10 +405,7 @@ fn push_bits_u64(row: &mut Vec<Val>, value: u64, bits: usize) {
 // Evaluated BN254 Miller line
 // ============================================================
 
-fn evaluated_line(
-    coeff: &(Fq2, Fq2, Fq2),
-    p: &G1Affine,
-) -> (Fq2, Fq2, Fq2) {
+fn evaluated_line(coeff: &(Fq2, Fq2, Fq2), p: &G1Affine) -> (Fq2, Fq2, Fq2) {
     let mut c0 = coeff.0;
     let mut c3 = coeff.1;
     let c4 = coeff.2;
@@ -460,9 +419,7 @@ fn evaluated_line(
 fn line_to_limbs(line: &(Fq2, Fq2, Fq2)) -> [u64; LINE_LIMBS] {
     let mut out = [0u64; LINE_LIMBS];
     let fqs = [
-        line.0.c0, line.0.c1,
-        line.1.c0, line.1.c1,
-        line.2.c0, line.2.c1,
+        line.0.c0, line.0.c1, line.1.c0, line.1.c1, line.2.c0, line.2.c1,
     ];
 
     for i in 0..6 {
@@ -565,8 +522,7 @@ fn build_miller_program(
             f.mul_by_034(&line.0, &line.1, &line.2);
 
             assert_eq!(
-                direct,
-                f,
+                direct, f,
                 "sparse direct Fq12 multiplication != arkworks mul_by_034"
             );
 
@@ -676,8 +632,7 @@ fn build_miller_program(
 fn build_full_schedule(
     pairs: &[(G1Affine, G2Affine); 4],
 ) -> (Vec<NativeRow>, Vec<MillerStepConst>, Fq12) {
-    let (mut rows, miller_constants, miller_out) =
-        build_miller_program(pairs);
+    let (mut rows, miller_constants, miller_out) = build_miller_program(pairs);
 
     let final_exp = final_exponent_biguint();
     assert_eq!(final_exp.bits() as usize, EXP_BITS);
@@ -737,8 +692,7 @@ fn build_full_schedule(
     let direct_product = Bn254::multi_pairing(ps, qs).0;
 
     assert_eq!(
-        acc,
-        direct_product,
+        acc, direct_product,
         "binary final exponentiation result != arkworks multi_pairing"
     );
 
@@ -771,19 +725,12 @@ fn build_full_schedule(
 // Generic Fq12 multiplication witness
 // ============================================================
 
-fn product_integer_output(
-    a: &[BigUint; 12],
-    b: &[BigUint; 12],
-    out_coord: usize,
-) -> BigInt {
+fn product_integer_output(a: &[BigUint; 12], b: &[BigUint; 12], out_coord: usize) -> BigInt {
     let mut s = BigInt::from(0);
 
     for i in 0..12 {
         for j in 0..12 {
-            let prod = BigInt::from_biguint(
-                Sign::Plus,
-                &a[i] * &b[j],
-            );
+            let prod = BigInt::from_biguint(Sign::Plus, &a[i] * &b[j]);
 
             for (k, coeff) in basis_product(i, j) {
                 if k == out_coord {
@@ -803,24 +750,16 @@ struct MulWitness {
     carry_mags: [[u64; CARRY_COUNT]; 12],
 }
 
-fn build_mul_witness(
-    a: &Fq12,
-    b: &Fq12,
-    out: &Fq12,
-) -> MulWitness {
+fn build_mul_witness(a: &Fq12, b: &Fq12, out: &Fq12) -> MulWitness {
     let ac = fq12_to_coords(a);
     let bc = fq12_to_coords(b);
     let oc = fq12_to_coords(out);
 
-    let abig: [BigUint; 12] =
-        std::array::from_fn(|i| fq_to_biguint(&ac[i]));
-    let bbig: [BigUint; 12] =
-        std::array::from_fn(|i| fq_to_biguint(&bc[i]));
+    let abig: [BigUint; 12] = std::array::from_fn(|i| fq_to_biguint(&ac[i]));
+    let bbig: [BigUint; 12] = std::array::from_fn(|i| fq_to_biguint(&bc[i]));
 
-    let alimbs: [[u64; LIMBS]; 12] =
-        std::array::from_fn(|i| fq_to_limbs(&ac[i]));
-    let blimbs: [[u64; LIMBS]; 12] =
-        std::array::from_fn(|i| fq_to_limbs(&bc[i]));
+    let alimbs: [[u64; LIMBS]; 12] = std::array::from_fn(|i| fq_to_limbs(&ac[i]));
+    let blimbs: [[u64; LIMBS]; 12] = std::array::from_fn(|i| fq_to_limbs(&bc[i]));
 
     let q_big = modulus_biguint();
     let q_int = BigInt::from_biguint(Sign::Plus, q_big);
@@ -833,14 +772,12 @@ fn build_mul_witness(
     for r in 0..12 {
         let s = product_integer_output(&abig, &bbig, r);
         let out_big = fq_to_biguint(&oc[r]);
-        let diff =
-            &s - BigInt::from_biguint(Sign::Plus, out_big.clone());
+        let diff = &s - BigInt::from_biguint(Sign::Plus, out_big.clone());
 
         assert_eq!(&diff % &q_int, BigInt::from(0));
 
         let quotient = diff / &q_int;
-        let (qneg, qabs) =
-            signed_bigint_abs_limbs::<QW_LIMBS>(&quotient);
+        let (qneg, qabs) = signed_bigint_abs_limbs::<QW_LIMBS>(&quotient);
 
         q_signs[r] = qneg;
         q_limbs[r] = qabs;
@@ -871,10 +808,7 @@ fn build_mul_witness(
                         }
                         let bj = t - ai;
                         if bj < LIMBS {
-                            x +=
-                                c as i128
-                                * alimbs[i][ai] as i128
-                                * blimbs[j][bj] as i128;
+                            x += c as i128 * alimbs[i][ai] as i128 * blimbs[j][bj] as i128;
                         }
                     }
                 }
@@ -886,10 +820,7 @@ fn build_mul_witness(
                 }
                 let qj = t - ki;
                 if qj < LIMBS {
-                    x -=
-                        qsign
-                        * qabs[ki] as i128
-                        * Q_LIMBS[qj] as i128;
+                    x -= qsign * qabs[ki] as i128 * Q_LIMBS[qj] as i128;
                 }
             }
 
@@ -905,10 +836,7 @@ fn build_mul_witness(
                 let neg = next < 0;
                 let mag = next.unsigned_abs();
 
-                assert!(
-                    mag < (1u128 << CARRY_BITS),
-                    "carry does not fit"
-                );
+                assert!(mag < (1u128 << CARRY_BITS), "carry does not fit");
 
                 carry_signs[r][t] = neg;
                 carry_mags[r][t] = mag as u64;
@@ -974,24 +902,17 @@ fn push_selectors(row: &mut Vec<Val>, op: Op) {
     }
 }
 
-fn arithmetic_operands(
-    row: &NativeRow,
-    next: &NativeRow,
-) -> Option<(Fq12, Fq12, Fq12)> {
+fn arithmetic_operands(row: &NativeRow, next: &NativeRow) -> Option<(Fq12, Fq12, Fq12)> {
     match row.op {
         Op::MillerSquare => Some((row.acc, row.acc, next.acc)),
 
         Op::MillerLine => {
-            let sparse = sparse_line_fq12(
-                row.line.as_ref().unwrap()
-            );
+            let sparse = sparse_line_fq12(row.line.as_ref().unwrap());
             Some((row.acc, sparse, next.acc))
         }
 
         Op::ExpAcc => {
-            let bit =
-                (&row.exp & BigUint::from(1u64))
-                == BigUint::from(1u64);
+            let bit = (&row.exp & BigUint::from(1u64)) == BigUint::from(1u64);
 
             if bit {
                 Some((row.acc, row.base, next.acc))
@@ -1006,18 +927,13 @@ fn arithmetic_operands(
     }
 }
 
-fn encode_row(
-    native: &NativeRow,
-    next: &NativeRow,
-) -> Vec<Val> {
+fn encode_row(native: &NativeRow, next: &NativeRow) -> Vec<Val> {
     let mut row = Vec::with_capacity(PAIR_WIDTH);
 
     push_selectors(&mut row, native.op);
 
     row.push(Val::from_u64(native.coeff_index as u64));
-    row.push(Val::from_u64(
-        native.miller_step.unwrap_or(0) as u64
-    ));
+    row.push(Val::from_u64(native.miller_step.unwrap_or(0) as u64));
     row.push(Val::from_u64(native.exp_counter as u64));
 
     push_fq12(&mut row, &native.acc);
@@ -1038,13 +954,11 @@ fn encode_row(
     }
 
     for i in 0..MILLER_STEPS {
-        row.push(
-            if native.miller_step == Some(i) {
-                Val::ONE
-            } else {
-                Val::ZERO
-            }
-        );
+        row.push(if native.miller_step == Some(i) {
+            Val::ONE
+        } else {
+            Val::ZERO
+        });
     }
 
     // State range bits.
@@ -1082,23 +996,17 @@ fn encode_row(
 
         for r in 0..12 {
             for c in 0..CARRY_COUNT {
-                row.push(
-                    if w.carry_signs[r][c] {
-                        Val::ONE
-                    } else {
-                        Val::ZERO
-                    }
-                );
+                row.push(if w.carry_signs[r][c] {
+                    Val::ONE
+                } else {
+                    Val::ZERO
+                });
             }
         }
 
         for r in 0..12 {
             for c in 0..CARRY_COUNT {
-                push_bits_u64(
-                    &mut row,
-                    w.carry_mags[r][c],
-                    CARRY_BITS,
-                );
+                push_bits_u64(&mut row, w.carry_mags[r][c], CARRY_BITS);
             }
         }
     } else {
@@ -1129,8 +1037,7 @@ fn make_trace(
     Vec<MillerStepConst>,
     Fq12,
 ) {
-    let (schedule, constants, pairing_product) =
-        build_full_schedule(pairs);
+    let (schedule, constants, pairing_product) = build_full_schedule(pairs);
 
     let real_rows = schedule.len();
     let height = real_rows.next_power_of_two();
@@ -1139,42 +1046,27 @@ fn make_trace(
     let mut pair_values = Vec::with_capacity(PAIR_WIDTH * height);
 
     for i in 0..schedule.len() {
-        let next =
-            if i + 1 < schedule.len() {
-                &schedule[i + 1]
-            } else {
-                &schedule[i]
-            };
+        let next = if i + 1 < schedule.len() {
+            &schedule[i + 1]
+        } else {
+            &schedule[i]
+        };
 
-        pair_values.extend_from_slice(
-            &encode_row(&schedule[i], next)
-        );
+        pair_values.extend_from_slice(&encode_row(&schedule[i], next));
     }
 
     let terminal = schedule.last().unwrap().clone();
 
     while pair_values.len() / PAIR_WIDTH < height {
-        pair_values.extend_from_slice(
-            &encode_row(&terminal, &terminal)
-        );
+        pair_values.extend_from_slice(&encode_row(&terminal, &terminal));
     }
 
     // Build the dynamic Miller-line evaluation witness at the SAME height.
     let line_values =
-        line_eval_layer::make_values_with_height(
-            &schedule,
-            &constants,
-            pairs,
-            height,
-        );
+        line_eval_layer::make_values_with_height(&schedule, &constants, pairs, height);
 
     // Build the commitment-difference subtrace at the SAME padded height.
-    let diff_values =
-        diff_layer::make_values_with_height(
-            commitment_points,
-            d_points,
-            height,
-        );
+    let diff_values = diff_layer::make_values_with_height(commitment_points, d_points, height);
 
     assert_eq!(pair_values.len(), PAIR_WIDTH * height);
     assert_eq!(line_values.len(), line_eval_layer::WIDTH * height);
@@ -1206,11 +1098,7 @@ fn make_trace(
 // AIR expression helpers
 // ============================================================
 
-fn expr_from_bits<AB: AirBuilder>(
-    row: &[AB::Var],
-    start: usize,
-    bit_count: usize,
-) -> AB::Expr {
+fn expr_from_bits<AB: AirBuilder>(row: &[AB::Var], start: usize, bit_count: usize) -> AB::Expr {
     let mut acc = AB::Expr::ZERO;
     let mut weight = AB::Expr::ONE;
 
@@ -1253,34 +1141,17 @@ fn operand_limb<AB: AirBuilder>(
     row[start + coord * LIMBS + limb].into()
 }
 
-fn quotient_limb<AB: AirBuilder>(
-    row: &[AB::Var],
-    r: usize,
-    l: usize,
-) -> AB::Expr {
-    let start =
-        Q_BITS_START + (r * QW_LIMBS + l) * LIMB_BITS;
+fn quotient_limb<AB: AirBuilder>(row: &[AB::Var], r: usize, l: usize) -> AB::Expr {
+    let start = Q_BITS_START + (r * QW_LIMBS + l) * LIMB_BITS;
     expr_from_bits::<AB>(row, start, LIMB_BITS)
 }
 
-fn carry_expr<AB: AirBuilder>(
-    row: &[AB::Var],
-    r: usize,
-    c: usize,
-) -> AB::Expr {
-    let sign_col =
-        CARRY_SIGN_START + r * CARRY_COUNT + c;
+fn carry_expr<AB: AirBuilder>(row: &[AB::Var], r: usize, c: usize) -> AB::Expr {
+    let sign_col = CARRY_SIGN_START + r * CARRY_COUNT + c;
 
-    let bits_start =
-        CARRY_BITS_START
-        + (r * CARRY_COUNT + c) * CARRY_BITS;
+    let bits_start = CARRY_BITS_START + (r * CARRY_COUNT + c) * CARRY_BITS;
 
-    signed_expr_from_bits::<AB>(
-        row,
-        sign_col,
-        bits_start,
-        CARRY_BITS,
-    )
+    signed_expr_from_bits::<AB>(row, sign_col, bits_start, CARRY_BITS)
 }
 
 mod diff_layer {
@@ -1291,10 +1162,8 @@ mod diff_layer {
     const BASE: u64 = 1 << LIMB_BITS;
 
     const Q_LIMBS: [u64; LIMBS] = [
-        64839, 55420, 35862, 15392,
-        51853, 26737, 27281, 38785,
-        22621, 33153, 17846, 47184,
-        41001, 57649, 20082, 12388,
+        64839, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+        57649, 20082, 12388,
     ];
 
     const NUM_RELATIONS: usize = 3;
@@ -1371,13 +1240,21 @@ mod diff_layer {
         lin_witnesses: [LinWitness; NUM_LINEAR_EQS],
     }
 
-
-
-    fn pub_x_elem(point: usize) -> usize { 2 * point }
-    fn pub_y_elem(point: usize) -> usize { 2 * point + 1 }
-    pub(super) fn d_x_elem(i: usize) -> usize { D_ELEM_BASE + 2 * i }
-    pub(super) fn d_y_elem(i: usize) -> usize { D_ELEM_BASE + 2 * i + 1 }
-    fn inter_elem(i: usize, which: usize) -> usize { INTERMEDIATE_BASE + 6 * i + which }
+    fn pub_x_elem(point: usize) -> usize {
+        2 * point
+    }
+    fn pub_y_elem(point: usize) -> usize {
+        2 * point + 1
+    }
+    pub(super) fn d_x_elem(i: usize) -> usize {
+        D_ELEM_BASE + 2 * i
+    }
+    pub(super) fn d_y_elem(i: usize) -> usize {
+        D_ELEM_BASE + 2 * i + 1
+    }
+    fn inter_elem(i: usize, which: usize) -> usize {
+        INTERMEDIATE_BASE + 6 * i + which
+    }
 
     pub(super) fn elem_limb_col(elem: usize, limb: usize) -> usize {
         GLOBAL_START + elem * ELEM_WIDTH + limb
@@ -1490,13 +1367,14 @@ mod diff_layer {
             carry = next;
         }
 
-        MulWitness { k_limbs, carry_signs, carry_mags }
+        MulWitness {
+            k_limbs,
+            carry_signs,
+            carry_mags,
+        }
     }
 
-    fn lin_witness(
-        terms: &[(i64, [u64; LIMBS])],
-        q_coeff: i64,
-    ) -> LinWitness {
+    fn lin_witness(terms: &[(i64, [u64; LIMBS])], q_coeff: i64) -> LinWitness {
         let q_big = BigInt::from_biguint(Sign::Plus, modulus_biguint());
         let mut sum = BigInt::from(0i64);
 
@@ -1514,7 +1392,13 @@ mod diff_layer {
 
         let k_big = -&sum / &denom;
         assert_eq!(sum + &denom * &k_big, BigInt::from(0i64));
-        let k = k_big.to_biguint().unwrap().to_u64_digits().first().copied().unwrap_or(0);
+        let k = k_big
+            .to_biguint()
+            .unwrap()
+            .to_u64_digits()
+            .first()
+            .copied()
+            .unwrap_or(0);
         assert!(k < 4);
 
         let mut carries_shifted = [0u64; LIMBS];
@@ -1539,11 +1423,7 @@ mod diff_layer {
         LinWitness { k, carries_shifted }
     }
 
-    fn addition_data(
-        p: G1Affine,
-        q: G1Affine,
-        r: G1Affine,
-    ) -> ([Fq; 6], [MulEquation; 3]) {
+    fn addition_data(p: G1Affine, q: G1Affine, r: G1Affine) -> ([Fq; 6], [MulEquation; 3]) {
         assert!(!p.infinity && !q.infinity && !r.infinity);
         let dx = q.x - p.x;
         assert!(!dx.is_zero());
@@ -1561,9 +1441,21 @@ mod diff_layer {
         (
             [lambda, dx, dy, rhs_x, xdiff, rhs_y],
             [
-                MulEquation { a: lambda, b: dx, c: dy },
-                MulEquation { a: lambda, b: lambda, c: rhs_x },
-                MulEquation { a: lambda, b: xdiff, c: rhs_y },
+                MulEquation {
+                    a: lambda,
+                    b: dx,
+                    c: dy,
+                },
+                MulEquation {
+                    a: lambda,
+                    b: lambda,
+                    c: rhs_x,
+                },
+                MulEquation {
+                    a: lambda,
+                    b: xdiff,
+                    c: rhs_y,
+                },
             ],
         )
     }
@@ -1625,11 +1517,7 @@ mod diff_layer {
         }
     }
 
-    fn expr_from_bits<AB: AirBuilder>(
-        row: &[AB::Var],
-        start: usize,
-        bit_count: usize,
-    ) -> AB::Expr {
+    fn expr_from_bits<AB: AirBuilder>(row: &[AB::Var], start: usize, bit_count: usize) -> AB::Expr {
         let mut acc = AB::Expr::ZERO;
         let mut weight = AB::Expr::ONE;
         for b in 0..bit_count {
@@ -1640,11 +1528,7 @@ mod diff_layer {
         acc
     }
 
-    fn elem_limb_expr<AB: AirBuilder>(
-        row: &[AB::Var],
-        elem: usize,
-        limb: usize,
-    ) -> AB::Expr {
+    fn elem_limb_expr<AB: AirBuilder>(row: &[AB::Var], elem: usize, limb: usize) -> AB::Expr {
         row[elem_limb_col(elem, limb)].into()
     }
 
@@ -1652,16 +1536,9 @@ mod diff_layer {
         expr_from_bits::<AB>(row, lin_k_bit_col(eq, 0), LIN_K_BITS)
     }
 
-    fn lin_carry_expr<AB: AirBuilder>(
-        row: &[AB::Var],
-        eq: usize,
-        limb: usize,
-    ) -> AB::Expr {
-        expr_from_bits::<AB>(
-            row,
-            lin_carry_bit_col(eq, limb, 0),
-            LIN_CARRY_BITS,
-        ) - AB::Expr::from_u64(LIN_CARRY_OFFSET as u64)
+    fn lin_carry_expr<AB: AirBuilder>(row: &[AB::Var], eq: usize, limb: usize) -> AB::Expr {
+        expr_from_bits::<AB>(row, lin_carry_bit_col(eq, limb, 0), LIN_CARRY_BITS)
+            - AB::Expr::from_u64(LIN_CARRY_OFFSET as u64)
     }
 
     fn mul_limb_from_bits<AB: AirBuilder>(
@@ -1672,10 +1549,7 @@ mod diff_layer {
         expr_from_bits::<AB>(row, bits_start + limb * LIMB_BITS, LIMB_BITS)
     }
 
-    fn mul_signed_carry_expr<AB: AirBuilder>(
-        row: &[AB::Var],
-        idx: usize,
-    ) -> AB::Expr {
+    fn mul_signed_carry_expr<AB: AirBuilder>(row: &[AB::Var], idx: usize) -> AB::Expr {
         let sign: AB::Expr = row[MUL_CARRY_SIGN_START + idx].into();
         let mag = expr_from_bits::<AB>(
             row,
@@ -1685,11 +1559,7 @@ mod diff_layer {
         (AB::Expr::ONE - sign.clone() - sign) * mag
     }
 
-    fn add_term<AB: AirBuilder>(
-        acc: AB::Expr,
-        term: AB::Expr,
-        coeff: i64,
-    ) -> AB::Expr {
+    fn add_term<AB: AirBuilder>(acc: AB::Expr, term: AB::Expr, coeff: i64) -> AB::Expr {
         match coeff {
             1 => acc + term,
             -1 => acc - term,
@@ -1708,7 +1578,10 @@ mod diff_layer {
         match j {
             0 => (vec![(1, xq), (-1, xp), (-1, inter_elem(i, I_DX))], 1),
             1 => (vec![(1, yq), (-1, yp), (-1, inter_elem(i, I_DY))], 1),
-            2 => (vec![(1, xr), (1, xp), (1, xq), (-1, inter_elem(i, I_RHSX))], -1),
+            2 => (
+                vec![(1, xr), (1, xp), (1, xq), (-1, inter_elem(i, I_RHSX))],
+                -1,
+            ),
             3 => (vec![(1, xp), (-1, xr), (-1, inter_elem(i, I_XDIFF))], 1),
             4 => (vec![(1, yr), (1, yp), (-1, inter_elem(i, I_RHSY))], -1),
             _ => unreachable!(),
@@ -1737,23 +1610,16 @@ mod diff_layer {
         }
     }
 
-
-
     fn fill_elem(row: &mut [Val], elem: usize, limbs: &[u64; LIMBS]) {
         for l in 0..LIMBS {
             row[elem_limb_col(elem, l)] = Val::from_u64(limbs[l]);
             for b in 0..LIMB_BITS {
-                row[elem_bits_col(elem, l, b)] =
-                    Val::from_u64((limbs[l] >> b) & 1);
+                row[elem_bits_col(elem, l, b)] = Val::from_u64((limbs[l] >> b) & 1);
             }
         }
     }
 
-    fn encode_mul_row(
-        row: &mut [Val],
-        eq_index: usize,
-        eq: &MulEquation,
-    ) {
+    fn encode_mul_row(row: &mut [Val], eq_index: usize, eq: &MulEquation) {
         for i in 0..NUM_MUL_EQS {
             row[SEL_START + i] = if i == eq_index { Val::ONE } else { Val::ZERO };
         }
@@ -1772,14 +1638,16 @@ mod diff_layer {
                 row[A_BITS_START + l * LIMB_BITS + bit] = Val::from_u64((a[l] >> bit) & 1);
                 row[B_BITS_START + l * LIMB_BITS + bit] = Val::from_u64((b[l] >> bit) & 1);
                 row[C_BITS_START + l * LIMB_BITS + bit] = Val::from_u64((c[l] >> bit) & 1);
-                row[K_BITS_START + l * LIMB_BITS + bit] =
-                    Val::from_u64((w.k_limbs[l] >> bit) & 1);
+                row[K_BITS_START + l * LIMB_BITS + bit] = Val::from_u64((w.k_limbs[l] >> bit) & 1);
             }
         }
 
         for i in 0..CARRY_COUNT {
-            row[MUL_CARRY_SIGN_START + i] =
-                if w.carry_signs[i] { Val::ONE } else { Val::ZERO };
+            row[MUL_CARRY_SIGN_START + i] = if w.carry_signs[i] {
+                Val::ONE
+            } else {
+                Val::ZERO
+            };
             for b in 0..MUL_CARRY_BITS {
                 row[MUL_CARRY_BITS_START + i * MUL_CARRY_BITS + b] =
                     Val::from_u64((w.carry_mags[i] >> b) & 1);
@@ -1826,206 +1694,199 @@ mod diff_layer {
         next: &[AB::Var],
         public_values: &[AB::Expr],
     ) {
-    // Bind the six public points on the first row.
-            for p in 0..NUM_PUBLIC_POINTS {
-                for l in 0..LIMBS {
-                    builder.when_first_row().assert_eq(
-                        local[elem_limb_col(pub_x_elem(p), l)],
-                        public_values[p * POINT_LIMBS + l].clone(),
-                    );
-                    builder.when_first_row().assert_eq(
-                        local[elem_limb_col(pub_y_elem(p), l)],
-                        public_values[p * POINT_LIMBS + LIMBS + l].clone(),
-                    );
-                }
-            }
-
-            // Carry every global field element through the trace.
-            for e in 0..GLOBAL_ELEMS {
-                for l in 0..LIMBS {
-                    builder.when_transition().assert_eq(
-                        local[elem_limb_col(e, l)],
-                        next[elem_limb_col(e, l)],
-                    );
-                }
-            }
-
-            // First-row range checks for all global field elements.
-            for e in 0..GLOBAL_ELEMS {
-                for l in 0..LIMBS {
-                    let mut rec = AB::Expr::ZERO;
-                    let mut w = AB::Expr::ONE;
-                    for b in 0..LIMB_BITS {
-                        let bit: AB::Expr = local[elem_bits_col(e, l, b)].into();
-                        builder.when_first_row().assert_zero(
-                            bit.clone() * (bit.clone() - AB::Expr::ONE)
-                        );
-                        rec = rec + bit * w.clone();
-                        w = w.clone() + w;
-                    }
-                    builder.when_first_row().assert_eq(
-                        local[elem_limb_col(e, l)],
-                        rec,
-                    );
-                }
-            }
-
-            // Dynamic modular linear relations used to derive dx,dy,rhsx,xdiff,rhsy.
-            for i in 0..NUM_RELATIONS {
-                for j in 0..5 {
-                    let eq = i * 5 + j;
-                    let (terms, q_coeff) = linear_spec(i, j);
-
-                    for b in 0..LIN_K_BITS {
-                        let bit: AB::Expr = local[lin_k_bit_col(eq, b)].into();
-                        builder.when_first_row().assert_zero(
-                            bit.clone() * (bit - AB::Expr::ONE)
-                        );
-                    }
-                    for l in 0..LIMBS {
-                        for b in 0..LIN_CARRY_BITS {
-                            let bit: AB::Expr = local[lin_carry_bit_col(eq, l, b)].into();
-                            builder.when_first_row().assert_zero(
-                                bit.clone() * (bit - AB::Expr::ONE)
-                            );
-                        }
-                    }
-
-                    let k = lin_k_expr::<AB>(local, eq);
-
-                    for t in 0..LIMBS {
-                        let mut lhs = if t == 0 {
-                            AB::Expr::ZERO
-                        } else {
-                            lin_carry_expr::<AB>(local, eq, t - 1)
-                        };
-
-                        for (coeff, elem) in &terms {
-                            lhs = add_term::<AB>(
-                                lhs,
-                                elem_limb_expr::<AB>(local, *elem, t),
-                                *coeff,
-                            );
-                        }
-
-                        let qterm = k.clone() * AB::Expr::from_u64(Q_LIMBS[t]);
-                        lhs = if q_coeff == 1 { lhs + qterm } else { lhs - qterm };
-
-                        let next_carry = lin_carry_expr::<AB>(local, eq, t);
-                        builder.when_first_row().assert_zero(
-                            lhs - next_carry * AB::Expr::from_u64(BASE)
-                        );
-                    }
-
-                    builder.when_first_row().assert_zero(
-                        lin_carry_expr::<AB>(local, eq, LIMBS - 1)
-                    );
-                }
-            }
-
-            // One-hot selector for the nine modular multiplication equations.
-            let mut sel_sum = AB::Expr::ZERO;
-            for i in 0..NUM_MUL_EQS {
-                let s: AB::Expr = local[SEL_START + i].into();
-                builder.assert_zero(s.clone() * (s.clone() - AB::Expr::ONE));
-                sel_sum = sel_sum + s;
-            }
-            builder.assert_one(sel_sum);
-
-            // Range checks for multiplication gadget.
+        // Bind the six public points on the first row.
+        for p in 0..NUM_PUBLIC_POINTS {
             for l in 0..LIMBS {
-                let a_rec = mul_limb_from_bits::<AB>(local, A_BITS_START, l);
-                let b_rec = mul_limb_from_bits::<AB>(local, B_BITS_START, l);
-                let c_rec = mul_limb_from_bits::<AB>(local, C_BITS_START, l);
+                builder.when_first_row().assert_eq(
+                    local[elem_limb_col(pub_x_elem(p), l)],
+                    public_values[p * POINT_LIMBS + l].clone(),
+                );
+                builder.when_first_row().assert_eq(
+                    local[elem_limb_col(pub_y_elem(p), l)],
+                    public_values[p * POINT_LIMBS + LIMBS + l].clone(),
+                );
+            }
+        }
 
-                builder.assert_eq(local[A_START + l], a_rec);
-                builder.assert_eq(local[B_START + l], b_rec);
-                builder.assert_eq(local[C_START + l], c_rec);
+        // Carry every global field element through the trace.
+        for e in 0..GLOBAL_ELEMS {
+            for l in 0..LIMBS {
+                builder
+                    .when_transition()
+                    .assert_eq(local[elem_limb_col(e, l)], next[elem_limb_col(e, l)]);
+            }
+        }
 
+        // First-row range checks for all global field elements.
+        for e in 0..GLOBAL_ELEMS {
+            for l in 0..LIMBS {
+                let mut rec = AB::Expr::ZERO;
+                let mut w = AB::Expr::ONE;
                 for b in 0..LIMB_BITS {
-                    for start in [A_BITS_START, B_BITS_START, C_BITS_START, K_BITS_START] {
-                        let bit: AB::Expr = local[start + l * LIMB_BITS + b].into();
-                        builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
+                    let bit: AB::Expr = local[elem_bits_col(e, l, b)].into();
+                    builder
+                        .when_first_row()
+                        .assert_zero(bit.clone() * (bit.clone() - AB::Expr::ONE));
+                    rec = rec + bit * w.clone();
+                    w = w.clone() + w;
+                }
+                builder
+                    .when_first_row()
+                    .assert_eq(local[elem_limb_col(e, l)], rec);
+            }
+        }
+
+        // Dynamic modular linear relations used to derive dx,dy,rhsx,xdiff,rhsy.
+        for i in 0..NUM_RELATIONS {
+            for j in 0..5 {
+                let eq = i * 5 + j;
+                let (terms, q_coeff) = linear_spec(i, j);
+
+                for b in 0..LIN_K_BITS {
+                    let bit: AB::Expr = local[lin_k_bit_col(eq, b)].into();
+                    builder
+                        .when_first_row()
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
+                }
+                for l in 0..LIMBS {
+                    for b in 0..LIN_CARRY_BITS {
+                        let bit: AB::Expr = local[lin_carry_bit_col(eq, l, b)].into();
+                        builder
+                            .when_first_row()
+                            .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                     }
                 }
-            }
 
-            for i in 0..CARRY_COUNT {
-                let sign: AB::Expr = local[MUL_CARRY_SIGN_START + i].into();
-                builder.assert_zero(sign.clone() * (sign - AB::Expr::ONE));
-                for b in 0..MUL_CARRY_BITS {
-                    let bit: AB::Expr =
-                        local[MUL_CARRY_BITS_START + i * MUL_CARRY_BITS + b].into();
+                let k = lin_k_expr::<AB>(local, eq);
+
+                for t in 0..LIMBS {
+                    let mut lhs = if t == 0 {
+                        AB::Expr::ZERO
+                    } else {
+                        lin_carry_expr::<AB>(local, eq, t - 1)
+                    };
+
+                    for (coeff, elem) in &terms {
+                        lhs = add_term::<AB>(lhs, elem_limb_expr::<AB>(local, *elem, t), *coeff);
+                    }
+
+                    let qterm = k.clone() * AB::Expr::from_u64(Q_LIMBS[t]);
+                    lhs = if q_coeff == 1 {
+                        lhs + qterm
+                    } else {
+                        lhs - qterm
+                    };
+
+                    let next_carry = lin_carry_expr::<AB>(local, eq, t);
+                    builder
+                        .when_first_row()
+                        .assert_zero(lhs - next_carry * AB::Expr::from_u64(BASE));
+                }
+
+                builder
+                    .when_first_row()
+                    .assert_zero(lin_carry_expr::<AB>(local, eq, LIMBS - 1));
+            }
+        }
+
+        // One-hot selector for the nine modular multiplication equations.
+        let mut sel_sum = AB::Expr::ZERO;
+        for i in 0..NUM_MUL_EQS {
+            let s: AB::Expr = local[SEL_START + i].into();
+            builder.assert_zero(s.clone() * (s.clone() - AB::Expr::ONE));
+            sel_sum = sel_sum + s;
+        }
+        builder.assert_one(sel_sum);
+
+        // Range checks for multiplication gadget.
+        for l in 0..LIMBS {
+            let a_rec = mul_limb_from_bits::<AB>(local, A_BITS_START, l);
+            let b_rec = mul_limb_from_bits::<AB>(local, B_BITS_START, l);
+            let c_rec = mul_limb_from_bits::<AB>(local, C_BITS_START, l);
+
+            builder.assert_eq(local[A_START + l], a_rec);
+            builder.assert_eq(local[B_START + l], b_rec);
+            builder.assert_eq(local[C_START + l], c_rec);
+
+            for b in 0..LIMB_BITS {
+                for start in [A_BITS_START, B_BITS_START, C_BITS_START, K_BITS_START] {
+                    let bit: AB::Expr = local[start + l * LIMB_BITS + b].into();
                     builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
+        }
 
-            // Bind multiplication a,b,c limbs to dynamic global intermediates.
-            for l in 0..LIMBS {
-                let mut ea = AB::Expr::ZERO;
-                let mut eb = AB::Expr::ZERO;
-                let mut ec = AB::Expr::ZERO;
+        for i in 0..CARRY_COUNT {
+            let sign: AB::Expr = local[MUL_CARRY_SIGN_START + i].into();
+            builder.assert_zero(sign.clone() * (sign - AB::Expr::ONE));
+            for b in 0..MUL_CARRY_BITS {
+                let bit: AB::Expr = local[MUL_CARRY_BITS_START + i * MUL_CARRY_BITS + b].into();
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
+            }
+        }
 
-                for eq in 0..NUM_MUL_EQS {
-                    let s: AB::Expr = local[SEL_START + eq].into();
-                    let (ae, be, ce) = mul_spec(eq);
-                    ea = ea + s.clone() * elem_limb_expr::<AB>(local, ae, l);
-                    eb = eb + s.clone() * elem_limb_expr::<AB>(local, be, l);
-                    ec = ec + s * elem_limb_expr::<AB>(local, ce, l);
-                }
+        // Bind multiplication a,b,c limbs to dynamic global intermediates.
+        for l in 0..LIMBS {
+            let mut ea = AB::Expr::ZERO;
+            let mut eb = AB::Expr::ZERO;
+            let mut ec = AB::Expr::ZERO;
 
-                builder.assert_eq(local[A_START + l], ea);
-                builder.assert_eq(local[B_START + l], eb);
-                builder.assert_eq(local[C_START + l], ec);
+            for eq in 0..NUM_MUL_EQS {
+                let s: AB::Expr = local[SEL_START + eq].into();
+                let (ae, be, ce) = mul_spec(eq);
+                ea = ea + s.clone() * elem_limb_expr::<AB>(local, ae, l);
+                eb = eb + s.clone() * elem_limb_expr::<AB>(local, be, l);
+                ec = ec + s * elem_limb_expr::<AB>(local, ce, l);
             }
 
-            // Enforce a*b-c=k*q.
-            for t in 0..32 {
-                let mut lhs = if t == 0 {
-                    AB::Expr::ZERO
-                } else {
-                    mul_signed_carry_expr::<AB>(local, t - 1)
-                };
+            builder.assert_eq(local[A_START + l], ea);
+            builder.assert_eq(local[B_START + l], eb);
+            builder.assert_eq(local[C_START + l], ec);
+        }
 
-                for i in 0..LIMBS {
-                    if t >= i {
-                        let j = t - i;
-                        if j < LIMBS {
-                            let ai: AB::Expr = local[A_START + i].into();
-                            let bj: AB::Expr = local[B_START + j].into();
-                            lhs = lhs + ai * bj;
-                        }
+        // Enforce a*b-c=k*q.
+        for t in 0..32 {
+            let mut lhs = if t == 0 {
+                AB::Expr::ZERO
+            } else {
+                mul_signed_carry_expr::<AB>(local, t - 1)
+            };
+
+            for i in 0..LIMBS {
+                if t >= i {
+                    let j = t - i;
+                    if j < LIMBS {
+                        let ai: AB::Expr = local[A_START + i].into();
+                        let bj: AB::Expr = local[B_START + j].into();
+                        lhs = lhs + ai * bj;
                     }
                 }
-
-                for i in 0..LIMBS {
-                    if t >= i {
-                        let j = t - i;
-                        if j < LIMBS {
-                            let ki = mul_limb_from_bits::<AB>(local, K_BITS_START, i);
-                            lhs = lhs - ki * AB::Expr::from_u64(Q_LIMBS[j]);
-                        }
-                    }
-                }
-
-                if t < LIMBS {
-                    let ci: AB::Expr = local[C_START + t].into();
-                    lhs = lhs - ci;
-                }
-
-                let next_carry = if t < CARRY_COUNT {
-                    mul_signed_carry_expr::<AB>(local, t)
-                } else {
-                    AB::Expr::ZERO
-                };
-
-                builder.assert_zero(
-                    lhs - next_carry * AB::Expr::from_u64(BASE)
-                );
             }
-    
+
+            for i in 0..LIMBS {
+                if t >= i {
+                    let j = t - i;
+                    if j < LIMBS {
+                        let ki = mul_limb_from_bits::<AB>(local, K_BITS_START, i);
+                        lhs = lhs - ki * AB::Expr::from_u64(Q_LIMBS[j]);
+                    }
+                }
+            }
+
+            if t < LIMBS {
+                let ci: AB::Expr = local[C_START + t].into();
+                lhs = lhs - ci;
+            }
+
+            let next_carry = if t < CARRY_COUNT {
+                mul_signed_carry_expr::<AB>(local, t)
+            } else {
+                AB::Expr::ZERO
+            };
+
+            builder.assert_zero(lhs - next_carry * AB::Expr::from_u64(BASE));
+        }
     }
-
 
     pub(super) fn make_values_with_height(
         public_points: &[G1Affine; NUM_PUBLIC_POINTS],
@@ -2050,40 +1911,26 @@ mod diff_layer {
                     let w = &data.lin_witnesses[eq];
 
                     for b in 0..LIN_K_BITS {
-                        row[lin_k_bit_col(eq, b)] =
-                            Val::from_u64((w.k >> b) & 1);
+                        row[lin_k_bit_col(eq, b)] = Val::from_u64((w.k >> b) & 1);
                     }
 
                     for l in 0..LIMBS {
                         for b in 0..LIN_CARRY_BITS {
                             row[lin_carry_bit_col(eq, l, b)] =
-                                Val::from_u64(
-                                    (w.carries_shifted[l] >> b) & 1
-                                );
+                                Val::from_u64((w.carries_shifted[l] >> b) & 1);
                         }
                     }
                 }
             }
 
-            let eq_index =
-                if r < NUM_MUL_EQS {
-                    r
-                } else {
-                    NUM_MUL_EQS - 1
-                };
+            let eq_index = if r < NUM_MUL_EQS { r } else { NUM_MUL_EQS - 1 };
 
-            encode_mul_row(
-                row,
-                eq_index,
-                &data.mul_eqs[eq_index],
-            );
+            encode_mul_row(row, eq_index, &data.mul_eqs[eq_index]);
         }
 
         values
     }
-
 }
-
 
 // ============================================================
 // Dynamic Miller-line evaluation layer
@@ -2136,7 +1983,9 @@ mod line_eval_layer {
         carry_mags: [u64; LCARRY_COUNT],
     }
 
-    fn slot_start(slot: usize) -> usize { slot * SLOT_WIDTH }
+    fn slot_start(slot: usize) -> usize {
+        slot * SLOT_WIDTH
+    }
 
     fn a_col(slot: usize, limb: usize) -> usize {
         slot_start(slot) + A_START + limb
@@ -2229,7 +2078,11 @@ mod line_eval_layer {
             carry = next;
         }
 
-        MulWitness { k_limbs, carry_signs, carry_mags }
+        MulWitness {
+            k_limbs,
+            carry_signs,
+            carry_mags,
+        }
     }
 
     fn fill_bits(row: &mut [Val], col: usize, value: u64, bits: usize) {
@@ -2245,22 +2098,30 @@ mod line_eval_layer {
         let w = build_mul_witness(a, b, c);
 
         for l in 0..LIMBS {
-            row[a_col(slot,l)] = Val::from_u64(al[l]);
-            row[b_col(slot,l)] = Val::from_u64(bl[l]);
-            row[c_col(slot,l)] = Val::from_u64(cl[l]);
+            row[a_col(slot, l)] = Val::from_u64(al[l]);
+            row[b_col(slot, l)] = Val::from_u64(bl[l]);
+            row[c_col(slot, l)] = Val::from_u64(cl[l]);
 
-            fill_bits(row, bits_col(slot,A_BITS_START,l,0), al[l], LIMB_BITS);
-            fill_bits(row, bits_col(slot,B_BITS_START,l,0), bl[l], LIMB_BITS);
-            fill_bits(row, bits_col(slot,C_BITS_START,l,0), cl[l], LIMB_BITS);
-            fill_bits(row, bits_col(slot,K_BITS_START,l,0), w.k_limbs[l], LIMB_BITS);
+            fill_bits(row, bits_col(slot, A_BITS_START, l, 0), al[l], LIMB_BITS);
+            fill_bits(row, bits_col(slot, B_BITS_START, l, 0), bl[l], LIMB_BITS);
+            fill_bits(row, bits_col(slot, C_BITS_START, l, 0), cl[l], LIMB_BITS);
+            fill_bits(
+                row,
+                bits_col(slot, K_BITS_START, l, 0),
+                w.k_limbs[l],
+                LIMB_BITS,
+            );
         }
 
         for cidx in 0..LCARRY_COUNT {
-            row[carry_sign_col(slot,cidx)] =
-                if w.carry_signs[cidx] { Val::ONE } else { Val::ZERO };
+            row[carry_sign_col(slot, cidx)] = if w.carry_signs[cidx] {
+                Val::ONE
+            } else {
+                Val::ZERO
+            };
             fill_bits(
                 row,
-                carry_bit_col(slot,cidx,0),
+                carry_bit_col(slot, cidx, 0),
                 w.carry_mags[cidx],
                 LCARRY_BITS,
             );
@@ -2276,26 +2137,30 @@ mod line_eval_layer {
         let mut values = vec![Val::ZERO; height * WIDTH];
 
         for r in 0..height {
-            if r >= schedule.len() { continue; }
+            if r >= schedule.len() {
+                continue;
+            }
             let native = &schedule[r];
-            if native.op != Op::MillerLine { continue; }
+            if native.op != Op::MillerLine {
+                continue;
+            }
 
             let step = native.miller_step.unwrap();
             let mc = &constants[step];
             let p = pairs[mc.pair_index].0;
 
             let raw = &mc.raw_coeff_limbs;
-            let a0 = fq_from_limbs(raw[0*LIMBS..1*LIMBS].try_into().unwrap());
-            let a1 = fq_from_limbs(raw[1*LIMBS..2*LIMBS].try_into().unwrap());
-            let a2 = fq_from_limbs(raw[2*LIMBS..3*LIMBS].try_into().unwrap());
-            let a3 = fq_from_limbs(raw[3*LIMBS..4*LIMBS].try_into().unwrap());
+            let a0 = fq_from_limbs(raw[0 * LIMBS..1 * LIMBS].try_into().unwrap());
+            let a1 = fq_from_limbs(raw[1 * LIMBS..2 * LIMBS].try_into().unwrap());
+            let a2 = fq_from_limbs(raw[2 * LIMBS..3 * LIMBS].try_into().unwrap());
+            let a3 = fq_from_limbs(raw[3 * LIMBS..4 * LIMBS].try_into().unwrap());
 
             let line = native.line.as_ref().unwrap();
             let cs = [line.0.c0, line.0.c1, line.1.c0, line.1.c1];
-            let as_ = [a0,a1,a2,a3];
-            let bs = [p.y,p.y,p.x,p.x];
+            let as_ = [a0, a1, a2, a3];
+            let bs = [p.y, p.y, p.x, p.x];
 
-            let row = &mut values[r*WIDTH..(r+1)*WIDTH];
+            let row = &mut values[r * WIDTH..(r + 1) * WIDTH];
             for slot in 0..MULS {
                 encode_slot(row, slot, as_[slot], bs[slot], cs[slot]);
             }
@@ -2304,15 +2169,11 @@ mod line_eval_layer {
         values
     }
 
-    fn expr_from_bits<AB: AirBuilder>(
-        row: &[AB::Var],
-        start: usize,
-        bit_count: usize,
-    ) -> AB::Expr {
+    fn expr_from_bits<AB: AirBuilder>(row: &[AB::Var], start: usize, bit_count: usize) -> AB::Expr {
         let mut acc = AB::Expr::ZERO;
         let mut weight = AB::Expr::ONE;
         for b in 0..bit_count {
-            let bit: AB::Expr = row[start+b].into();
+            let bit: AB::Expr = row[start + b].into();
             acc = acc + bit * weight.clone();
             weight = weight.clone() + weight;
         }
@@ -2320,8 +2181,8 @@ mod line_eval_layer {
     }
 
     fn signed_carry<AB: AirBuilder>(row: &[AB::Var], slot: usize, c: usize) -> AB::Expr {
-        let sign: AB::Expr = row[carry_sign_col(slot,c)].into();
-        let mag = expr_from_bits::<AB>(row, carry_bit_col(slot,c,0), LCARRY_BITS);
+        let sign: AB::Expr = row[carry_sign_col(slot, c)].into();
+        let mag = expr_from_bits::<AB>(row, carry_bit_col(slot, c, 0), LCARRY_BITS);
         (AB::Expr::ONE - sign.clone() - sign) * mag
     }
 
@@ -2360,40 +2221,40 @@ mod line_eval_layer {
         // row is a Miller-line row.
         for slot in 0..MULS {
             for l in 0..LIMBS {
-                for (vcol,bstart) in [
-                    (a_col(slot,l), bits_col(slot,A_BITS_START,l,0)),
-                    (b_col(slot,l), bits_col(slot,B_BITS_START,l,0)),
-                    (c_col(slot,l), bits_col(slot,C_BITS_START,l,0)),
+                for (vcol, bstart) in [
+                    (a_col(slot, l), bits_col(slot, A_BITS_START, l, 0)),
+                    (b_col(slot, l), bits_col(slot, B_BITS_START, l, 0)),
+                    (c_col(slot, l), bits_col(slot, C_BITS_START, l, 0)),
                 ] {
-                    let rec = expr_from_bits::<AB>(row,bstart,LIMB_BITS);
-                    builder.when(mline.clone()).assert_eq(row[vcol],rec);
+                    let rec = expr_from_bits::<AB>(row, bstart, LIMB_BITS);
+                    builder.when(mline.clone()).assert_eq(row[vcol], rec);
                     for b in 0..LIMB_BITS {
-                        let bit: AB::Expr = row[bstart+b].into();
-                        builder.when(mline.clone()).assert_zero(
-                            bit.clone()*(bit-AB::Expr::ONE)
-                        );
+                        let bit: AB::Expr = row[bstart + b].into();
+                        builder
+                            .when(mline.clone())
+                            .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                     }
                 }
 
-                let kstart = bits_col(slot,K_BITS_START,l,0);
+                let kstart = bits_col(slot, K_BITS_START, l, 0);
                 for b in 0..LIMB_BITS {
-                    let bit: AB::Expr = row[kstart+b].into();
-                    builder.when(mline.clone()).assert_zero(
-                        bit.clone()*(bit-AB::Expr::ONE)
-                    );
+                    let bit: AB::Expr = row[kstart + b].into();
+                    builder
+                        .when(mline.clone())
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
 
             for c in 0..LCARRY_COUNT {
-                let sign: AB::Expr = row[carry_sign_col(slot,c)].into();
-                builder.when(mline.clone()).assert_zero(
-                    sign.clone()*(sign-AB::Expr::ONE)
-                );
+                let sign: AB::Expr = row[carry_sign_col(slot, c)].into();
+                builder
+                    .when(mline.clone())
+                    .assert_zero(sign.clone() * (sign - AB::Expr::ONE));
                 for b in 0..LCARRY_BITS {
-                    let bit: AB::Expr = row[carry_bit_col(slot,c,b)].into();
-                    builder.when(mline.clone()).assert_zero(
-                        bit.clone()*(bit-AB::Expr::ONE)
-                    );
+                    let bit: AB::Expr = row[carry_bit_col(slot, c, b)].into();
+                    builder
+                        .when(mline.clone())
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
         }
@@ -2409,26 +2270,33 @@ mod line_eval_layer {
                 let mut expected_b = AB::Expr::ZERO;
 
                 for j in 0..MILLER_STEPS {
-                    if miller[j].is_square { continue; }
-                    let id: AB::Expr = pair_local[MILLER_ID_START+j].into();
-                    let aval = miller[j].raw_coeff_limbs[raw_component*LIMBS+l];
-                    if aval != 0 {
-                        expected_a = expected_a + id.clone()*AB::Expr::from_u64(aval);
+                    if miller[j].is_square {
+                        continue;
                     }
-                    expected_b = expected_b + id * point_coord_limb::<AB>(
-                        diff_local,
-                        public_values,
-                        miller[j].pair_index,
-                        use_y,
-                        l,
-                    );
+                    let id: AB::Expr = pair_local[MILLER_ID_START + j].into();
+                    let aval = miller[j].raw_coeff_limbs[raw_component * LIMBS + l];
+                    if aval != 0 {
+                        expected_a = expected_a + id.clone() * AB::Expr::from_u64(aval);
+                    }
+                    expected_b = expected_b
+                        + id * point_coord_limb::<AB>(
+                            diff_local,
+                            public_values,
+                            miller[j].pair_index,
+                            use_y,
+                            l,
+                        );
                 }
 
-                builder.when(mline.clone()).assert_eq(row[a_col(slot,l)], expected_a);
-                builder.when(mline.clone()).assert_eq(row[b_col(slot,l)], expected_b);
+                builder
+                    .when(mline.clone())
+                    .assert_eq(row[a_col(slot, l)], expected_a);
+                builder
+                    .when(mline.clone())
+                    .assert_eq(row[b_col(slot, l)], expected_b);
                 builder.when(mline.clone()).assert_eq(
-                    row[c_col(slot,l)],
-                    pair_local[LINE_START + raw_component*LIMBS + l],
+                    row[c_col(slot, l)],
+                    pair_local[LINE_START + raw_component * LIMBS + l],
                 );
             }
         }
@@ -2439,17 +2307,18 @@ mod line_eval_layer {
             for l in 0..LIMBS {
                 let mut expected = AB::Expr::ZERO;
                 for j in 0..MILLER_STEPS {
-                    if miller[j].is_square { continue; }
-                    let val = miller[j].raw_coeff_limbs[comp*LIMBS+l];
+                    if miller[j].is_square {
+                        continue;
+                    }
+                    let val = miller[j].raw_coeff_limbs[comp * LIMBS + l];
                     if val != 0 {
-                        let id: AB::Expr = pair_local[MILLER_ID_START+j].into();
-                        expected = expected + id*AB::Expr::from_u64(val);
+                        let id: AB::Expr = pair_local[MILLER_ID_START + j].into();
+                        expected = expected + id * AB::Expr::from_u64(val);
                     }
                 }
-                builder.when(mline.clone()).assert_eq(
-                    pair_local[LINE_START + comp*LIMBS + l],
-                    expected,
-                );
+                builder
+                    .when(mline.clone())
+                    .assert_eq(pair_local[LINE_START + comp * LIMBS + l], expected);
             }
         }
 
@@ -2459,48 +2328,48 @@ mod line_eval_layer {
                 let mut lhs = if t == 0 {
                     AB::Expr::ZERO
                 } else {
-                    signed_carry::<AB>(row,slot,t-1)
+                    signed_carry::<AB>(row, slot, t - 1)
                 };
 
                 for i in 0..LIMBS {
                     if t >= i {
-                        let j=t-i;
-                        if j<LIMBS {
-                            let ai: AB::Expr = row[a_col(slot,i)].into();
-                            let bj: AB::Expr = row[b_col(slot,j)].into();
-                            lhs = lhs + ai*bj;
+                        let j = t - i;
+                        if j < LIMBS {
+                            let ai: AB::Expr = row[a_col(slot, i)].into();
+                            let bj: AB::Expr = row[b_col(slot, j)].into();
+                            lhs = lhs + ai * bj;
                         }
                     }
                 }
 
                 for i in 0..LIMBS {
                     if t >= i {
-                        let j=t-i;
-                        if j<LIMBS {
+                        let j = t - i;
+                        if j < LIMBS {
                             let ki = expr_from_bits::<AB>(
                                 row,
-                                bits_col(slot,K_BITS_START,i,0),
+                                bits_col(slot, K_BITS_START, i, 0),
                                 LIMB_BITS,
                             );
-                            lhs = lhs - ki*AB::Expr::from_u64(Q_LIMBS[j]);
+                            lhs = lhs - ki * AB::Expr::from_u64(Q_LIMBS[j]);
                         }
                     }
                 }
 
-                if t<LIMBS {
-                    let ci: AB::Expr = row[c_col(slot,t)].into();
-                    lhs = lhs-ci;
+                if t < LIMBS {
+                    let ci: AB::Expr = row[c_col(slot, t)].into();
+                    lhs = lhs - ci;
                 }
 
-                let next_carry = if t<LCARRY_COUNT {
-                    signed_carry::<AB>(row,slot,t)
+                let next_carry = if t < LCARRY_COUNT {
+                    signed_carry::<AB>(row, slot, t)
                 } else {
                     AB::Expr::ZERO
                 };
 
-                builder.when(mline.clone()).assert_zero(
-                    lhs-next_carry*AB::Expr::from_u64(BASE)
-                );
+                builder
+                    .when(mline.clone())
+                    .assert_zero(lhs - next_carry * AB::Expr::from_u64(BASE));
             }
         }
     }
@@ -2571,9 +2440,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
         for i in 0..NUM_SELECTORS {
             let s: AB::Expr = local[i].into();
-            builder.assert_zero(
-                s.clone() * (s.clone() - AB::Expr::ONE)
-            );
+            builder.assert_zero(s.clone() * (s.clone() - AB::Expr::ONE));
             selector_sum = selector_sum + s;
         }
 
@@ -2590,9 +2457,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         let miller_active = msq.clone() + mline.clone();
 
         // First row is Miller step 0.
-        builder.when_first_row().assert_one(
-            local[MILLER_ID_START]
-        );
+        builder.when_first_row().assert_one(local[MILLER_ID_START]);
 
         // ----------------------------------------------------
         // Range-check ACC, BASE, EXP limbs.
@@ -2605,9 +2470,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
             for b in 0..LIMB_BITS {
                 let bit: AB::Expr = local[bs + b].into();
-                builder.assert_zero(
-                    bit.clone() * (bit - AB::Expr::ONE)
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
@@ -2619,9 +2482,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
             for b in 0..LIMB_BITS {
                 let bit: AB::Expr = local[bs + b].into();
-                builder.assert_zero(
-                    bit.clone() * (bit - AB::Expr::ONE)
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
@@ -2633,9 +2494,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
             for b in 0..LIMB_BITS {
                 let bit: AB::Expr = local[bs + b].into();
-                builder.assert_zero(
-                    bit.clone() * (bit - AB::Expr::ONE)
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
@@ -2650,45 +2509,31 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         let mut expected_coeff = AB::Expr::ZERO;
 
         for j in 0..MILLER_STEPS {
-            let id: AB::Expr =
-                local[MILLER_ID_START + j].into();
+            let id: AB::Expr = local[MILLER_ID_START + j].into();
 
-            builder.assert_zero(
-                id.clone() * (id.clone() - AB::Expr::ONE)
-            );
+            builder.assert_zero(id.clone() * (id.clone() - AB::Expr::ONE));
 
             mid_sum = mid_sum + id.clone();
 
-            mid_weighted =
-                mid_weighted
-                + id.clone() * AB::Expr::from_u64(j as u64);
+            mid_weighted = mid_weighted + id.clone() * AB::Expr::from_u64(j as u64);
 
             if self.miller[j].is_square {
                 expected_sq = expected_sq + id.clone();
             }
 
             expected_coeff =
-                expected_coeff
-                + id * AB::Expr::from_u64(
-                    self.miller[j].coeff_index as u64
-                );
+                expected_coeff + id * AB::Expr::from_u64(self.miller[j].coeff_index as u64);
         }
 
         builder.assert_eq(mid_sum, miller_active.clone());
 
-        builder.assert_eq(
-            local[MILLER_STEP_INDEX],
-            mid_weighted,
-        );
+        builder.assert_eq(local[MILLER_STEP_INDEX], mid_weighted);
 
         builder.assert_eq(msq.clone(), expected_sq);
 
         builder
             .when(miller_active.clone())
-            .assert_eq(
-                local[COEFF_INDEX],
-                expected_coeff,
-            );
+            .assert_eq(local[COEFF_INDEX], expected_coeff);
 
         // Evaluated Miller-line limbs are derived dynamically below.
 
@@ -2765,20 +2610,14 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
             builder
                 .when_transition()
                 .when(einit.clone())
-                .assert_eq(
-                    next[BASE_START + i],
-                    local[ACC_START + i],
-                );
+                .assert_eq(next[BASE_START + i], local[ACC_START + i]);
         }
 
         for i in 0..EXP_LIMBS {
-            builder
-                .when_transition()
-                .when(einit.clone())
-                .assert_eq(
-                    next[EXP_START + i],
-                    AB::Expr::from_u64(self.final_exp_limbs[i]),
-                );
+            builder.when_transition().when(einit.clone()).assert_eq(
+                next[EXP_START + i],
+                AB::Expr::from_u64(self.final_exp_limbs[i]),
+            );
         }
 
         builder
@@ -2805,29 +2644,20 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
             builder
                 .when_transition()
                 .when(eacc.clone())
-                .assert_eq(
-                    next[BASE_START + i],
-                    local[BASE_START + i],
-                );
+                .assert_eq(next[BASE_START + i], local[BASE_START + i]);
         }
 
         for i in 0..EXP_LIMBS {
             builder
                 .when_transition()
                 .when(eacc.clone())
-                .assert_eq(
-                    next[EXP_START + i],
-                    local[EXP_START + i],
-                );
+                .assert_eq(next[EXP_START + i], local[EXP_START + i]);
         }
 
         builder
             .when_transition()
             .when(eacc.clone())
-            .assert_eq(
-                next[EXP_COUNTER],
-                local[EXP_COUNTER],
-            );
+            .assert_eq(next[EXP_COUNTER], local[EXP_COUNTER]);
 
         for i in 0..FQ12_LIMBS {
             let a: AB::Expr = local[ACC_START + i].into();
@@ -2835,10 +2665,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
             builder
                 .when_transition()
-                .when(
-                    eacc.clone()
-                    * (AB::Expr::ONE - exp_bit.clone())
-                )
+                .when(eacc.clone() * (AB::Expr::ONE - exp_bit.clone()))
                 .assert_eq(n, a);
         }
 
@@ -2855,19 +2682,13 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
             builder
                 .when_transition()
                 .when(ebase.clone())
-                .assert_eq(
-                    next[ACC_START + i],
-                    local[ACC_START + i],
-                );
+                .assert_eq(next[ACC_START + i], local[ACC_START + i]);
         }
 
         builder
             .when_transition()
             .when(ebase.clone())
-            .assert_eq(
-                next[EXP_COUNTER],
-                local[EXP_COUNTER] + AB::Expr::ONE,
-            );
+            .assert_eq(next[EXP_COUNTER], local[EXP_COUNTER] + AB::Expr::ONE);
 
         let next_output: AB::Expr = next[SEL_OUTPUT].into();
 
@@ -2886,45 +2707,25 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         //
         // carry_out = MSB(next limb_i), except top = 0.
         for i in 0..EXP_LIMBS {
-            let local_limb: AB::Expr =
-                local[EXP_START + i].into();
-            let next_limb: AB::Expr =
-                next[EXP_START + i].into();
+            let local_limb: AB::Expr = local[EXP_START + i].into();
+            let next_limb: AB::Expr = next[EXP_START + i].into();
 
-            let carry_in =
-                if i == 0 {
-                    exp_bit.clone()
-                } else {
-                    next[
-                        EXP_BITS_START
-                        + (i - 1) * LIMB_BITS
-                        + (LIMB_BITS - 1)
-                    ]
-                    .into()
-                };
+            let carry_in = if i == 0 {
+                exp_bit.clone()
+            } else {
+                next[EXP_BITS_START + (i - 1) * LIMB_BITS + (LIMB_BITS - 1)].into()
+            };
 
-            let carry_out: AB::Expr =
-                if i + 1 == EXP_LIMBS {
-                    AB::Expr::ZERO
-                } else {
-                    next[
-                        EXP_BITS_START
-                        + i * LIMB_BITS
-                        + (LIMB_BITS - 1)
-                    ]
-                    .into()
-                };
+            let carry_out: AB::Expr = if i + 1 == EXP_LIMBS {
+                AB::Expr::ZERO
+            } else {
+                next[EXP_BITS_START + i * LIMB_BITS + (LIMB_BITS - 1)].into()
+            };
 
-            builder
-                .when_transition()
-                .when(ebase.clone())
-                .assert_eq(
-                    local_limb
-                    + carry_out * AB::Expr::from_u64(BASE),
-                    carry_in
-                    + next_limb.clone()
-                    + next_limb,
-                );
+            builder.when_transition().when(ebase.clone()).assert_eq(
+                local_limb + carry_out * AB::Expr::from_u64(BASE),
+                carry_in + next_limb.clone() + next_limb,
+            );
         }
 
         // ----------------------------------------------------
@@ -2932,24 +2733,17 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // ----------------------------------------------------
         builder
             .when(output.clone())
-            .assert_eq(
-                local[EXP_COUNTER],
-                AB::Expr::from_u64(EXP_BITS as u64),
-            );
+            .assert_eq(local[EXP_COUNTER], AB::Expr::from_u64(EXP_BITS as u64));
 
         for i in EXP_START..EXP_END {
             builder.when(output.clone()).assert_zero(local[i]);
         }
 
         for i in 0..FQ12_LIMBS {
-            builder
-                .when(output.clone())
-                .assert_eq(
-                    local[ACC_START + i],
-                    AB::Expr::from_u64(
-                        self.pairing_output_limbs[i]
-                    ),
-                );
+            builder.when(output.clone()).assert_eq(
+                local[ACC_START + i],
+                AB::Expr::from_u64(self.pairing_output_limbs[i]),
+            );
         }
 
         let next_pad: AB::Expr = next[SEL_PAD].into();
@@ -2984,60 +2778,35 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         for i in 0..FQ12_LIMBS {
             builder
                 .when(msq.clone())
-                .assert_eq(
-                    local[OP_A_START + i],
-                    local[ACC_START + i],
-                );
+                .assert_eq(local[OP_A_START + i], local[ACC_START + i]);
 
             builder
                 .when(msq.clone())
-                .assert_eq(
-                    local[OP_B_START + i],
-                    local[ACC_START + i],
-                );
+                .assert_eq(local[OP_B_START + i], local[ACC_START + i]);
         }
 
         // Miller line: A=acc; B is sparse(c0,c3,c4).
         for i in 0..FQ12_LIMBS {
             builder
                 .when(mline.clone())
-                .assert_eq(
-                    local[OP_A_START + i],
-                    local[ACC_START + i],
-                );
+                .assert_eq(local[OP_A_START + i], local[ACC_START + i]);
 
             let coord = i / LIMBS;
             let limb = i % LIMBS;
 
-            let sparse_b: AB::Expr =
-                match coord {
-                    0 => local[
-                        LINE_START + 0 * LIMBS + limb
-                    ].into(),
-                    1 => local[
-                        LINE_START + 1 * LIMBS + limb
-                    ].into(),
-                    6 => local[
-                        LINE_START + 2 * LIMBS + limb
-                    ].into(),
-                    7 => local[
-                        LINE_START + 3 * LIMBS + limb
-                    ].into(),
-                    8 => local[
-                        LINE_START + 4 * LIMBS + limb
-                    ].into(),
-                    9 => local[
-                        LINE_START + 5 * LIMBS + limb
-                    ].into(),
-                    _ => AB::Expr::ZERO,
-                };
+            let sparse_b: AB::Expr = match coord {
+                0 => local[LINE_START + 0 * LIMBS + limb].into(),
+                1 => local[LINE_START + 1 * LIMBS + limb].into(),
+                6 => local[LINE_START + 2 * LIMBS + limb].into(),
+                7 => local[LINE_START + 3 * LIMBS + limb].into(),
+                8 => local[LINE_START + 4 * LIMBS + limb].into(),
+                9 => local[LINE_START + 5 * LIMBS + limb].into(),
+                _ => AB::Expr::ZERO,
+            };
 
             builder
                 .when(mline.clone())
-                .assert_eq(
-                    local[OP_B_START + i],
-                    sparse_b,
-                );
+                .assert_eq(local[OP_B_START + i], sparse_b);
         }
 
         // ExpAcc: A=bit*acc, B=bit*base.
@@ -3047,96 +2816,65 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
             builder
                 .when(eacc.clone())
-                .assert_eq(
-                    local[OP_A_START + i],
-                    exp_bit.clone() * a,
-                );
+                .assert_eq(local[OP_A_START + i], exp_bit.clone() * a);
 
             builder
                 .when(eacc.clone())
-                .assert_eq(
-                    local[OP_B_START + i],
-                    exp_bit.clone() * b,
-                );
+                .assert_eq(local[OP_B_START + i], exp_bit.clone() * b);
         }
 
         // ExpBase: A=base, B=base.
         for i in 0..FQ12_LIMBS {
             builder
                 .when(ebase.clone())
-                .assert_eq(
-                    local[OP_A_START + i],
-                    local[BASE_START + i],
-                );
+                .assert_eq(local[OP_A_START + i], local[BASE_START + i]);
             builder
                 .when(ebase.clone())
-                .assert_eq(
-                    local[OP_B_START + i],
-                    local[BASE_START + i],
-                );
+                .assert_eq(local[OP_B_START + i], local[BASE_START + i]);
         }
 
         // ----------------------------------------------------
         // Multiplication witness bit constraints
         // ----------------------------------------------------
         let arith_active =
-            msq.clone()
-            + mline.clone()
-            + ebase.clone()
-            + eacc.clone() * exp_bit.clone();
+            msq.clone() + mline.clone() + ebase.clone() + eacc.clone() * exp_bit.clone();
 
         for r in 0..12 {
             let s: AB::Expr = local[Q_SIGN_START + r].into();
 
             builder
                 .when(arith_active.clone())
-                .assert_zero(
-                    s.clone() * (s - AB::Expr::ONE)
-                );
+                .assert_zero(s.clone() * (s - AB::Expr::ONE));
 
             for ql in 0..QW_LIMBS {
-                let start =
-                    Q_BITS_START
-                    + (r * QW_LIMBS + ql) * LIMB_BITS;
+                let start = Q_BITS_START + (r * QW_LIMBS + ql) * LIMB_BITS;
 
                 for b in 0..LIMB_BITS {
                     let bit: AB::Expr = local[start + b].into();
 
                     builder
                         .when(arith_active.clone())
-                        .assert_zero(
-                            bit.clone()
-                            * (bit - AB::Expr::ONE)
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
 
             for c in 0..CARRY_COUNT {
-                let sc =
-                    CARRY_SIGN_START
-                    + r * CARRY_COUNT + c;
+                let sc = CARRY_SIGN_START + r * CARRY_COUNT + c;
 
                 let sb: AB::Expr = local[sc].into();
 
                 builder
                     .when(arith_active.clone())
-                    .assert_zero(
-                        sb.clone() * (sb - AB::Expr::ONE)
-                    );
+                    .assert_zero(sb.clone() * (sb - AB::Expr::ONE));
 
-                let bs =
-                    CARRY_BITS_START
-                    + (r * CARRY_COUNT + c) * CARRY_BITS;
+                let bs = CARRY_BITS_START + (r * CARRY_COUNT + c) * CARRY_BITS;
 
                 for b in 0..CARRY_BITS {
                     let bit: AB::Expr = local[bs + b].into();
 
                     builder
                         .when(arith_active.clone())
-                        .assert_zero(
-                            bit.clone()
-                            * (bit - AB::Expr::ONE)
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
         }
@@ -3145,25 +2883,21 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // Generic non-native Fq12 multiplication relation.
         // ----------------------------------------------------
         for r in 0..12 {
-            let qsign: AB::Expr =
-                local[Q_SIGN_START + r].into();
-            let qfactor =
-                AB::Expr::ONE - qsign.clone() - qsign;
+            let qsign: AB::Expr = local[Q_SIGN_START + r].into();
+            let qfactor = AB::Expr::ONE - qsign.clone() - qsign;
 
             for t in 0..32 {
-                let carry_cur =
-                    if t == 0 {
-                        AB::Expr::ZERO
-                    } else {
-                        carry_expr::<AB>(local, r, t - 1)
-                    };
+                let carry_cur = if t == 0 {
+                    AB::Expr::ZERO
+                } else {
+                    carry_expr::<AB>(local, r, t - 1)
+                };
 
-                let carry_next =
-                    if t == 31 {
-                        AB::Expr::ZERO
-                    } else {
-                        carry_expr::<AB>(local, r, t)
-                    };
+                let carry_next = if t == 31 {
+                    AB::Expr::ZERO
+                } else {
+                    carry_expr::<AB>(local, r, t)
+                };
 
                 let mut core = carry_cur;
 
@@ -3193,28 +2927,14 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
                                 continue;
                             }
 
-                            let a =
-                                operand_limb::<AB>(
-                                    local,
-                                    OP_A_START,
-                                    i,
-                                    ai,
-                                );
+                            let a = operand_limb::<AB>(local, OP_A_START, i, ai);
 
-                            let b =
-                                operand_limb::<AB>(
-                                    local,
-                                    OP_B_START,
-                                    j,
-                                    bj,
-                                );
+                            let b = operand_limb::<AB>(local, OP_B_START, j, bj);
 
                             let term = a * b;
                             let mag = coeff.unsigned_abs();
 
-                            let scaled =
-                                term
-                                * AB::Expr::from_u64(mag);
+                            let scaled = term * AB::Expr::from_u64(mag);
 
                             if coeff > 0 {
                                 core = core + scaled;
@@ -3236,43 +2956,24 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
                     let qj = t - ki;
 
                     if qj < LIMBS {
-                        kq =
-                            kq
-                            + quotient_limb::<AB>(
-                                local, r, ki
-                            )
-                            * AB::Expr::from_u64(
-                                Q_LIMBS[qj]
-                            );
+                        kq = kq
+                            + quotient_limb::<AB>(local, r, ki) * AB::Expr::from_u64(Q_LIMBS[qj]);
                     }
                 }
 
                 core = core - qfactor.clone() * kq;
 
-                core =
-                    core
-                    - carry_next
-                        * AB::Expr::from_u64(BASE);
+                core = core - carry_next * AB::Expr::from_u64(BASE);
 
                 // Target output differs only for ExpBase.
                 if t < LIMBS {
-                    let next_acc: AB::Expr =
-                        next[
-                            ACC_START + r * LIMBS + t
-                        ]
-                        .into();
+                    let next_acc: AB::Expr = next[ACC_START + r * LIMBS + t].into();
 
-                    let next_base: AB::Expr =
-                        next[
-                            BASE_START + r * LIMBS + t
-                        ]
-                        .into();
+                    let next_base: AB::Expr = next[BASE_START + r * LIMBS + t].into();
 
-                    let acc_core =
-                        core.clone() - next_acc;
+                    let acc_core = core.clone() - next_acc;
 
-                    let base_core =
-                        core.clone() - next_base;
+                    let base_core = core.clone() - next_base;
 
                     builder
                         .when_transition()
@@ -3324,12 +3025,9 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         let line_start = PAIR_WIDTH;
         let diff_start = PAIR_WIDTH + line_eval_layer::WIDTH;
 
-        let line_local =
-            &local[line_start..line_start + line_eval_layer::WIDTH];
-        let diff_local =
-            &local[diff_start..diff_start + diff_layer::WIDTH];
-        let diff_next =
-            &next[diff_start..diff_start + diff_layer::WIDTH];
+        let line_local = &local[line_start..line_start + line_eval_layer::WIDTH];
+        let diff_local = &local[diff_start..diff_start + diff_layer::WIDTH];
+        let diff_next = &next[diff_start..diff_start + diff_layer::WIDTH];
 
         line_eval_layer::eval(
             builder,
@@ -3444,10 +3142,7 @@ fn vanishing_poly(points: &[Fr]) -> Polynomial {
     let mut out = vec![Fr::from(1u64)];
 
     for z in points {
-        out = poly_mul(
-            &out,
-            &[-*z, Fr::from(1u64)],
-        );
+        out = poly_mul(&out, &[-*z, Fr::from(1u64)]);
     }
 
     out
@@ -3517,10 +3212,7 @@ pub fn prove_and_verify_three_equalities(
     // semantic equality is false.
     for i in 0..3 {
         if poly_eval(&left_polys[i], z[i]) != poly_eval(&right_polys[i], z[i]) {
-            return Err(format!(
-                "statement {} is false: left(z) != right(z)",
-                i + 1
-            ));
+            return Err(format!("statement {} is false: left(z) != right(z)", i + 1));
         }
     }
 
@@ -3549,20 +3241,12 @@ pub fn prove_and_verify_three_equalities(
         commitments.push(c_left);
         commitments.push(c_right);
 
-        d_vec.push(
-            (
-                c_left.into_group()
-                    - c_right.into_group()
-            )
-            .into_affine(),
-        );
+        d_vec.push((c_left.into_group() - c_right.into_group()).into_affine());
     }
 
-    let commitment_points: [G1Affine; COMMITMENT_POINTS] =
-        commitments.try_into().ok().unwrap();
+    let commitment_points: [G1Affine; COMMITMENT_POINTS] = commitments.try_into().ok().unwrap();
 
-    let d: [G1Affine; 3] =
-        d_vec.try_into().ok().unwrap();
+    let d: [G1Affine; 3] = d_vec.try_into().ok().unwrap();
 
     // -------------------------------------------------------------------------
     // Construct q_i and aggregate:
@@ -3575,21 +3259,11 @@ pub fn prove_and_verify_three_equalities(
     let mut gamma_i = Fr::from(1u64);
 
     for i in 0..3 {
-        let delta = poly_sub(
-            &left_polys[i],
-            &right_polys[i],
-        );
+        let delta = poly_sub(&left_polys[i], &right_polys[i]);
 
-        let q_i = divide_by_x_minus_z(
-            &delta,
-            z[i],
-        );
+        let q_i = divide_by_x_minus_z(&delta, z[i]);
 
-        add_scaled_poly(
-            &mut h,
-            &q_i,
-            gamma_i,
-        );
+        add_scaled_poly(&mut h, &q_i, gamma_i);
 
         gamma_i *= gamma;
     }
@@ -3693,13 +3367,9 @@ pub fn prove_and_verify_three_equalities(
     //
     let gamma_sq = gamma * gamma;
 
-    let q2_weighted = q_side[1]
-        .mul_bigint(gamma.into_bigint())
-        .into_affine();
+    let q2_weighted = q_side[1].mul_bigint(gamma.into_bigint()).into_affine();
 
-    let q3_weighted = q_side[2]
-        .mul_bigint(gamma_sq.into_bigint())
-        .into_affine();
+    let q3_weighted = q_side[2].mul_bigint(gamma_sq.into_bigint()).into_affine();
 
     // Keep W itself on the G1 side so the dynamic Miller-line AIR can
     // bind pair 4 directly to the public W coordinates.  Move the minus
@@ -3720,7 +3390,8 @@ pub fn prove_and_verify_three_equalities(
     let native_product = Bn254::multi_pairing(
         pairs.iter().map(|(p, _)| *p).collect::<Vec<_>>(),
         pairs.iter().map(|(_, q)| *q).collect::<Vec<_>>(),
-    ).0;
+    )
+    .0;
 
     assert_eq!(
         native_product,
@@ -3739,17 +3410,8 @@ pub fn prove_and_verify_three_equalities(
     // -------------------------------------------------------------------------
     // Build the STARK trace.
     // -------------------------------------------------------------------------
-    let (
-        trace,
-        real_rows,
-        height,
-        miller_constants,
-        pairing_product,
-    ) = make_trace(
-        &pairs,
-        &commitment_points,
-        &d,
-    );
+    let (trace, real_rows, height, miller_constants, pairing_product) =
+        make_trace(&pairs, &commitment_points, &d);
 
     assert_eq!(
         pairing_product,
@@ -3769,8 +3431,7 @@ pub fn prove_and_verify_three_equalities(
         }
     }
 
-    let final_exp_limbs =
-        exp_to_limbs(&final_exponent_biguint());
+    let final_exp_limbs = exp_to_limbs(&final_exponent_biguint());
 
     let air = PairingAir {
         miller: miller_constants,
@@ -3779,24 +3440,13 @@ pub fn prove_and_verify_three_equalities(
         statement_g1_limbs,
     };
 
-    let air_layout =
-        AirLayout::from_air::<Val>(&air);
+    let air_layout = AirLayout::from_air::<Val>(&air);
 
-    let symbolic_constraints =
-        get_symbolic_constraints::<Val, _>(
-            &air,
-            air_layout,
-        );
+    let symbolic_constraints = get_symbolic_constraints::<Val, _>(&air, air_layout);
 
-    let num_air_constraints =
-        symbolic_constraints.len();
+    let num_air_constraints = symbolic_constraints.len();
 
-    let max_constraint_degree =
-        get_max_constraint_degree::<Val, _>(
-            &air,
-            air_layout,
-            height,
-        );
+    let max_constraint_degree = get_max_constraint_degree::<Val, _>(&air, air_layout, height);
 
     println!("============================================================");
     println!(" MULTI-PAIRING STARK TRACE");
@@ -3809,8 +3459,14 @@ pub fn prove_and_verify_three_equalities(
     println!("Pairing subtrace width     : {}", PAIR_WIDTH);
     println!("Dynamic-line subtrace width: {}", line_eval_layer::WIDTH);
     println!("Difference subtrace width  : {}", diff_layer::WIDTH);
-    println!("Combined trace width       : {}", PAIR_WIDTH + line_eval_layer::WIDTH + diff_layer::WIDTH);
-    println!("Trace cells                : {}", (PAIR_WIDTH + line_eval_layer::WIDTH + diff_layer::WIDTH) * height);
+    println!(
+        "Combined trace width       : {}",
+        PAIR_WIDTH + line_eval_layer::WIDTH + diff_layer::WIDTH
+    );
+    println!(
+        "Trace cells                : {}",
+        (PAIR_WIDTH + line_eval_layer::WIDTH + diff_layer::WIDTH) * height
+    );
     println!("AIR constraints            : {}", num_air_constraints);
     println!("Max constraint degree      : {}", max_constraint_degree);
     println!();
@@ -3824,46 +3480,32 @@ pub fn prove_and_verify_three_equalities(
     let byte_hash = ByteHash {};
     let field_hash = FieldHash::new(byte_hash);
 
-    type Compress =
-        CompressionFunctionFromHasher<ByteHash, 2, 32>;
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
 
     let compress = Compress::new(byte_hash);
 
-    type ValMmcs =
-        MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
 
-    let val_mmcs =
-        ValMmcs::new(field_hash, compress, 3);
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
 
-    type ChallengeMmcs =
-        ExtensionMmcs<Val, Challenge, ValMmcs>;
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
 
-    let challenge_mmcs =
-        ChallengeMmcs::new(val_mmcs.clone());
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
 
     type Dft = Radix2DitParallel<Val>;
     let dft = Dft::default();
 
-    let fri_params =
-        FriParameters::new_benchmark(challenge_mmcs);
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
 
-    type Pcs =
-        TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
 
-    let pcs =
-        Pcs::new(dft, val_mmcs, fri_params);
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
 
-    type Challenger =
-        SerializingChallenger64<
-            Val,
-            HashChallenger<u8, ByteHash, 32>,
-        >;
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
 
-    let challenger =
-        Challenger::from_hasher(vec![], byte_hash);
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
 
-    type ConfigType =
-        StarkConfig<Pcs, Challenge, Challenger>;
+    type ConfigType = StarkConfig<Pcs, Challenge, Challenger>;
 
     let config = ConfigType::new(pcs, challenger);
 
@@ -3872,34 +3514,17 @@ pub fn prove_and_verify_three_equalities(
     // -------------------------------------------------------------------------
     let prove_start = Instant::now();
 
-    let proof =
-        prove(
-            &config,
-            &air,
-            trace,
-            &public_values,
-        )
-        .expect(
-            "generalized Boneh multi-pairing STARK generation failed",
-        );
+    let proof = prove(&config, &air, trace, &public_values)
+        .expect("generalized Boneh multi-pairing STARK generation failed");
 
     let proving_time = prove_start.elapsed();
 
-    let proof_bytes =
-        postcard::to_allocvec(&proof)
-            .expect("proof serialization failed");
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
 
     let verify_start = Instant::now();
 
-    verify(
-        &config,
-        &air,
-        &proof,
-        &public_values,
-    )
-    .expect(
-        "generalized Boneh multi-pairing STARK verification failed",
-    );
+    verify(&config, &air, &proof, &public_values)
+        .expect("generalized Boneh multi-pairing STARK verification failed");
 
     let verification_time = verify_start.elapsed();
 
@@ -3914,9 +3539,7 @@ pub fn prove_and_verify_three_equalities(
         //   0 C_f1, 1 C_F1, 2 C_f2, 3 C_F2, 4 C_f3, 5 C_F3, 6 W.
         //
         // Every modified public statement must be rejected.
-        let labels = [
-            "C_f1", "C_F1", "C_f2", "C_F2", "C_f3", "C_F3", "W",
-        ];
+        let labels = ["C_f1", "C_F1", "C_f2", "C_F2", "C_f3", "C_F3", "W"];
 
         for point_index in 0..PUBLIC_G1_POINTS {
             let mut wrong_values = public_values.clone();
@@ -3924,13 +3547,7 @@ pub fn prove_and_verify_three_equalities(
             wrong_values[start] += Val::ONE;
 
             assert!(
-                verify(
-                    &config,
-                    &air,
-                    &proof,
-                    &wrong_values,
-                )
-                .is_err(),
+                verify(&config, &air, &proof, &wrong_values,).is_err(),
                 "modified public {} unexpectedly verified",
                 labels[point_index],
             );
@@ -3956,7 +3573,10 @@ pub fn prove_and_verify_three_equalities(
     }
     println!();
     println!("Proof count                      : 1");
-    println!("Proof size                       : {} bytes", proof_bytes.len());
+    println!(
+        "Proof size                       : {} bytes",
+        proof_bytes.len()
+    );
     println!("Proving time                     : {:?}", proving_time);
     println!("Verification time                : {:?}", verification_time);
     println!();
@@ -4049,11 +3669,8 @@ pub fn demo_three_equality_input() -> ThreeEqualityInput {
 fn main() {
     let input = demo_three_equality_input();
 
-    let report = prove_and_verify_three_equalities(
-        &input,
-        true,
-    )
-    .expect("fully integrated three-equality proof failed");
+    let report = prove_and_verify_three_equalities(&input, true)
+        .expect("fully integrated three-equality proof failed");
 
     println!();
     println!("REUSABLE API REPORT");
@@ -4073,10 +3690,7 @@ mod tests {
         let input = demo_three_equality_input();
 
         for s in &input.statements {
-            assert_eq!(
-                poly_eval(&s.left, s.point),
-                poly_eval(&s.right, s.point),
-            );
+            assert_eq!(poly_eval(&s.left, s.point), poly_eval(&s.right, s.point),);
         }
     }
 
@@ -4088,15 +3702,9 @@ mod tests {
             let delta = poly_sub(&s.left, &s.right);
             let q = divide_by_x_minus_z(&delta, s.point);
 
-            let reconstructed = poly_mul(
-                &q,
-                &[-s.point, Fr::from(1u64)],
-            );
+            let reconstructed = poly_mul(&q, &[-s.point, Fr::from(1u64)]);
 
-            assert_eq!(
-                poly_trim(reconstructed),
-                poly_trim(delta),
-            );
+            assert_eq!(poly_trim(reconstructed), poly_trim(delta),);
         }
     }
 
@@ -4118,10 +3726,7 @@ mod tests {
         // Change f_2(X) by +1 at the constant coefficient.
         input.statements[1].left[0] += Fr::from(1u64);
 
-        let result = prove_and_verify_three_equalities(
-            &input,
-            false,
-        );
+        let result = prove_and_verify_three_equalities(&input, false);
 
         assert!(result.is_err());
     }
@@ -4141,11 +3746,8 @@ mod tests {
     fn full_integrated_proof_and_public_tamper_tests() {
         let input = demo_three_equality_input();
 
-        let report = prove_and_verify_three_equalities(
-            &input,
-            true,
-        )
-        .expect("valid fully-integrated instance must verify");
+        let report = prove_and_verify_three_equalities(&input, true)
+            .expect("valid fully-integrated instance must verify");
 
         assert!(report.proof_size_bytes > 0);
         assert_eq!(report.trace_height, 8192);
