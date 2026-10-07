@@ -14,20 +14,18 @@
 use std::time::Instant;
 
 use ark_bn254::{Bn254, Config, Fq, Fq12, Fq2, Fq6, Fr, G1Affine, G2Affine};
-use ark_ec::{
-    bn::{BnConfig, G2Prepared},
-    pairing::Pairing,
-    AffineRepr, CurveGroup,
-};
+use ark_ec::bn::{BnConfig, G2Prepared};
+use ark_ec::pairing::Pairing;
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 use num_bigint::{BigInt, BigUint, Sign};
-
 use p3_air::symbolic::{get_max_constraint_degree, get_symbolic_constraints, AirLayout};
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{extension::BinomialExtensionField, PrimeCharacteristicRing};
+use p3_field::extension::BinomialExtensionField;
+use p3_field::PrimeCharacteristicRing;
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
