@@ -307,7 +307,15 @@ def test_commands(
     if doctest:
         base = ["cargo", "test", "--doc"]
     else:
-        base = ["cargo", "nextest", "run"]
+        base = [
+            "cargo",
+            "nextest",
+            "run",
+            "--lib",
+            "--bins",
+            "--tests",
+            "--benches",
+        ]
     selected = set(packages) if packages is not None else None
     feature_runs = package_test_features(metadata, selected, parallel)
     baseline = base + package_args(packages) + feature_args(parallel, metadata, packages)

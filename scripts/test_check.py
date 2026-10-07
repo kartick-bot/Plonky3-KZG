@@ -40,7 +40,7 @@ class CheckCliTests(unittest.TestCase):
     def test_test_and_doctest_match_ci_recipes(self):
         self.assertEqual(
             self.dry_run_lines("test", "--parallel")[0],
-            "+ cargo nextest run --features parallel",
+            "+ cargo nextest run --lib --bins --tests --benches --features parallel",
         )
         self.assertEqual(
             self.dry_run_lines("doctest", "--package", "p3-util"),
@@ -50,7 +50,7 @@ class CheckCliTests(unittest.TestCase):
     def test_generated_package_lists_are_forwarded_without_shell_parsing(self):
         self.assertEqual(
             self.dry_run_lines("test", "--packages", "p3-util,p3-matrix")[0],
-            "+ cargo nextest run -p p3-matrix -p p3-util",
+            "+ cargo nextest run --lib --bins --tests --benches -p p3-matrix -p p3-util",
         )
         self.assertEqual(
             self.dry_run_lines(
@@ -114,7 +114,7 @@ class CheckCliTests(unittest.TestCase):
             "sort": "+ cargo +stable sort --workspace --grouped --check",
             "toml": "+ taplo fmt --check",
             "deps": "+ cargo machete --with-metadata",
-            "clippy": "+ cargo +stable clippy --all-targets -- -D warnings",
+            "clippy": "+ cargo +stable clippy --lib --bins --tests --benches -- -D warnings",
             "docs": "+ cargo +stable doc --no-deps --workspace --document-private-items",
             "fmt": "+ cargo +nightly fmt --all -- --check",
             "scripts": "+ "
@@ -275,8 +275,8 @@ class CargoMetadataTests(unittest.TestCase):
         self.assertEqual(
             result.stdout.splitlines(),
             [
-                "+ cargo nextest run --features parallel",
-                "+ cargo nextest run -p p3-featured --features backend-a,backend-b,parallel",
+                "+ cargo nextest run --lib --bins --tests --benches --features parallel",
+                "+ cargo nextest run --lib --bins --tests --benches -p p3-featured --features backend-a,backend-b,parallel",
             ],
         )
 
@@ -347,8 +347,8 @@ class CargoMetadataTests(unittest.TestCase):
         self.assertEqual(
             commands,
             [
-                "nextest run -p p3-featured --no-tests warn",
-                "nextest run -p p3-featured --features backend-a,backend-b",
+                "nextest run --lib --bins --tests --benches -p p3-featured --no-tests warn",
+                "nextest run --lib --bins --tests --benches -p p3-featured --features backend-a,backend-b",
             ],
         )
 
@@ -365,7 +365,7 @@ class CargoMetadataTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             result.stdout.splitlines()[0],
-            "+ cargo nextest run -p p3-featured"
+            "+ cargo nextest run --lib --bins --tests --benches -p p3-featured"
             " --features p3-featured/parallel --no-tests warn",
         )
 
