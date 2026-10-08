@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
+members = ["uni-stark/examples/vplus-tree",
     "air",
     "baby-bear",
     "batch-stark",
@@ -48,7 +48,6 @@ members = [
     "sumcheck",
     "symmetric",
     "uni-stark",
-    "util",
     "whir",
     "word",
     "word-backend",
