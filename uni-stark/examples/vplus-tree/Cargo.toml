@@ -3,5 +3,11 @@ name = "vplus-tree"
 version = "0.1.0"
 edition = "2024"
 
+
 [dependencies]
+ark-bn254 = "0.5"
+ark-ec = "0.5"
+ark-ff = "0.5"
 rand = "0.10.3"
+sha2 = "0.10"
+rand08 = { package = "rand", version = "0.8" }

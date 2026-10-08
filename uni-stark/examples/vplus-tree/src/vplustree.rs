@@ -7,13 +7,51 @@ use crate::node::Node;
 
 #[derive(Debug)]
 pub struct SearchPathStep {
+    // Current internal node.
+    pub nodeIndex: usize,
     pub nodeKeys: Vec<i64>,
+
+    // Which child was selected.
     pub index: usize,
+
+    // Left sibling, if one exists.
+    pub leftChildIndex: Option<usize>,
     pub leftChildKeys: Option<Vec<i64>>,
+
+    // Chosen child.
+    pub chosenChildIndex: usize,
     pub chosenChildKeys: Vec<i64>,
+
+    // Right sibling, if one exists.
+    pub rightChildIndex: Option<usize>,
     pub rightChildKeys: Option<Vec<i64>>,
 }
+// ---------------------------------------------------------
+// Proof Path Structure
+// ---------------------------------------------------------
+#[derive(Debug)]
+pub struct ProofPathStep {
+    // Current internal node.
+    pub parentIndex: usize,
 
+    // Child followed during the search.
+    pub chosenChildIndex: usize,
+
+    // Immediate left sibling, if it exists.
+    pub leftIndex: Option<usize>,
+
+    // Immediate right sibling, if it exists.
+    pub rightIndex: Option<usize>,
+
+    // Keys stored in the left sibling.
+    pub leftKeys: Option<Vec<i64>>,
+
+    // Keys stored in the chosen child.
+    pub chosenKeys: Vec<i64>,
+
+    // Keys stored in the right sibling.
+    pub rightKeys: Option<Vec<i64>>,
+}
 
 // ---------------------------------------------------------
 // V+ Tree Structure
@@ -123,16 +161,20 @@ impl VplusTree {
             let mut rightNode = Node::new(order, true);
 
 
+            // Keys moving to the right leaf.
             rightNode.keys =
                 node.keys[midIndex..].to_vec();
 
+            // Corresponding SHA-256 values move with the keys.
             rightNode.values =
                 node.values[midIndex..].to_vec();
 
 
+            // Keys remaining in the left leaf.
             node.keys =
                 node.keys[..midIndex].to_vec();
 
+            // Corresponding SHA-256 values remain with them.
             node.values =
                 node.values[..midIndex].to_vec();
 
@@ -232,107 +274,290 @@ impl VplusTree {
     // Search Path
     // ---------------------------------------------------------
 
-    pub fn searchPath(
-        &self,
-        key: i64
-    ) -> (usize, Vec<SearchPathStep>) {
+pub fn searchPath(
+    &self,
+    key: i64
+) -> (usize, Vec<SearchPathStep>) {
 
-        let mut path =
-            Vec::new();
+    let mut path =
+        Vec::new();
 
-
-        let mut currentNode =
-            self.root;
-
-
-        while !self.nodes[currentNode].is_leaf {
-
-            let mut index = 0;
+    let mut currentNode =
+        self.root;
 
 
-            while index < self.nodes[currentNode].keys.len()
-                && key >= self.nodes[currentNode].keys[index]
-            {
-                index += 1;
-            }
+    while !self.nodes[currentNode].is_leaf {
+
+        let mut index = 0;
 
 
-            let chosenChild =
-                self.nodes[currentNode].children[index];
-
-
-            let leftChildKeys =
-                if index > 0 {
-
-                    let leftChild =
-                        self.nodes[currentNode].children[index - 1];
-
-                    Some(
-                        self.nodes[leftChild]
-                            .keys
-                            .clone()
-                    )
-                }
-                else {
-                    None
-                };
-
-
-            let rightChildKeys =
-                if index + 1
-                    < self.nodes[currentNode].children.len()
-                {
-
-                    let rightChild =
-                        self.nodes[currentNode].children[index + 1];
-
-                    Some(
-                        self.nodes[rightChild]
-                            .keys
-                            .clone()
-                    )
-                }
-                else {
-                    None
-                };
-
-
-            path.push(
-                SearchPathStep {
-
-                    nodeKeys:
-                        self.nodes[currentNode]
-                            .keys
-                            .clone(),
-
-                    index,
-
-                    leftChildKeys,
-
-                    chosenChildKeys:
-                        self.nodes[chosenChild]
-                            .keys
-                            .clone(),
-
-                    rightChildKeys,
-                }
-            );
-
-
-            currentNode =
-                chosenChild;
+        while index < self.nodes[currentNode].keys.len()
+            && key >= self.nodes[currentNode].keys[index]
+        {
+            index += 1;
         }
 
 
-        (currentNode, path)
+        // -------------------------------------------------
+        // Chosen child
+        // -------------------------------------------------
+
+        let chosenChild =
+            self.nodes[currentNode].children[index];
+
+
+        // -------------------------------------------------
+        // Left sibling
+        // -------------------------------------------------
+
+        let leftChildIndex =
+            if index > 0 {
+
+                Some(
+                    self.nodes[currentNode]
+                        .children[index - 1]
+                )
+            }
+            else {
+
+                None
+            };
+
+
+        let leftChildKeys =
+            match leftChildIndex {
+
+                Some(leftIndex) => {
+
+                    Some(
+                        self.nodes[leftIndex]
+                            .keys
+                            .clone()
+                    )
+                }
+
+                None => {
+
+                    None
+                }
+            };
+
+
+        // -------------------------------------------------
+        // Right sibling
+        // -------------------------------------------------
+
+        let rightChildIndex =
+            if index + 1
+                < self.nodes[currentNode].children.len()
+            {
+
+                Some(
+                    self.nodes[currentNode]
+                        .children[index + 1]
+                )
+            }
+            else {
+
+                None
+            };
+
+
+        let rightChildKeys =
+            match rightChildIndex {
+
+                Some(rightIndex) => {
+
+                    Some(
+                        self.nodes[rightIndex]
+                            .keys
+                            .clone()
+                    )
+                }
+
+                None => {
+
+                    None
+                }
+            };
+
+
+        // -------------------------------------------------
+        // Store this search-path step
+        // -------------------------------------------------
+
+        path.push(
+            SearchPathStep {
+
+                // Current internal node.
+                nodeIndex:
+                    currentNode,
+
+                nodeKeys:
+                    self.nodes[currentNode]
+                        .keys
+                        .clone(),
+
+                // Position of chosen child.
+                index,
+
+                // Left sibling.
+                leftChildIndex,
+                leftChildKeys,
+
+                // Chosen child.
+                chosenChildIndex:
+                    chosenChild,
+
+                chosenChildKeys:
+                    self.nodes[chosenChild]
+                        .keys
+                        .clone(),
+
+                // Right sibling.
+                rightChildIndex,
+                rightChildKeys,
+            }
+        );
+
+
+        // Continue down the chosen path.
+        currentNode =
+            chosenChild;
     }
+
+
+    // currentNode is now the leaf reached by the search.
+    (currentNode, path)
+}
+// ---------------------------------------------------------
+// Build Proof Path
+// ---------------------------------------------------------
+
+// ---------------------------------------------------------
+// Build Proof Path
+// ---------------------------------------------------------
+
+pub fn buildProofPath(
+    &self,
+    key: i64
+) -> (usize, Vec<ProofPathStep>) {
+
+    let (leafIndex, searchPath) =
+        self.searchPath(key);
+
+
+    let mut proofPath =
+        Vec::new();
+
+
+    for step in searchPath {
+
+        proofPath.push(
+            ProofPathStep {
+                parentIndex:
+                    step.nodeIndex,
+
+                chosenChildIndex:
+                    step.chosenChildIndex,
+
+                leftIndex:
+                    step.leftChildIndex,
+
+                rightIndex:
+                    step.rightChildIndex,
+
+                leftKeys:
+                    step.leftChildKeys,
+
+                chosenKeys:
+                    step.chosenChildKeys,
+
+                rightKeys:
+                    step.rightChildKeys,
+            }
+        );
+    }
+
+
+    (
+        leafIndex,
+        proofPath
+    )
+}
+
+
+// ---------------------------------------------------------
+// Retrieve Left Child
+// ---------------------------------------------------------
+
+pub fn retrieveLeft(
+    &self,
+    parentIndex: usize,
+    chosenChildPosition: usize
+) -> Option<usize> {
+
+    // If the chosen child is already the
+    // left-most child, there is no child
+    // to its left.
+    if chosenChildPosition == 0 {
+        return None;
+    }
+
+
+    // Return the node index of the child
+    // immediately to the left of the
+    // chosen child.
+    Some(
+        self.nodes[parentIndex]
+            .children[chosenChildPosition - 1]
+    )
+}
+// ---------------------------------------------------------
+// Retrieve Right Child
+// ---------------------------------------------------------
+
+pub fn retrieveRight(
+    &self,
+    parentIndex: usize,
+    chosenChildPosition: usize
+) -> Option<usize> {
+
+    let children =
+        &self.nodes[parentIndex].children;
+
+
+    // If the chosen child is already the
+    // right-most child, there is no child
+    // to its right.
+    if chosenChildPosition + 1
+        >= children.len()
+    {
+        return None;
+    }
+
+
+    // Return the node index of the child
+    // immediately to the right of the
+    // chosen child.
+    Some(
+        children[chosenChildPosition + 1]
+    )
+}
+
+
+
+
 
 
     // ---------------------------------------------------------
     // Get
     // ---------------------------------------------------------
 
-    pub fn get(&self, key: i64) -> Option<String> {
+    pub fn get(
+        &self,
+        key: i64
+    ) -> Option<[u8; 32]> {
 
         let leafIndex =
             self.search(key);
@@ -357,7 +582,7 @@ impl VplusTree {
             && leaf.keys[index] == key
         {
             return Some(
-                leaf.values[index].clone()
+                leaf.values[index]
             );
         }
 
@@ -373,7 +598,7 @@ impl VplusTree {
     pub fn update(
         &mut self,
         key: i64,
-        value: String
+        value: [u8; 32]
     ) -> bool {
 
         let leafIndex =
@@ -412,7 +637,7 @@ impl VplusTree {
     pub fn insert(
         &mut self,
         key: i64,
-        value: String
+        value: [u8; 32]
     ) {
 
         let leafIndex =
@@ -430,7 +655,8 @@ impl VplusTree {
         }
 
 
-        // Key already exists
+        // Key already exists:
+        // replace the existing SHA-256 value.
         if index < self.nodes[leafIndex].keys.len()
             && self.nodes[leafIndex].keys[index] == key
         {
@@ -442,13 +668,14 @@ impl VplusTree {
         }
 
 
-        // Insert key
+        // Insert key.
         self.nodes[leafIndex]
             .keys
             .insert(index, key);
 
 
-        // Insert value
+        // Insert corresponding SHA-256 value
+        // at exactly the same position.
         self.nodes[leafIndex]
             .values
             .insert(index, value);
@@ -941,6 +1168,35 @@ impl VplusTree {
                 &self.nodes[nodeIndex];
 
 
+            // Leaf nodes must contain exactly
+            // one SHA-256 value for every key.
+            if node.is_leaf
+                && node.keys.len() != node.values.len()
+            {
+                println!(
+                    "Leaf {:?} has {} keys but {} values.",
+                    node.keys,
+                    node.keys.len(),
+                    node.values.len()
+                );
+
+                return false;
+            }
+
+
+            // Internal nodes should not store leaf values.
+            if !node.is_leaf
+                && !node.values.is_empty()
+            {
+                println!(
+                    "Internal node {:?} unexpectedly stores values.",
+                    node.keys
+                );
+
+                return false;
+            }
+
+
             if !node.is_leaf {
 
                 // Internal nodes should have
@@ -1186,6 +1442,21 @@ impl VplusTree {
 
         if node.is_leaf {
 
+            // Every key in a leaf must have exactly one
+            // corresponding SHA-256 value.
+            if node.keys.len() != node.values.len() {
+
+                println!(
+                    "Leaf {:?} has {} keys but {} values.",
+                    node.keys,
+                    node.keys.len(),
+                    node.values.len()
+                );
+
+                return false;
+            }
+
+
             match *leafDepth {
 
                 None => {
@@ -1220,6 +1491,21 @@ impl VplusTree {
 
 
             return true;
+        }
+
+
+        // -----------------------------------------------------
+        // Internal nodes must not contain leaf values
+        // -----------------------------------------------------
+
+        if !node.values.is_empty() {
+
+            println!(
+                "Internal node {:?} unexpectedly contains values.",
+                node.keys
+            );
+
+            return false;
         }
 
 

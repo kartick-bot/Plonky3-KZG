@@ -14,8 +14,9 @@ pub struct Node {
     // Only internal nodes use this.
     pub children: Vec<usize>,
 
-    // Values stored in leaf nodes.
-    pub values: Vec<String>,
+    // SHA-256 values stored in leaf nodes.
+    // keys[i] corresponds to values[i].
+    pub values: Vec<[u8; 32]>,
 
     // Next leaf in the linked list.
     pub next_node: Option<usize>,
