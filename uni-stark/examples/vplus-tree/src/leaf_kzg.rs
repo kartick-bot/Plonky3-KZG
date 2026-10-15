@@ -803,7 +803,7 @@ for evaluation in
 {
     let x =
         Fr::from(
-            evaluation.position_in_leaf as u64
+            evaluation.global_index as u64
         );
 
 
@@ -998,13 +998,13 @@ pub fn printAndVerifyLeafPolynomials(
             &leaf_group.evaluations
         {
 
-            let position =
-                evaluation.position_in_leaf;
+            let globalIndex =
+                evaluation.global_index;
 
 
             let x =
                 Fr::from(
-                    position as u64
+                    globalIndex as u64
                 );
 
 
@@ -1022,8 +1022,8 @@ pub fn printAndVerifyLeafPolynomials(
 
 
             println!(
-                "  position={} key={} match={}",
-                position,
+                "  global_index={} key={} match={}",
+                globalIndex,
                 evaluation.key,
                 result == expected
             );
@@ -1115,7 +1115,46 @@ fn hashInternalRecord(
 
 // Build commitment for one node
 
-fn buildNodeCommitment(
+
+// ---------------------------------------------------------
+// Compute Internal Record Evaluation Value
+//
+// Maps:
+//
+//     (key, LPC, RPC)
+//
+// to the same field value used when constructing
+// internal-node polynomials:
+//
+//     y = y_low + y_high
+// ---------------------------------------------------------
+
+pub fn internalRecordEvaluation(
+    key: i64,
+    leftCommitment: &G1Affine,
+    rightCommitment: &G1Affine
+) -> Fr {
+
+    let digest =
+        hashInternalRecord(
+            key,
+            leftCommitment,
+            rightCommitment
+        );
+
+    let (
+        y_low,
+        y_high
+    ) =
+        digestToFieldLimbs(
+            &digest
+        );
+
+    y_low + y_high
+}
+
+
+pub fn buildNodeCommitment(
     tree: &VplusTree,
     node_index: usize,
     leaf_polynomials: &[LeafPolynomial],
@@ -1581,11 +1620,50 @@ pub fn computeKzgWitnessRecursive(
         );
 
 
+        // -------------------------------------------------
+        // Compute Global Logical Leaf Index
+        //
+        // This index is continuous across all leaves:
+        //
+        //     0, 1, 2, 3, ...
+        //
+        // It is the same x-coordinate used when the leaf
+        // polynomial was constructed.
+        // -------------------------------------------------
+
+        let mut globalIndex =
+            0usize;
+
+
+        for leafNodeIndex in
+            tree.getAllLeaves()
+        {
+
+            if leafNodeIndex
+                == node_index
+            {
+
+                globalIndex +=
+                    i;
+
+                break;
+            }
+
+
+            globalIndex +=
+                tree.nodes[
+                    leafNodeIndex
+                ]
+                .keys
+                .len();
+        }
+
+
         let witness =
             computeKzgWitness(
                 &leaf.coefficients,
                 Fr::from(
-                    i as u64
+                    globalIndex as u64
                 ),
                 srs
             );

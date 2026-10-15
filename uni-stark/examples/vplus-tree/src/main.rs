@@ -1,8 +1,10 @@
 mod leaf_kzg;
 mod node;
 mod vplustree;
+mod verify_eval;
 
 use vplustree::VplusTree;
+use verify_eval::verifyEval;
 
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
@@ -15,7 +17,11 @@ use leaf_kzg::{
     groupEvaluationsByLeaf,
     printAndVerifyLeafPolynomials,
     computeKzgWitnessRecursive,
+    internalRecordEvaluation,
+    buildNodeCommitment,
 };
+
+
 // ---------------------------------------------------------
 // Generate Random Unique Keys
 // ---------------------------------------------------------
@@ -402,10 +408,6 @@ fn printSearchPath(
         );
 
 
-        // -------------------------------------------------
-        // Left Node
-        // -------------------------------------------------
-
         match (
             step.leftIndex,
             &step.leftKeys
@@ -433,20 +435,12 @@ fn printSearchPath(
         }
 
 
-        // -------------------------------------------------
-        // Chosen Node
-        // -------------------------------------------------
-
         println!(
             "Chosen: index={} keys={:?}",
             step.chosenChildIndex,
             step.chosenKeys
         );
 
-
-        // -------------------------------------------------
-        // Right Node
-        // -------------------------------------------------
 
         match (
             step.rightIndex,
@@ -473,6 +467,462 @@ fn printSearchPath(
                 );
             }
         }
+    }
+}
+
+
+
+// =========================================================
+// Reusable Membership Verification
+// =========================================================
+
+struct MembershipVerification {
+
+    leaf_index: usize,
+
+    global_index: usize,
+
+    witnesses:
+        Vec<
+            ark_bn254::G1Affine
+        >,
+
+    path:
+        Vec<
+            vplustree::SearchPathStep
+        >,
+}
+
+
+// ---------------------------------------------------------
+// Verify One Complete Membership Proof
+//
+// Verifies:
+//
+//   1. leaf KZG opening at the global leaf-level index,
+//   2. every internal-node KZG opening,
+//   3. child-to-parent commitment linkage,
+//   4. termination at the trusted root commitment.
+//
+// This is generic over tree order and tree depth.
+// ---------------------------------------------------------
+
+fn verifyMembershipPath(
+    tree: &VplusTree,
+    key: i64,
+    evaluations: &[leaf_kzg::LeafEvaluation],
+    polynomials: &[leaf_kzg::LeafPolynomial],
+    srs: &leaf_kzg::KzgSrs,
+    rootCommitment: &ark_bn254::G1Affine,
+    label: &str
+) -> MembershipVerification {
+
+    let witnesses =
+        computeKzgWitnessRecursive(
+            tree,
+            tree.root,
+            key,
+            polynomials,
+            srs
+        );
+
+
+    let (
+        leafIndex,
+        path
+    ) =
+        tree.searchPath(
+            key
+        );
+
+
+    assert_eq!(
+        witnesses.len(),
+        path.len() + 1,
+        "{} witness count does not match leaf-to-root path",
+        label
+    );
+
+
+    let leafEvaluation =
+        evaluations
+            .iter()
+            .find(
+                |evaluation|
+                    evaluation.leaf_node_index
+                        == leafIndex
+                    &&
+                    evaluation.key
+                        == key
+            )
+            .expect(
+                "Membership key evaluation/global index not found"
+            );
+
+
+    let globalIndex =
+        leafEvaluation.global_index;
+
+
+    let leafPolynomial =
+        polynomials
+            .iter()
+            .find(
+                |polynomial|
+                    polynomial.leaf_node_index
+                        == leafIndex
+            )
+            .expect(
+                "Membership leaf polynomial not found"
+            );
+
+
+    let leafEvaluationPoint =
+        ark_bn254::Fr::from(
+            globalIndex as u64
+        );
+
+
+    let leafEvaluationValue =
+        leaf_kzg::evaluatePolynomial(
+            &leafPolynomial.coefficients,
+            leafEvaluationPoint
+        );
+
+
+    let leafVerification =
+        verifyEval(
+            &leafPolynomial.commitment,
+            leafEvaluationPoint,
+            leafEvaluationValue,
+            &witnesses[0],
+            srs
+        );
+
+
+    println!();
+
+    println!(
+        "=========================================="
+    );
+
+    println!(
+        "Membership Proof: {}",
+        label
+    );
+
+    println!(
+        "=========================================="
+    );
+
+    println!(
+        "Key          : {}",
+        key
+    );
+
+    println!(
+        "Global Index : {}",
+        globalIndex
+    );
+
+    println!(
+        "Leaf Node    : {}",
+        leafIndex
+    );
+
+    println!(
+        "Witness Count: {}",
+        witnesses.len()
+    );
+
+    println!();
+
+    println!(
+        "Witness 0"
+    );
+
+    println!(
+        "  Node Type  : Leaf"
+    );
+
+    println!(
+        "  Node Index : {}",
+        leafIndex
+    );
+
+    println!(
+        "  x          : {}",
+        globalIndex
+    );
+
+    println!(
+        "  Witness    : {:?}",
+        witnesses[0]
+    );
+
+    println!(
+        "  verifyEval : {}",
+        leafVerification
+    );
+
+
+    assert!(
+        leafVerification,
+        "{} leaf KZG verification failed",
+        label
+    );
+
+
+    let mut verifiedChildCommitment =
+        leafPolynomial.commitment;
+
+
+    for (
+        level,
+        step
+    ) in
+        path
+            .iter()
+            .rev()
+            .enumerate()
+    {
+
+        let witnessIndex =
+            level + 1;
+
+
+        let nodeIndex =
+            step.nodeIndex;
+
+
+        let node =
+            &tree.nodes[
+                nodeIndex
+            ];
+
+
+        let (
+            recordPosition,
+            chosenSide
+        ) =
+            if step.index
+                < node.keys.len()
+            {
+
+                (
+                    step.index,
+                    "LPC"
+                )
+            }
+            else {
+
+                (
+                    node.keys.len()
+                        - 1,
+                    "RPC"
+                )
+            };
+
+
+        let leftChildIndex =
+            node.children[
+                recordPosition
+            ];
+
+
+        let rightChildIndex =
+            node.children[
+                recordPosition + 1
+            ];
+
+
+        let leftCommitment =
+            buildNodeCommitment(
+                tree,
+                leftChildIndex,
+                polynomials,
+                srs
+            );
+
+
+        let rightCommitment =
+            buildNodeCommitment(
+                tree,
+                rightChildIndex,
+                polynomials,
+                srs
+            );
+
+
+        let authenticatedChildCommitment =
+            if step.index
+                < node.keys.len()
+            {
+
+                assert_eq!(
+                    step.chosenChildIndex,
+                    leftChildIndex,
+                    "{} chosen child does not match LPC child at node {}",
+                    label,
+                    nodeIndex
+                );
+
+
+                leftCommitment
+            }
+            else {
+
+                assert_eq!(
+                    step.chosenChildIndex,
+                    rightChildIndex,
+                    "{} chosen child does not match RPC child at node {}",
+                    label,
+                    nodeIndex
+                );
+
+
+                rightCommitment
+            };
+
+
+        assert_eq!(
+            authenticatedChildCommitment,
+            verifiedChildCommitment,
+            "{} commitment linkage failed at witness {} node {}",
+            label,
+            witnessIndex,
+            nodeIndex
+        );
+
+
+        let internalEvaluationValue =
+            internalRecordEvaluation(
+                node.keys[
+                    recordPosition
+                ],
+                &leftCommitment,
+                &rightCommitment
+            );
+
+
+        let internalEvaluationPoint =
+            ark_bn254::Fr::from(
+                recordPosition as u64
+            );
+
+
+        let nodeCommitment =
+            buildNodeCommitment(
+                tree,
+                nodeIndex,
+                polynomials,
+                srs
+            );
+
+
+        let verification =
+            verifyEval(
+                &nodeCommitment,
+                internalEvaluationPoint,
+                internalEvaluationValue,
+                &witnesses[
+                    witnessIndex
+                ],
+                srs
+            );
+
+
+        println!();
+
+        println!(
+            "Witness {}",
+            witnessIndex
+        );
+
+        println!(
+            "  Node Type  : Internal"
+        );
+
+        println!(
+            "  Node Index : {}",
+            nodeIndex
+        );
+
+        println!(
+            "  Record     : {}",
+            recordPosition
+        );
+
+        println!(
+            "  Mapping    : {}",
+            chosenSide
+        );
+
+        println!(
+            "  Child Node : {}",
+            step.chosenChildIndex
+        );
+
+        println!(
+            "  Witness    : {:?}",
+            witnesses[witnessIndex]
+        );
+
+        println!(
+            "  verifyEval : {}",
+            verification
+        );
+
+
+        assert!(
+            verification,
+            "{} internal-node KZG verification failed at witness {} node {}",
+            label,
+            witnessIndex,
+            nodeIndex
+        );
+
+
+        verifiedChildCommitment =
+            nodeCommitment;
+    }
+
+
+    assert_eq!(
+        verifiedChildCommitment,
+        *rootCommitment,
+        "{} proof does not terminate at trusted root commitment",
+        label
+    );
+
+
+    println!();
+
+    println!(
+        "Trusted Root Check : PASS"
+    );
+
+    println!(
+        "{} Membership Proof: PASS",
+        label
+    );
+
+    println!(
+        "=========================================="
+    );
+
+
+    MembershipVerification {
+
+        leaf_index:
+            leafIndex,
+
+        global_index:
+            globalIndex,
+
+        witnesses,
+
+        path,
     }
 }
 
@@ -533,12 +983,6 @@ fn buildTree(
 
 
     // -----------------------------------------------------
-    // Create Leaf I_k Mapping JSONL
-    // -----------------------------------------------------
-
-
-
-    // -----------------------------------------------------
     // Print Tree
     // -----------------------------------------------------
 
@@ -554,26 +998,6 @@ fn buildTree(
 
     // -----------------------------------------------------
     // KZG SRS
-    //
-    // We now construct ONE polynomial per leaf.
-    //
-    // Each logical (key,value) record contributes TWO
-    // interpolation points:
-    //
-    //     low limb  -> f(2i)
-    //     high limb -> f(2i + 1)
-    //
-    // Maximum records in a node:
-    //
-    //     order - 1
-    //
-    // Therefore:
-    //
-    // maximum interpolation points
-    //     = 2 * (order - 1)
-    //
-    // maximum polynomial degree
-    //     = 2 * (order - 1) - 1
     // -----------------------------------------------------
 
     let max_degree =
@@ -629,10 +1053,6 @@ fn buildTree(
     );
 
 
-    // -----------------------------------------------------
-    // Tree Information
-    // -----------------------------------------------------
-
     println!();
 
 
@@ -654,10 +1074,6 @@ fn buildTree(
     );
 
 
-    // -----------------------------------------------------
-    // Validation
-    // -----------------------------------------------------
-
     println!();
 
 
@@ -675,15 +1091,6 @@ fn buildTree(
 
 
     tree.verifyTree();
-
-
-    // -----------------------------------------------------
-    // Previous Internal Node Record Print
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-
-    // tree.printInternalNodeRecords();
 
 
     // -----------------------------------------------------
@@ -707,7 +1114,7 @@ fn buildTree(
 
 
     // -----------------------------------------------------
-    // Build ONE Polynomial / Commitment Per Leaf
+    // Build Leaf Polynomials
     // -----------------------------------------------------
 
     let polynomials =
@@ -718,7 +1125,7 @@ fn buildTree(
 
 
     // -----------------------------------------------------
-    // Print And Verify Leaf Polynomials
+    // Verify Leaf Polynomials
     // -----------------------------------------------------
 
     printAndVerifyLeafPolynomials(
@@ -728,7 +1135,7 @@ fn buildTree(
 
 
     // -----------------------------------------------------
-    // Build Parent And Root Commitments
+    // Build Root Commitment
     // -----------------------------------------------------
 
     let rootCommitment =
@@ -740,103 +1147,174 @@ fn buildTree(
 
 
     // -----------------------------------------------------
-    // Sample Lookups
+    // Choose Search Key
     // -----------------------------------------------------
 
-    // -----------------------------------------------------
-    // Previous Sample Key-Value Lookups
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-
-    // println!();
-
-    // println!(
-    //     "Sample Key-Value Lookups:"
-    // );
-
-    // println!(
-    //     "------------------------------------------"
-    // );
+    let searchKey =
+        keys[0];
 
 
-    // for key in keys
-    //     .iter()
-    //     .take(5)
-    // {
 
-    //     match tree.get(
-    //         *key
-    //     ) {
+    // =====================================================
+    // MEMBERSHIP PROOF 1: QUERIED KEY
+    // =====================================================
 
-    //         Some(value) => {
-
-    //             println!(
-    //                 "Key {} -> {}",
-    //                 key,
-    //                 hashToHex(
-    //                     &value
-    //                 )
-    //             );
-    //         }
+    let requestedProof =
+        verifyMembershipPath(
+            &tree,
+            searchKey,
+            &evaluations,
+            &polynomials,
+            &srs,
+            &rootCommitment,
+            "Queried Key"
+        );
 
 
-    //         None => {
-
-    //             println!(
-    //                 "Key {} -> NOT FOUND",
-    //                 key
-    //             );
-    //         }
-    //     }
-    // }
+    let leafIndex =
+        requestedProof.leaf_index;
 
 
-    // -----------------------------------------------------
-    // Search Path For One Key
-    // -----------------------------------------------------
+    let requestedGlobalIndex =
+        requestedProof.global_index;
 
-    // -----------------------------------------------------
-    // Previous Search / Proof Path Test
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-     let searchKey =
-         keys[0];
-
-
-    // printSearchPath(
-    //     &tree,
-    //     searchKey
-    // );
-    
-    
-    // -----------------------------------------------------
-    // Compute KZG Witnesses From Leaf To Root
-    // -----------------------------------------------------
 
     let witnesses =
-        computeKzgWitnessRecursive(
+        requestedProof.witnesses;
+
+
+    let path =
+        requestedProof.path;
+
+
+    // =====================================================
+    // MEMBERSHIP PROOF 2: IMMEDIATE PREDECESSOR
+    // =====================================================
+
+    assert!(
+        requestedGlobalIndex > 0,
+        "Requested key is the first key in the tree and has no predecessor"
+    );
+
+
+    let predecessorGlobalIndex =
+        requestedGlobalIndex - 1;
+
+
+    let predecessorEvaluation =
+        evaluations
+            .iter()
+            .find(
+                |evaluation|
+                    evaluation.global_index
+                        == predecessorGlobalIndex
+            )
+            .expect(
+                "Immediate predecessor evaluation not found"
+            );
+
+
+    let predecessorKey =
+        predecessorEvaluation.key;
+
+
+    let predecessorProof =
+        verifyMembershipPath(
             &tree,
-            tree.root,
-            searchKey,
+            predecessorKey,
+            &evaluations,
             &polynomials,
-            &srs
+            &srs,
+            &rootCommitment,
+            "Immediate Predecessor"
         );
 
 
-    // -----------------------------------------------------
-    // Witness And Commitment Mapping
-    // -----------------------------------------------------
+    assert_eq!(
+        predecessorProof.global_index,
+        predecessorGlobalIndex,
+        "Verified predecessor global index does not match expected immediate predecessor index"
+    );
 
-    let (
-        leafIndex,
-        path
-    ) =
-        tree.searchPath(
-            searchKey
-        );
 
+    // =====================================================
+    // ORDERING CHECKS
+    // =====================================================
+
+    println!();
+
+    println!(
+        "=========================================="
+    );
+
+    println!(
+        "Ordering Checks"
+    );
+
+    println!(
+        "=========================================="
+    );
+
+    println!(
+        "Queried Key              : {}",
+        searchKey
+    );
+
+    println!(
+        "Queried Global Index     : {}",
+        requestedGlobalIndex
+    );
+
+    println!(
+        "Immediate Predecessor    : {}",
+        predecessorKey
+    );
+
+    println!(
+        "Predecessor Global Index : {}",
+        predecessorProof.global_index
+    );
+
+
+    assert_eq!(
+        requestedGlobalIndex,
+        predecessorProof.global_index + 1,
+        "Immediate-predecessor index adjacency check failed"
+    );
+
+
+    println!(
+        "Index adjacency check: {} + 1 = {} : PASS",
+        predecessorProof.global_index,
+        requestedGlobalIndex
+    );
+
+
+    assert!(
+        predecessorKey < searchKey,
+        "Immediate-predecessor key ordering check failed"
+    );
+
+
+    println!(
+        "Key ordering check: {} < {} : PASS",
+        predecessorKey,
+        searchKey
+    );
+
+
+    println!(
+        "Immediate predecessor ordering proof: PASS"
+    );
+
+    println!(
+        "=========================================="
+    );
+
+
+    // =====================================================
+    // Requested-Key Diagnostic Information
+    // =====================================================
 
     let expectedWitnessCount =
         path.len() + 1;
@@ -875,9 +1353,11 @@ fn buildTree(
         "=========================================="
     );
 
+
     println!(
         "KZG Witness And Commitment Check"
     );
+
 
     println!(
         "=========================================="
@@ -927,28 +1407,34 @@ fn buildTree(
         "Witness 0"
     );
 
+
     println!(
         "  Node Type   : Leaf"
     );
+
 
     println!(
         "  Node Index  : {}",
         leafIndex
     );
 
+
     println!(
         "  Commitment  : {:?}",
         leafCommitment
     );
+
 
     println!(
         "  Witness     : {:?}",
         witnesses[0]
     );
 
+
     println!(
         "  Mapping     : PASS"
     );
+
 
     println!(
         "  Math Check  : PASS"
@@ -958,10 +1444,11 @@ fn buildTree(
     for (
         level,
         step
-    ) in path
-        .iter()
-        .rev()
-        .enumerate()
+    ) in
+        path
+            .iter()
+            .rev()
+            .enumerate()
     {
 
         let witnessIndex =
@@ -996,34 +1483,41 @@ fn buildTree(
 
         println!();
 
+
         println!(
             "Witness {}",
             witnessIndex
         );
 
+
         println!(
             "  Node Type   : Internal"
         );
+
 
         println!(
             "  Node Index  : {}",
             step.nodeIndex
         );
 
+
         println!(
             "  Record      : {}",
             recordPosition
         );
+
 
         println!(
             "  Mapping     : {}",
             mappingSide
         );
 
+
         println!(
             "  Child Node  : {}",
             step.chosenChildIndex
         );
+
 
         println!(
             "  Witness     : {:?}",
@@ -1054,6 +1548,7 @@ fn buildTree(
             "  Mapping     : PASS"
         );
 
+
         println!(
             "  Math Check  : PASS"
         );
@@ -1066,9 +1561,11 @@ fn buildTree(
         "=========================================="
     );
 
+
     println!(
         "KZG Verification Summary"
     );
+
 
     println!(
         "=========================================="
@@ -1079,32 +1576,38 @@ fn buildTree(
         "Polynomial Division       : PASS"
     );
 
+
     println!(
         "Division Remainder        : PASS"
     );
+
 
     println!(
         "Polynomial Reconstruction : PASS"
     );
 
+
     println!(
         "Commitment Recalculation  : PASS"
     );
+
 
     println!(
         "Leaf To Root Mapping      : PASS"
     );
 
+
     println!(
         "Witness Generation        : PASS"
     );
 
+
     // -----------------------------------------------------
-    // Write Tree And KZG JSON Files
+    // Write JSON Files
     // -----------------------------------------------------
 
     writeJsonFiles(
-       &mut tree,
+        &mut tree,
         order,
         &polynomials,
         &srs,
@@ -1112,10 +1615,6 @@ fn buildTree(
         &witnesses,
         &rootCommitment
     );
-
-    
-    
-    
 }
 
 
@@ -1124,23 +1623,6 @@ fn buildTree(
 // ---------------------------------------------------------
 
 fn main() {
-
-    // -----------------------------------------------------
-    // Experiment Settings
-    // -----------------------------------------------------
-
-    // -----------------------------------------------------
-    // Previous Multi-Order Experiment
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-
-    // let orders =
-    //     vec![
-    //         4,
-    //         5
-    //     ];
-
 
     let orders =
         vec![
@@ -1163,26 +1645,10 @@ fn main() {
         10;
 
 
-    // -----------------------------------------------------
-    // Calculate Values
-    // -----------------------------------------------------
-
     let keyCount =
         keyBase.pow(
             power
         );
-
-
-    // -----------------------------------------------------
-    // Previous Fixed Key Universe
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-
-    // let universeMax =
-    //     2_i64.pow(
-    //         universePower
-    //     );
 
 
     let universeMax =
@@ -1195,17 +1661,15 @@ fn main() {
         );
 
 
-    // -----------------------------------------------------
-    // Print Experiment Settings
-    // -----------------------------------------------------
-
     println!(
         "=========================================="
     );
 
+
     println!(
         "Experiment Configuration"
     );
+
 
     println!(
         "=========================================="
@@ -1233,46 +1697,12 @@ fn main() {
     );
 
 
-    // -----------------------------------------------------
-    // Generate Random Keys
-    // -----------------------------------------------------
-
     let keys =
         generateRandomKeys(
             keyCount,
             universeMax
         );
 
-
-    // -----------------------------------------------------
-    // Previous Random Key Print
-    //
-    // Kept for reference.
-    // -----------------------------------------------------
-
-    // println!();
-
-    // println!(
-    //     "Generated Random Keys:"
-    // );
-
-
-    // for chunk in keys
-    //     .chunks(
-    //         10
-    //     )
-    // {
-
-    //     println!(
-    //         "{:?}",
-    //         chunk
-    //     );
-    // }
-
-
-    // -----------------------------------------------------
-    // Build Trees
-    // -----------------------------------------------------
 
     for order in orders {
 
@@ -1286,12 +1716,6 @@ fn main() {
 
 // ---------------------------------------------------------
 // Write Tree And KZG Data To JSON Files
-//
-// Output 1:
-//     vplus_tree.json
-//
-// Output 2:
-//     kzg_details.json
 // ---------------------------------------------------------
 
 fn writeJsonFiles(
@@ -1306,10 +1730,6 @@ fn writeJsonFiles(
 
     use std::io::Write;
 
-
-    // -----------------------------------------------------
-    // JSON String Escape
-    // -----------------------------------------------------
 
     let jsonString =
         |value: String| {
@@ -1340,14 +1760,6 @@ fn writeJsonFiles(
 
     // -----------------------------------------------------
     // Build Commitment Table
-    //
-    // Reuse existing buildTreeCommitment().
-    //
-    // buildTreeCommitment() already uses the existing
-    // private buildNodeCommitment() internally.
-    //
-    // Temporarily make each node the root,
-    // get its commitment, then restore the real root.
     // -----------------------------------------------------
 
     let originalRoot =
@@ -1386,11 +1798,13 @@ fn writeJsonFiles(
 
 
     assert_eq!(
-        nodeCommitments[tree.root]
-            .as_ref()
-            .expect(
-                "Root commitment missing"
-            ),
+        nodeCommitments[
+            tree.root
+        ]
+        .as_ref()
+        .expect(
+            "Root commitment missing"
+        ),
         rootCommitment,
         "Root commitment does not match existing root commitment"
     );
@@ -1421,8 +1835,7 @@ fn writeJsonFiles(
 
 
     // =====================================================
-    // FILE 1
-    // vplus_tree.json
+    // FILE 1: vplus_tree.json
     // =====================================================
 
     let mut treeFile =
@@ -1433,10 +1846,6 @@ fn writeJsonFiles(
             "Could not create vplus_tree.json"
         );
 
-
-    // -----------------------------------------------------
-    // Build ASCII Tree
-    // -----------------------------------------------------
 
     let mut asciiTree =
         String::new();
@@ -1489,14 +1898,7 @@ fn writeJsonFiles(
         else {
 
             let branch =
-                if isLast {
-
-                    "+-- "
-                }
-                else {
-
-                    "+-- "
-                };
+                "+-- ";
 
 
             let nodeType =
@@ -1771,8 +2173,7 @@ fn writeJsonFiles(
 
 
     // =====================================================
-    // FILE 2
-    // kzg_details.json
+    // FILE 2: kzg_details.json
     // =====================================================
 
     let mut kzgFile =
@@ -1808,7 +2209,7 @@ fn writeJsonFiles(
 
 
     // -----------------------------------------------------
-    // Experiment Information
+    // Experiment
     // -----------------------------------------------------
 
     writeln!(
@@ -1882,7 +2283,7 @@ fn writeJsonFiles(
 
 
     // -----------------------------------------------------
-    // BN254 Curve Information
+    // Curve
     // -----------------------------------------------------
 
     writeln!(
@@ -2972,7 +3373,6 @@ fn writeJsonFiles(
 
     // =====================================================
     // PROOF PATH
-    // Leaf -> Parent -> Root
     // =====================================================
 
     writeln!(
@@ -2983,11 +3383,13 @@ fn writeJsonFiles(
 
 
     let leafCommitment =
-        nodeCommitments[leafIndex]
-            .as_ref()
-            .expect(
-                "Leaf commitment missing"
-            );
+        nodeCommitments[
+            leafIndex
+        ]
+        .as_ref()
+        .expect(
+            "Leaf commitment missing"
+        );
 
 
     writeln!(
@@ -3117,11 +3519,13 @@ fn writeJsonFiles(
 
 
         let commitment =
-            nodeCommitments[step.nodeIndex]
-                .as_ref()
-                .expect(
-                    "Path commitment missing"
-                );
+            nodeCommitments[
+                step.nodeIndex
+            ]
+            .as_ref()
+            .expect(
+                "Path commitment missing"
+            );
 
 
         writeln!(
@@ -3312,13 +3716,16 @@ fn writeJsonFiles(
 
     println!();
 
+
     println!(
         "JSON Files Written:"
     );
 
+
     println!(
         "  vplus_tree.json"
     );
+
 
     println!(
         "  kzg_details.json"
