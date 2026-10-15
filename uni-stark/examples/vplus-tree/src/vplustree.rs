@@ -26,9 +26,12 @@ pub struct SearchPathStep {
     pub rightChildIndex: Option<usize>,
     pub rightChildKeys: Option<Vec<i64>>,
 }
+
+
 // ---------------------------------------------------------
 // Proof Path Structure
 // ---------------------------------------------------------
+
 #[derive(Debug)]
 pub struct ProofPathStep {
     // Current internal node.
@@ -52,6 +55,7 @@ pub struct ProofPathStep {
     // Keys stored in the right sibling.
     pub rightKeys: Option<Vec<i64>>,
 }
+
 
 // ---------------------------------------------------------
 // V+ Tree Structure
@@ -84,7 +88,11 @@ impl VplusTree {
             panic!("Order must be at least 3");
         }
 
-        let rootNode = Node::new(order, true);
+        let rootNode =
+            Node::new(
+                order,
+                true
+            );
 
         VplusTree {
             order,
@@ -125,18 +133,24 @@ impl VplusTree {
     // Underflow Check
     // ---------------------------------------------------------
 
-    pub fn isUnderflow(&self, nodeIndex: usize) -> bool {
+    pub fn isUnderflow(
+        &self,
+        nodeIndex: usize
+    ) -> bool {
 
-        let node = &self.nodes[nodeIndex];
+        let node =
+            &self.nodes[nodeIndex];
 
         if nodeIndex == self.root {
             node.keys.len() < 1
         }
         else if node.is_leaf {
-            node.keys.len() < self.minLeafKeys()
+            node.keys.len()
+                < self.minLeafKeys()
         }
         else {
-            node.keys.len() < self.minInternalKeys()
+            node.keys.len()
+                < self.minInternalKeys()
         }
     }
 
@@ -145,9 +159,12 @@ impl VplusTree {
     // Unified Split Helper
     // ---------------------------------------------------------
 
-    pub fn splitNodeHelper(node: &mut Node) -> (Node, i64) {
+    pub fn splitNodeHelper(
+        node: &mut Node
+    ) -> (Node, i64) {
 
-        let order = node.order;
+        let order =
+            node.order;
 
 
         // -----------------------------------------------------
@@ -156,31 +173,52 @@ impl VplusTree {
 
         if node.is_leaf {
 
-            let midIndex = order / 2;
+            let midIndex =
+                order / 2;
 
-            let mut rightNode = Node::new(order, true);
+
+            let mut rightNode =
+                Node::new(
+                    order,
+                    true
+                );
 
 
             // Keys moving to the right leaf.
             rightNode.keys =
-                node.keys[midIndex..].to_vec();
+                node.keys[
+                    midIndex..
+                ]
+                .to_vec();
+
 
             // Corresponding SHA-256 values move with the keys.
             rightNode.values =
-                node.values[midIndex..].to_vec();
+                node.values[
+                    midIndex..
+                ]
+                .to_vec();
 
 
             // Keys remaining in the left leaf.
             node.keys =
-                node.keys[..midIndex].to_vec();
+                node.keys[
+                    ..midIndex
+                ]
+                .to_vec();
+
 
             // Corresponding SHA-256 values remain with them.
             node.values =
-                node.values[..midIndex].to_vec();
+                node.values[
+                    ..midIndex
+                ]
+                .to_vec();
 
 
             rightNode.next_node =
                 node.next_node;
+
 
             rightNode.parent_node =
                 node.parent_node;
@@ -190,7 +228,10 @@ impl VplusTree {
                 rightNode.keys[0];
 
 
-            return (rightNode, promoteKey);
+            return (
+                rightNode,
+                promoteKey
+            );
         }
 
 
@@ -202,47 +243,198 @@ impl VplusTree {
             (order - 1) / 2;
 
 
+        // Key promoted to the parent.
         let promoteKey =
             node.keys[midIndex];
 
 
-        let (leftChildren, rightChildren) =
-            node.retrieveChildren(midIndex);
+        // Split children around the promoted key.
+        let (
+            leftChildren,
+            rightChildren
+        ) =
+            node.retrieveChildren(
+                midIndex
+            );
 
+
+        // -----------------------------------------------------
+        // Preserve commitment metadata for the keys
+        // remaining on the left.
+        // -----------------------------------------------------
+
+        let leftLeftPointerCommitments =
+            node.left_pointer_commitments[
+                ..midIndex
+            ]
+            .to_vec();
+
+
+        let leftRightPointerCommitments =
+            node.right_pointer_commitments[
+                ..midIndex
+            ]
+            .to_vec();
+
+
+        // -----------------------------------------------------
+        // Preserve commitment metadata for the keys
+        // moving to the right.
+        //
+        // The promoted key at midIndex is removed.
+        // -----------------------------------------------------
+
+        let rightLeftPointerCommitments =
+            node.left_pointer_commitments[
+                midIndex + 1..
+            ]
+            .to_vec();
+
+
+        let rightRightPointerCommitments =
+            node.right_pointer_commitments[
+                midIndex + 1..
+            ]
+            .to_vec();
+
+
+        // -----------------------------------------------------
+        // Construct right internal node
+        // -----------------------------------------------------
 
         let mut rightNode =
-            Node::new(order, false);
+            Node::new(
+                order,
+                false
+            );
 
 
         rightNode.keys =
-            node.keys[midIndex + 1..].to_vec();
+            node.keys[
+                midIndex + 1..
+            ]
+            .to_vec();
 
 
         rightNode.children =
             rightChildren;
 
 
+        rightNode.left_pointer_commitments =
+            rightLeftPointerCommitments;
+
+
+        rightNode.right_pointer_commitments =
+            rightRightPointerCommitments;
+
+
+        // -----------------------------------------------------
+        // Keep left half in original node
+        // -----------------------------------------------------
+
         node.keys =
-            node.keys[..midIndex].to_vec();
+            node.keys[
+                ..midIndex
+            ]
+            .to_vec();
 
 
         node.children =
             leftChildren;
 
 
+        node.left_pointer_commitments =
+            leftLeftPointerCommitments;
+
+
+        node.right_pointer_commitments =
+            leftRightPointerCommitments;
+
+
         rightNode.parent_node =
             node.parent_node;
 
 
-        (rightNode, promoteKey)
+        (
+            rightNode,
+            promoteKey
+        )
     }
+
+    // ---------------------------------------------------------
+// Print Internal Node Records
+// ---------------------------------------------------------
+
+pub fn printInternalNodeRecords(
+    &self
+) {
+
+    println!();
+    println!(
+        "=========================================="
+    );
+
+    println!(
+        "Internal Node Records"
+    );
+
+    println!(
+        "=========================================="
+    );
+
+
+    for (
+        nodeIndex,
+        node
+    ) in self.nodes.iter().enumerate() {
+
+        if node.is_leaf {
+            continue;
+        }
+
+
+        println!();
+
+        println!(
+            "Internal Node Index: {}",
+            nodeIndex
+        );
+
+
+        for i in 0..node.keys.len() {
+
+            println!(
+                "  Record {}:",
+                i
+            );
+
+            println!(
+                "    key = {}",
+                node.keys[i]
+            );
+
+            println!(
+                "    LPC = {:?}",
+                node.left_pointer_commitments[i]
+            );
+
+            println!(
+                "    RPC = {:?}",
+                node.right_pointer_commitments[i]
+            );
+        }
+    }
+}
 
 
     // ---------------------------------------------------------
     // Search
     // ---------------------------------------------------------
 
-    pub fn search(&self, key: i64) -> usize {
+    pub fn search(
+        &self,
+        key: i64
+    ) -> usize {
 
         let mut currentNode =
             self.root;
@@ -250,19 +442,23 @@ impl VplusTree {
 
         while !self.nodes[currentNode].is_leaf {
 
-            let mut index = 0;
+            let mut index =
+                0;
 
 
             // Same behavior as Python bisect_right
-            while index < self.nodes[currentNode].keys.len()
-                && key >= self.nodes[currentNode].keys[index]
+            while index
+                < self.nodes[currentNode].keys.len()
+                && key
+                    >= self.nodes[currentNode].keys[index]
             {
                 index += 1;
             }
 
 
             currentNode =
-                self.nodes[currentNode].children[index];
+                self.nodes[currentNode]
+                    .children[index];
         }
 
 
@@ -274,280 +470,286 @@ impl VplusTree {
     // Search Path
     // ---------------------------------------------------------
 
-pub fn searchPath(
-    &self,
-    key: i64
-) -> (usize, Vec<SearchPathStep>) {
+    pub fn searchPath(
+        &self,
+        key: i64
+    ) -> (
+        usize,
+        Vec<SearchPathStep>
+    ) {
 
-    let mut path =
-        Vec::new();
-
-    let mut currentNode =
-        self.root;
-
-
-    while !self.nodes[currentNode].is_leaf {
-
-        let mut index = 0;
+        let mut path =
+            Vec::new();
 
 
-        while index < self.nodes[currentNode].keys.len()
-            && key >= self.nodes[currentNode].keys[index]
-        {
-            index += 1;
+        let mut currentNode =
+            self.root;
+
+
+        while !self.nodes[currentNode].is_leaf {
+
+            let mut index =
+                0;
+
+
+            while index
+                < self.nodes[currentNode].keys.len()
+                && key
+                    >= self.nodes[currentNode].keys[index]
+            {
+                index += 1;
+            }
+
+
+            // -------------------------------------------------
+            // Chosen child
+            // -------------------------------------------------
+
+            let chosenChild =
+                self.nodes[currentNode]
+                    .children[index];
+
+
+            // -------------------------------------------------
+            // Left sibling
+            // -------------------------------------------------
+
+            let leftChildIndex =
+                if index > 0 {
+
+                    Some(
+                        self.nodes[currentNode]
+                            .children[index - 1]
+                    )
+                }
+                else {
+
+                    None
+                };
+
+
+            let leftChildKeys =
+                match leftChildIndex {
+
+                    Some(leftIndex) => {
+
+                        Some(
+                            self.nodes[leftIndex]
+                                .keys
+                                .clone()
+                        )
+                    }
+
+                    None => {
+
+                        None
+                    }
+                };
+
+
+            // -------------------------------------------------
+            // Right sibling
+            // -------------------------------------------------
+
+            let rightChildIndex =
+                if index + 1
+                    < self.nodes[currentNode]
+                        .children
+                        .len()
+                {
+
+                    Some(
+                        self.nodes[currentNode]
+                            .children[index + 1]
+                    )
+                }
+                else {
+
+                    None
+                };
+
+
+            let rightChildKeys =
+                match rightChildIndex {
+
+                    Some(rightIndex) => {
+
+                        Some(
+                            self.nodes[rightIndex]
+                                .keys
+                                .clone()
+                        )
+                    }
+
+                    None => {
+
+                        None
+                    }
+                };
+
+
+            // -------------------------------------------------
+            // Store this search-path step
+            // -------------------------------------------------
+
+            path.push(
+                SearchPathStep {
+
+                    nodeIndex:
+                        currentNode,
+
+                    nodeKeys:
+                        self.nodes[currentNode]
+                            .keys
+                            .clone(),
+
+                    index,
+
+                    leftChildIndex,
+                    leftChildKeys,
+
+                    chosenChildIndex:
+                        chosenChild,
+
+                    chosenChildKeys:
+                        self.nodes[chosenChild]
+                            .keys
+                            .clone(),
+
+                    rightChildIndex,
+                    rightChildKeys,
+                }
+            );
+
+
+            currentNode =
+                chosenChild;
         }
 
 
-        // -------------------------------------------------
-        // Chosen child
-        // -------------------------------------------------
-
-        let chosenChild =
-            self.nodes[currentNode].children[index];
-
-
-        // -------------------------------------------------
-        // Left sibling
-        // -------------------------------------------------
-
-        let leftChildIndex =
-            if index > 0 {
-
-                Some(
-                    self.nodes[currentNode]
-                        .children[index - 1]
-                )
-            }
-            else {
-
-                None
-            };
-
-
-        let leftChildKeys =
-            match leftChildIndex {
-
-                Some(leftIndex) => {
-
-                    Some(
-                        self.nodes[leftIndex]
-                            .keys
-                            .clone()
-                    )
-                }
-
-                None => {
-
-                    None
-                }
-            };
-
-
-        // -------------------------------------------------
-        // Right sibling
-        // -------------------------------------------------
-
-        let rightChildIndex =
-            if index + 1
-                < self.nodes[currentNode].children.len()
-            {
-
-                Some(
-                    self.nodes[currentNode]
-                        .children[index + 1]
-                )
-            }
-            else {
-
-                None
-            };
-
-
-        let rightChildKeys =
-            match rightChildIndex {
-
-                Some(rightIndex) => {
-
-                    Some(
-                        self.nodes[rightIndex]
-                            .keys
-                            .clone()
-                    )
-                }
-
-                None => {
-
-                    None
-                }
-            };
-
-
-        // -------------------------------------------------
-        // Store this search-path step
-        // -------------------------------------------------
-
-        path.push(
-            SearchPathStep {
-
-                // Current internal node.
-                nodeIndex:
-                    currentNode,
-
-                nodeKeys:
-                    self.nodes[currentNode]
-                        .keys
-                        .clone(),
-
-                // Position of chosen child.
-                index,
-
-                // Left sibling.
-                leftChildIndex,
-                leftChildKeys,
-
-                // Chosen child.
-                chosenChildIndex:
-                    chosenChild,
-
-                chosenChildKeys:
-                    self.nodes[chosenChild]
-                        .keys
-                        .clone(),
-
-                // Right sibling.
-                rightChildIndex,
-                rightChildKeys,
-            }
-        );
-
-
-        // Continue down the chosen path.
-        currentNode =
-            chosenChild;
+        (
+            currentNode,
+            path
+        )
     }
 
 
-    // currentNode is now the leaf reached by the search.
-    (currentNode, path)
-}
-// ---------------------------------------------------------
-// Build Proof Path
-// ---------------------------------------------------------
+    // ---------------------------------------------------------
+    // Build Proof Path
+    // ---------------------------------------------------------
 
-// ---------------------------------------------------------
-// Build Proof Path
-// ---------------------------------------------------------
+    pub fn buildProofPath(
+        &self,
+        key: i64
+    ) -> (
+        usize,
+        Vec<ProofPathStep>
+    ) {
 
-pub fn buildProofPath(
-    &self,
-    key: i64
-) -> (usize, Vec<ProofPathStep>) {
-
-    let (leafIndex, searchPath) =
-        self.searchPath(key);
-
-
-    let mut proofPath =
-        Vec::new();
+        let (
+            leafIndex,
+            searchPath
+        ) =
+            self.searchPath(
+                key
+            );
 
 
-    for step in searchPath {
+        let mut proofPath =
+            Vec::new();
 
-        proofPath.push(
-            ProofPathStep {
-                parentIndex:
-                    step.nodeIndex,
 
-                chosenChildIndex:
-                    step.chosenChildIndex,
+        for step in searchPath {
 
-                leftIndex:
-                    step.leftChildIndex,
+            proofPath.push(
+                ProofPathStep {
 
-                rightIndex:
-                    step.rightChildIndex,
+                    parentIndex:
+                        step.nodeIndex,
 
-                leftKeys:
-                    step.leftChildKeys,
+                    chosenChildIndex:
+                        step.chosenChildIndex,
 
-                chosenKeys:
-                    step.chosenChildKeys,
+                    leftIndex:
+                        step.leftChildIndex,
 
-                rightKeys:
-                    step.rightChildKeys,
-            }
-        );
+                    rightIndex:
+                        step.rightChildIndex,
+
+                    leftKeys:
+                        step.leftChildKeys,
+
+                    chosenKeys:
+                        step.chosenChildKeys,
+
+                    rightKeys:
+                        step.rightChildKeys,
+                }
+            );
+        }
+
+
+        (
+            leafIndex,
+            proofPath
+        )
     }
 
 
-    (
-        leafIndex,
-        proofPath
-    )
-}
+    // ---------------------------------------------------------
+    // Retrieve Left Child
+    // ---------------------------------------------------------
+
+    pub fn retrieveLeft(
+        &self,
+        parentIndex: usize,
+        chosenChildPosition: usize
+    ) -> Option<usize> {
+
+        if chosenChildPosition == 0 {
+
+            return None;
+        }
 
 
-// ---------------------------------------------------------
-// Retrieve Left Child
-// ---------------------------------------------------------
-
-pub fn retrieveLeft(
-    &self,
-    parentIndex: usize,
-    chosenChildPosition: usize
-) -> Option<usize> {
-
-    // If the chosen child is already the
-    // left-most child, there is no child
-    // to its left.
-    if chosenChildPosition == 0 {
-        return None;
+        Some(
+            self.nodes[parentIndex]
+                .children[
+                    chosenChildPosition - 1
+                ]
+        )
     }
 
 
-    // Return the node index of the child
-    // immediately to the left of the
-    // chosen child.
-    Some(
-        self.nodes[parentIndex]
-            .children[chosenChildPosition - 1]
-    )
-}
-// ---------------------------------------------------------
-// Retrieve Right Child
-// ---------------------------------------------------------
+    // ---------------------------------------------------------
+    // Retrieve Right Child
+    // ---------------------------------------------------------
 
-pub fn retrieveRight(
-    &self,
-    parentIndex: usize,
-    chosenChildPosition: usize
-) -> Option<usize> {
+    pub fn retrieveRight(
+        &self,
+        parentIndex: usize,
+        chosenChildPosition: usize
+    ) -> Option<usize> {
 
-    let children =
-        &self.nodes[parentIndex].children;
+        let children =
+            &self.nodes[parentIndex]
+                .children;
 
 
-    // If the chosen child is already the
-    // right-most child, there is no child
-    // to its right.
-    if chosenChildPosition + 1
-        >= children.len()
-    {
-        return None;
+        if chosenChildPosition + 1
+            >= children.len()
+        {
+
+            return None;
+        }
+
+
+        Some(
+            children[
+                chosenChildPosition + 1
+            ]
+        )
     }
-
-
-    // Return the node index of the child
-    // immediately to the right of the
-    // chosen child.
-    Some(
-        children[chosenChildPosition + 1]
-    )
-}
-
-
-
-
 
 
     // ---------------------------------------------------------
@@ -560,27 +762,34 @@ pub fn retrieveRight(
     ) -> Option<[u8; 32]> {
 
         let leafIndex =
-            self.search(key);
+            self.search(
+                key
+            );
 
 
         let leaf =
             &self.nodes[leafIndex];
 
 
-        let mut index = 0;
+        let mut index =
+            0;
 
 
-        // Same behavior as Python bisect_left
-        while index < leaf.keys.len()
-            && leaf.keys[index] < key
+        while index
+            < leaf.keys.len()
+            && leaf.keys[index]
+                < key
         {
             index += 1;
         }
 
 
-        if index < leaf.keys.len()
-            && leaf.keys[index] == key
+        if index
+            < leaf.keys.len()
+            && leaf.keys[index]
+                == key
         {
+
             return Some(
                 leaf.values[index]
             );
@@ -602,25 +811,40 @@ pub fn retrieveRight(
     ) -> bool {
 
         let leafIndex =
-            self.search(key);
+            self.search(
+                key
+            );
 
 
-        let mut index = 0;
+        let mut index =
+            0;
 
 
-        while index < self.nodes[leafIndex].keys.len()
-            && self.nodes[leafIndex].keys[index] < key
+        while index
+            < self.nodes[leafIndex]
+                .keys
+                .len()
+            && self.nodes[leafIndex]
+                .keys[index]
+                < key
         {
             index += 1;
         }
 
 
-        if index < self.nodes[leafIndex].keys.len()
-            && self.nodes[leafIndex].keys[index] == key
+        if index
+            < self.nodes[leafIndex]
+                .keys
+                .len()
+            && self.nodes[leafIndex]
+                .keys[index]
+                == key
         {
 
             self.nodes[leafIndex]
-                .values[index] = value;
+                .values[index] =
+                value;
+
 
             return true;
         }
@@ -641,15 +865,23 @@ pub fn retrieveRight(
     ) {
 
         let leafIndex =
-            self.search(key);
+            self.search(
+                key
+            );
 
 
-        let mut index = 0;
+        let mut index =
+            0;
 
 
         // Same behavior as Python bisect_left
-        while index < self.nodes[leafIndex].keys.len()
-            && self.nodes[leafIndex].keys[index] < key
+        while index
+            < self.nodes[leafIndex]
+                .keys
+                .len()
+            && self.nodes[leafIndex]
+                .keys[index]
+                < key
         {
             index += 1;
         }
@@ -657,35 +889,49 @@ pub fn retrieveRight(
 
         // Key already exists:
         // replace the existing SHA-256 value.
-        if index < self.nodes[leafIndex].keys.len()
-            && self.nodes[leafIndex].keys[index] == key
+        if index
+            < self.nodes[leafIndex]
+                .keys
+                .len()
+            && self.nodes[leafIndex]
+                .keys[index]
+                == key
         {
 
             self.nodes[leafIndex]
-                .values[index] = value;
+                .values[index] =
+                value;
+
 
             return;
         }
 
 
-        // Insert key.
         self.nodes[leafIndex]
             .keys
-            .insert(index, key);
+            .insert(
+                index,
+                key
+            );
 
 
-        // Insert corresponding SHA-256 value
-        // at exactly the same position.
         self.nodes[leafIndex]
             .values
-            .insert(index, value);
+            .insert(
+                index,
+                value
+            );
 
 
-        // Split if leaf overflows
-        if self.nodes[leafIndex].keys.len()
+        if self.nodes[leafIndex]
+            .keys
+            .len()
             > self.maxKeys()
         {
-            self.splitLeaf(leafIndex);
+
+            self.splitLeaf(
+                leafIndex
+            );
         }
     }
 
@@ -700,15 +946,22 @@ pub fn retrieveRight(
     ) {
 
         let parentIndex =
-            self.nodes[leafIndex].parent_node;
+            self.nodes[leafIndex]
+                .parent_node;
 
 
-        let (mut rightNode, promoteKey) = {
+        let (
+            mut rightNode,
+            promoteKey
+        ) = {
 
             let leaf =
                 &mut self.nodes[leafIndex];
 
-            VplusTree::splitNodeHelper(leaf)
+
+            VplusTree::splitNodeHelper(
+                leaf
+            )
         };
 
 
@@ -720,15 +973,19 @@ pub fn retrieveRight(
             parentIndex;
 
 
-        self.nodes.push(rightNode);
+        self.nodes.push(
+            rightNode
+        );
 
 
-        // Connect the leaf linked list
-        self.nodes[leafIndex].next_node =
-            Some(rightIndex);
+        // Connect leaf linked list.
+        self.nodes[leafIndex]
+            .next_node =
+            Some(
+                rightIndex
+            );
 
 
-        // Root leaf
         if parentIndex.is_none() {
 
             self.createNewRoot(
@@ -759,36 +1016,87 @@ pub fn retrieveRight(
         childIndex: usize
     ) {
 
-        let mut index = 0;
+        let mut index =
+            0;
 
 
         // Same behavior as Python bisect_right
-        while index < self.nodes[parentIndex].keys.len()
-            && key >= self.nodes[parentIndex].keys[index]
+        while index
+            < self.nodes[parentIndex]
+                .keys
+                .len()
+            && key
+                >= self.nodes[parentIndex]
+                    .keys[index]
         {
+
             index += 1;
         }
 
 
+        // -----------------------------------------------------
+        // Insert separator key.
+        // -----------------------------------------------------
+
         self.nodes[parentIndex]
             .keys
-            .insert(index, key);
+            .insert(
+                index,
+                key
+            );
 
+
+        // -----------------------------------------------------
+        // Create matching LPC/RPC slots.
+        //
+        // For now the values are None.
+        // -----------------------------------------------------
+
+        self.nodes[parentIndex]
+            .left_pointer_commitments
+            .insert(
+                index,
+                None
+            );
+
+
+        self.nodes[parentIndex]
+            .right_pointer_commitments
+            .insert(
+                index,
+                None
+            );
+
+
+        // -----------------------------------------------------
+        // Insert child pointer.
+        // -----------------------------------------------------
 
         self.nodes[parentIndex]
             .children
-            .insert(index + 1, childIndex);
+            .insert(
+                index + 1,
+                childIndex
+            );
 
 
-        self.nodes[childIndex].parent_node =
-            Some(parentIndex);
+        self.nodes[childIndex]
+            .parent_node =
+            Some(
+                parentIndex
+            );
 
 
-        // Split parent if it overflows
-        if self.nodes[parentIndex].keys.len()
+        // Split parent if it overflows.
+        if self.nodes[parentIndex]
+            .keys
+            .len()
             > self.maxKeys()
         {
-            self.splitInternal(parentIndex);
+
+            self.splitInternal(
+                parentIndex
+            );
         }
     }
 
@@ -803,15 +1111,22 @@ pub fn retrieveRight(
     ) {
 
         let parentIndex =
-            self.nodes[nodeIndex].parent_node;
+            self.nodes[nodeIndex]
+                .parent_node;
 
 
-        let (mut rightNode, promoteKey) = {
+        let (
+            mut rightNode,
+            promoteKey
+        ) = {
 
             let node =
                 &mut self.nodes[nodeIndex];
 
-            VplusTree::splitNodeHelper(node)
+
+            VplusTree::splitNodeHelper(
+                node
+            )
         };
 
 
@@ -824,22 +1139,28 @@ pub fn retrieveRight(
 
 
         let rightChildren =
-            rightNode.children.clone();
+            rightNode
+                .children
+                .clone();
 
 
-        self.nodes.push(rightNode);
+        self.nodes.push(
+            rightNode
+        );
 
 
         // Children moved to the right node
-        // must point to their new parent
+        // must point to their new parent.
         for childIndex in rightChildren {
 
-            self.nodes[childIndex].parent_node =
-                Some(rightIndex);
+            self.nodes[childIndex]
+                .parent_node =
+                Some(
+                    rightIndex
+                );
         }
 
 
-        // Node was the root
         if parentIndex.is_none() {
 
             self.createNewRoot(
@@ -871,29 +1192,74 @@ pub fn retrieveRight(
     ) {
 
         let mut newRoot =
-            Node::new(self.order, false);
+            Node::new(
+                self.order,
+                false
+            );
 
 
-        newRoot.keys.push(key);
+        // -----------------------------------------------------
+        // Root key.
+        // -----------------------------------------------------
+
+        newRoot.keys.push(
+            key
+        );
 
 
-        newRoot.children.push(leftChild);
-        newRoot.children.push(rightChild);
+        // -----------------------------------------------------
+        // Matching LPC/RPC slots.
+        // -----------------------------------------------------
+
+        newRoot
+            .left_pointer_commitments
+            .push(
+                None
+            );
+
+
+        newRoot
+            .right_pointer_commitments
+            .push(
+                None
+            );
+
+
+        // -----------------------------------------------------
+        // Root children.
+        // -----------------------------------------------------
+
+        newRoot.children.push(
+            leftChild
+        );
+
+
+        newRoot.children.push(
+            rightChild
+        );
 
 
         let newRootIndex =
             self.nodes.len();
 
 
-        self.nodes.push(newRoot);
+        self.nodes.push(
+            newRoot
+        );
 
 
-        self.nodes[leftChild].parent_node =
-            Some(newRootIndex);
+        self.nodes[leftChild]
+            .parent_node =
+            Some(
+                newRootIndex
+            );
 
 
-        self.nodes[rightChild].parent_node =
-            Some(newRootIndex);
+        self.nodes[rightChild]
+            .parent_node =
+            Some(
+                newRootIndex
+            );
 
 
         self.root =
@@ -908,9 +1274,13 @@ pub fn retrieveRight(
     pub fn show(&self) {
 
         let mut currentLevel =
-            vec![self.root];
+            vec![
+                self.root
+            ];
 
-        let mut depth = 0;
+
+        let mut depth =
+            0;
 
 
         while !currentLevel.is_empty() {
@@ -919,13 +1289,18 @@ pub fn retrieveRight(
                 Vec::new();
 
 
-            print!("Level {}: ", depth);
+            print!(
+                "Level {}: ",
+                depth
+            );
 
 
             for nodeIndex in &currentLevel {
 
                 let node =
-                    &self.nodes[*nodeIndex];
+                    &self.nodes[
+                        *nodeIndex
+                    ];
 
 
                 if node.is_leaf {
@@ -943,7 +1318,9 @@ pub fn retrieveRight(
                     );
 
 
-                    for childIndex in &node.children {
+                    for childIndex
+                        in &node.children
+                    {
 
                         nextLevel.push(
                             *childIndex
@@ -959,6 +1336,7 @@ pub fn retrieveRight(
             currentLevel =
                 nextLevel;
 
+
             depth += 1;
         }
     }
@@ -968,20 +1346,28 @@ pub fn retrieveRight(
     // Height
     // ---------------------------------------------------------
 
-    pub fn getHeight(&self) -> usize {
+    pub fn getHeight(
+        &self
+    ) -> usize {
 
-        let mut height = 0;
+        let mut height =
+            0;
+
 
         let mut currentNode =
             self.root;
 
 
-        while !self.nodes[currentNode].is_leaf {
+        while !self.nodes[currentNode]
+            .is_leaf
+        {
 
             height += 1;
 
+
             currentNode =
-                self.nodes[currentNode].children[0];
+                self.nodes[currentNode]
+                    .children[0];
         }
 
 
@@ -998,17 +1384,21 @@ pub fn retrieveRight(
         nodeIndex: usize
     ) -> usize {
 
-        let mut depth = 0;
+        let mut depth =
+            0;
+
 
         let mut currentNode =
             nodeIndex;
 
 
         while let Some(parentIndex) =
-            self.nodes[currentNode].parent_node
+            self.nodes[currentNode]
+                .parent_node
         {
 
             depth += 1;
+
 
             currentNode =
                 parentIndex;
@@ -1023,12 +1413,18 @@ pub fn retrieveRight(
     // Count Nodes
     // ---------------------------------------------------------
 
-    pub fn countNodes(&self) -> usize {
+    pub fn countNodes(
+        &self
+    ) -> usize {
 
-        let mut count = 0;
+        let mut count =
+            0;
+
 
         let mut queue =
-            vec![self.root];
+            vec![
+                self.root
+            ];
 
 
         while !queue.is_empty() {
@@ -1040,10 +1436,13 @@ pub fn retrieveRight(
             count += 1;
 
 
-            if !self.nodes[nodeIndex].is_leaf {
+            if !self.nodes[nodeIndex]
+                .is_leaf
+            {
 
-                for childIndex in
-                    &self.nodes[nodeIndex].children
+                for childIndex
+                    in &self.nodes[nodeIndex]
+                        .children
                 {
 
                     queue.push(
@@ -1062,7 +1461,9 @@ pub fn retrieveRight(
     // Get All Leaves
     // ---------------------------------------------------------
 
-    pub fn getAllLeaves(&self) -> Vec<usize> {
+    pub fn getAllLeaves(
+        &self
+    ) -> Vec<usize> {
 
         let mut leaves =
             Vec::new();
@@ -1072,15 +1473,16 @@ pub fn retrieveRight(
             self.root;
 
 
-        // Find left-most leaf
-        while !self.nodes[currentNode].is_leaf {
+        while !self.nodes[currentNode]
+            .is_leaf
+        {
 
             currentNode =
-                self.nodes[currentNode].children[0];
+                self.nodes[currentNode]
+                    .children[0];
         }
 
 
-        // Follow leaf pointers
         loop {
 
             leaves.push(
@@ -1088,7 +1490,9 @@ pub fn retrieveRight(
             );
 
 
-            match self.nodes[currentNode].next_node {
+            match self.nodes[currentNode]
+                .next_node
+            {
 
                 Some(nextNode) => {
 
@@ -1112,9 +1516,12 @@ pub fn retrieveRight(
     // Count Keys
     // ---------------------------------------------------------
 
-    pub fn countKeys(&self) -> usize {
+    pub fn countKeys(
+        &self
+    ) -> usize {
 
-        let mut count = 0;
+        let mut count =
+            0;
 
 
         let leaves =
@@ -1138,9 +1545,10 @@ pub fn retrieveRight(
     // Basic Tree Validation
     // ---------------------------------------------------------
 
-    pub fn validate(&self) -> bool {
+    pub fn validate(
+        &self
+    ) -> bool {
 
-        // Root should not have a parent
         if self.nodes[self.root]
             .parent_node
             .is_some()
@@ -1150,12 +1558,15 @@ pub fn retrieveRight(
                 "Root should not have a parent."
             );
 
+
             return false;
         }
 
 
         let mut queue =
-            vec![self.root];
+            vec![
+                self.root
+            ];
 
 
         while !queue.is_empty() {
@@ -1168,11 +1579,15 @@ pub fn retrieveRight(
                 &self.nodes[nodeIndex];
 
 
-            // Leaf nodes must contain exactly
-            // one SHA-256 value for every key.
+            // -------------------------------------------------
+            // Leaf values
+            // -------------------------------------------------
+
             if node.is_leaf
-                && node.keys.len() != node.values.len()
+                && node.keys.len()
+                    != node.values.len()
             {
+
                 println!(
                     "Leaf {:?} has {} keys but {} values.",
                     node.keys,
@@ -1180,18 +1595,24 @@ pub fn retrieveRight(
                     node.values.len()
                 );
 
+
                 return false;
             }
 
 
+            // -------------------------------------------------
             // Internal nodes should not store leaf values.
+            // -------------------------------------------------
+
             if !node.is_leaf
                 && !node.values.is_empty()
             {
+
                 println!(
                     "Internal node {:?} unexpectedly stores values.",
                     node.keys
                 );
+
 
                 return false;
             }
@@ -1199,8 +1620,50 @@ pub fn retrieveRight(
 
             if !node.is_leaf {
 
-                // Internal nodes should have
-                // one more child than keys
+                // -------------------------------------------------
+                // Every internal key must have one LPC slot.
+                // -------------------------------------------------
+
+                if node.left_pointer_commitments.len()
+                    != node.keys.len()
+                {
+
+                    println!(
+                        "Internal node {:?} has {} keys but {} LPC entries.",
+                        node.keys,
+                        node.keys.len(),
+                        node.left_pointer_commitments.len()
+                    );
+
+
+                    return false;
+                }
+
+
+                // -------------------------------------------------
+                // Every internal key must have one RPC slot.
+                // -------------------------------------------------
+
+                if node.right_pointer_commitments.len()
+                    != node.keys.len()
+                {
+
+                    println!(
+                        "Internal node {:?} has {} keys but {} RPC entries.",
+                        node.keys,
+                        node.keys.len(),
+                        node.right_pointer_commitments.len()
+                    );
+
+
+                    return false;
+                }
+
+
+                // -------------------------------------------------
+                // Internal node children.
+                // -------------------------------------------------
+
                 if node.children.len()
                     != node.keys.len() + 1
                 {
@@ -1210,22 +1673,32 @@ pub fn retrieveRight(
                         node.keys
                     );
 
+
                     return false;
                 }
 
 
-                for childIndex in &node.children {
+                for childIndex
+                    in &node.children
+                {
 
-                    // Check parent connection
-                    if self.nodes[*childIndex]
-                        .parent_node
-                        != Some(nodeIndex)
+                    if self.nodes[
+                        *childIndex
+                    ]
+                    .parent_node
+                        != Some(
+                            nodeIndex
+                        )
                     {
 
                         println!(
                             "Child {:?} has wrong parent.",
-                            self.nodes[*childIndex].keys
+                            self.nodes[
+                                *childIndex
+                            ]
+                            .keys
                         );
+
 
                         return false;
                     }
@@ -1234,6 +1707,36 @@ pub fn retrieveRight(
                     queue.push(
                         *childIndex
                     );
+                }
+            }
+            else {
+
+                // Leaf nodes should not contain LPC/RPC entries.
+                if !node.left_pointer_commitments
+                    .is_empty()
+                {
+
+                    println!(
+                        "Leaf {:?} unexpectedly contains LPC entries.",
+                        node.keys
+                    );
+
+
+                    return false;
+                }
+
+
+                if !node.right_pointer_commitments
+                    .is_empty()
+                {
+
+                    println!(
+                        "Leaf {:?} unexpectedly contains RPC entries.",
+                        node.keys
+                    );
+
+
+                    return false;
                 }
             }
         }
@@ -1247,13 +1750,17 @@ pub fn retrieveRight(
     // Verify Tree
     // ---------------------------------------------------------
 
-    pub fn verifyTree(&self) -> bool {
+    pub fn verifyTree(
+        &self
+    ) -> bool {
 
-        let mut leafDepth: Option<usize> =
+        let mut leafDepth:
+            Option<usize> =
             None;
 
 
-        let mut leafKeys: Vec<i64> =
+        let mut leafKeys:
+            Vec<i64> =
             Vec::new();
 
 
@@ -1274,7 +1781,7 @@ pub fn retrieveRight(
         }
 
 
-        // Check global leaf order
+        // Check global leaf order.
         let mut sortedLeafKeys =
             leafKeys.clone();
 
@@ -1282,11 +1789,14 @@ pub fn retrieveRight(
         sortedLeafKeys.sort();
 
 
-        if leafKeys != sortedLeafKeys {
+        if leafKeys
+            != sortedLeafKeys
+        {
 
             println!(
                 "Leaf chain is not globally sorted."
             );
+
 
             return false;
         }
@@ -1330,12 +1840,15 @@ pub fn retrieveRight(
         sortedKeys.sort();
 
 
-        if node.keys != sortedKeys {
+        if node.keys
+            != sortedKeys
+        {
 
             println!(
                 "Keys are not sorted in node: {:?}",
                 node.keys
             );
+
 
             return false;
         }
@@ -1358,6 +1871,7 @@ pub fn retrieveRight(
                         key
                     );
 
+
                     return false;
                 }
             }
@@ -1373,6 +1887,7 @@ pub fn retrieveRight(
                         "Key violates upper bound: {}",
                         key
                     );
+
 
                     return false;
                 }
@@ -1394,6 +1909,7 @@ pub fn retrieveRight(
                 self.maxKeys()
             );
 
+
             return false;
         }
 
@@ -1403,7 +1919,9 @@ pub fn retrieveRight(
         // Root is exempt
         // -----------------------------------------------------
 
-        if nodeIndex != self.root {
+        if nodeIndex
+            != self.root
+        {
 
             if node.is_leaf
                 && node.keys.len()
@@ -1415,6 +1933,7 @@ pub fn retrieveRight(
                     node.keys,
                     self.minLeafKeys()
                 );
+
 
                 return false;
             }
@@ -1431,6 +1950,7 @@ pub fn retrieveRight(
                     self.minInternalKeys()
                 );
 
+
                 return false;
             }
         }
@@ -1442,9 +1962,9 @@ pub fn retrieveRight(
 
         if node.is_leaf {
 
-            // Every key in a leaf must have exactly one
-            // corresponding SHA-256 value.
-            if node.keys.len() != node.values.len() {
+            if node.keys.len()
+                != node.values.len()
+            {
 
                 println!(
                     "Leaf {:?} has {} keys but {} values.",
@@ -1452,6 +1972,35 @@ pub fn retrieveRight(
                     node.keys.len(),
                     node.values.len()
                 );
+
+
+                return false;
+            }
+
+
+            if !node.left_pointer_commitments
+                .is_empty()
+            {
+
+                println!(
+                    "Leaf {:?} unexpectedly contains LPC entries.",
+                    node.keys
+                );
+
+
+                return false;
+            }
+
+
+            if !node.right_pointer_commitments
+                .is_empty()
+            {
+
+                println!(
+                    "Leaf {:?} unexpectedly contains RPC entries.",
+                    node.keys
+                );
+
 
                 return false;
             }
@@ -1462,7 +2011,9 @@ pub fn retrieveRight(
                 None => {
 
                     *leafDepth =
-                        Some(depth);
+                        Some(
+                            depth
+                        );
                 }
 
 
@@ -1475,6 +2026,7 @@ pub fn retrieveRight(
                         println!(
                             "Leaves are not at the same depth."
                         );
+
 
                         return false;
                     }
@@ -1505,6 +2057,43 @@ pub fn retrieveRight(
                 node.keys
             );
 
+
+            return false;
+        }
+
+
+        // -----------------------------------------------------
+        // Internal Node LPC Count
+        // -----------------------------------------------------
+
+        if node.left_pointer_commitments.len()
+            != node.keys.len()
+        {
+
+            println!(
+                "Internal node {:?} has incorrect LPC count.",
+                node.keys
+            );
+
+
+            return false;
+        }
+
+
+        // -----------------------------------------------------
+        // Internal Node RPC Count
+        // -----------------------------------------------------
+
+        if node.right_pointer_commitments.len()
+            != node.keys.len()
+        {
+
+            println!(
+                "Internal node {:?} has incorrect RPC count.",
+                node.keys
+            );
+
+
             return false;
         }
 
@@ -1520,6 +2109,7 @@ pub fn retrieveRight(
             println!(
                 "Internal node child count is incorrect."
             );
+
 
             return false;
         }
@@ -1539,7 +2129,9 @@ pub fn retrieveRight(
                 if i > 0 {
 
                     Some(
-                        node.keys[i - 1]
+                        node.keys[
+                            i - 1
+                        ]
                     )
                 }
                 else {

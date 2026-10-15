@@ -26,21 +26,24 @@ use sha2::{
 };
 
 use crate::vplustree::VplusTree;
+use ark_serialize::CanonicalSerialize;
+
 
 
 // ---------------------------------------------------------
-// Leaf Evaluation Point
+// Leaf Evaluation Record
 // ---------------------------------------------------------
 
 #[derive(Clone, Debug)]
 pub struct LeafEvaluation {
+
     // Actual node index in the V+ Tree.
     pub leaf_node_index: usize,
 
     // Position of the key inside this leaf.
     pub position_in_leaf: usize,
 
-    // Global index at the leaf level.
+    // Logical global index at the leaf level.
     //
     // These are continuous across the entire leaf level:
     //
@@ -52,11 +55,6 @@ pub struct LeafEvaluation {
 
     // SHA256(key || value).
     pub digest: [u8; 32],
-
-    // Polynomial evaluation point.
-    //
-    // x_i = global_index
-    pub x: Fr,
 
     // Lower 128 bits of the SHA-256 digest,
     // represented exactly as a BN254 field element.
@@ -74,10 +72,11 @@ pub struct LeafEvaluation {
 
 #[derive(Clone, Debug)]
 pub struct LeafPolynomialData {
+
     // Actual leaf node index in the V+ Tree.
     pub leaf_node_index: usize,
 
-    // All evaluation points that belong to this leaf.
+    // All logical records that belong to this leaf.
     pub evaluations: Vec<LeafEvaluation>,
 }
 
@@ -88,6 +87,7 @@ pub struct LeafPolynomialData {
 
 #[derive(Clone, Debug)]
 pub struct KzgSrs {
+
     // [G1, tau*G1, tau^2*G1, ..., tau^d*G1]
     pub g1_powers: Vec<G1Affine>,
 
@@ -144,7 +144,9 @@ pub fn generateTreeSrs(
 
 
     let mut tau_power =
-        Fr::from(1u64);
+        Fr::from(
+            1u64
+        );
 
 
     for _ in 0..=max_degree {
@@ -288,7 +290,7 @@ pub fn digestToFieldLimbs(
 
 
 // ---------------------------------------------------------
-// Build All Leaf-Level Evaluation Points
+// Build All Leaf-Level Logical Evaluations
 // ---------------------------------------------------------
 
 pub fn buildLeafEvaluations(
@@ -303,10 +305,15 @@ pub fn buildLeafEvaluations(
         Vec::new();
 
 
-    // Global index for the entire leaf level.
+    // Logical index for the entire leaf level.
     //
     // IMPORTANT:
+    //
     // This does NOT restart for every leaf.
+    //
+    // Every (key,value) record gets one logical index:
+    //
+    // 0, 1, 2, 3, ...
     let mut global_index =
         0usize;
 
@@ -314,17 +321,25 @@ pub fn buildLeafEvaluations(
     for leaf_node_index in leaves {
 
         let leaf =
-            &tree.nodes[leaf_node_index];
+            &tree.nodes[
+                leaf_node_index
+            ];
 
 
-        for position_in_leaf in 0..leaf.keys.len() {
+        for position_in_leaf
+            in 0..leaf.keys.len()
+        {
 
             let key =
-                leaf.keys[position_in_leaf];
+                leaf.keys[
+                    position_in_leaf
+                ];
 
 
             let value =
-                &leaf.values[position_in_leaf];
+                &leaf.values[
+                    position_in_leaf
+                ];
 
 
             // -------------------------------------------------
@@ -339,23 +354,10 @@ pub fn buildLeafEvaluations(
 
 
             // -------------------------------------------------
-            // Evaluation point
+            // Preserve the complete 256-bit digest.
             //
-            // x_i = global index of this key
-            // at the leaf level.
-            // -------------------------------------------------
-
-            let x =
-                Fr::from(
-                    global_index as u64
-                );
-
-
-            // -------------------------------------------------
-            // Evaluation values
-            //
-            // Preserve the entire 256-bit SHA-256 digest
-            // exactly by splitting it into two 128-bit limbs.
+            // We split it into two exact 128-bit BN254
+            // field elements.
             // -------------------------------------------------
 
             let (
@@ -368,24 +370,31 @@ pub fn buildLeafEvaluations(
 
 
             // -------------------------------------------------
-            // Store Evaluation
+            // Store Logical Record
             // -------------------------------------------------
 
             evaluations.push(
                 LeafEvaluation {
+
                     leaf_node_index,
+
                     position_in_leaf,
+
                     global_index,
+
                     key,
+
                     digest,
-                    x,
+
                     y_low,
+
                     y_high,
                 }
             );
 
 
-            global_index += 1;
+            global_index +=
+                1;
         }
     }
 
@@ -423,8 +432,10 @@ pub fn groupEvaluationsByLeaf(
                     evaluation.clone()
                 );
 
+
                 found =
                     true;
+
 
                 break;
             }
@@ -435,6 +446,7 @@ pub fn groupEvaluationsByLeaf(
 
             grouped.push(
                 LeafPolynomialData {
+
                     leaf_node_index:
                         evaluation.leaf_node_index,
 
@@ -466,7 +478,10 @@ fn polynomialAdd(
 ) -> Vec<Fr> {
 
     let max_len =
-        a.len().max(b.len());
+        a.len()
+            .max(
+                b.len()
+            );
 
 
     let mut result =
@@ -507,7 +522,8 @@ fn polynomialScale(
         .iter()
         .map(
             |coefficient|
-                *coefficient * scalar
+                *coefficient
+                    * scalar
         )
         .collect()
 }
@@ -533,7 +549,8 @@ fn polynomialMultiplyLinear(
 
         // Contribution from -root.
         result[i] -=
-            polynomial[i] * root;
+            polynomial[i]
+                * root;
 
 
         // Contribution from X.
@@ -597,12 +614,16 @@ pub fn lagrangeInterpolate(
 
         let mut basis_polynomial =
             vec![
-                Fr::from(1u64)
+                Fr::from(
+                    1u64
+                )
             ];
 
 
         let mut denominator =
-            Fr::from(1u64);
+            Fr::from(
+                1u64
+            );
 
 
         for j in 0..points.len() {
@@ -671,24 +692,35 @@ pub fn lagrangeInterpolate(
 
 
 // ---------------------------------------------------------
-// Leaf Polynomials
+// Leaf Polynomial
+//
+// IMPORTANT:
+//
+// We create ONE polynomial per leaf.
+//
+// Every logical (key,value) record contributes one
+// interpolation point. The two field limbs are combined as:
+//
+//     y = y_low + y_high
+//
+// For position i inside the leaf:
+//
+//     f(i) = y
+//
+// With at most (order - 1) keys in a leaf, the maximum
+// polynomial degree is (order - 2).
 // ---------------------------------------------------------
 
 #[derive(Clone, Debug)]
-pub struct LeafPolynomials {
+pub struct LeafPolynomial {
+
     pub leaf_node_index: usize,
 
-    // Lagrange polynomial for low 128-bit limbs.
-    pub low_coefficients: Vec<Fr>,
+    // One polynomial containing both SHA-256 limbs.
+    pub coefficients: Vec<Fr>,
 
-    // Lagrange polynomial for high 128-bit limbs.
-    pub high_coefficients: Vec<Fr>,
-
-    // KZG commitment to the low polynomial.
-    pub low_commitment: G1Affine,
-
-    // KZG commitment to the high polynomial.
-    pub high_commitment: G1Affine,
+    // One KZG commitment to the polynomial.
+    pub commitment: G1Affine,
 }
 
 
@@ -736,13 +768,13 @@ pub fn commitPolynomial(
 
 
 // ---------------------------------------------------------
-// Build One Pair Of Polynomials Per Leaf
+// Build One Polynomial Per Leaf
 // ---------------------------------------------------------
 
 pub fn buildLeafPolynomials(
     grouped: &[LeafPolynomialData],
     srs: &KzgSrs
-) -> Vec<LeafPolynomials> {
+) -> Vec<LeafPolynomial> {
 
     let mut result =
         Vec::new();
@@ -750,81 +782,76 @@ pub fn buildLeafPolynomials(
 
     for leaf_group in grouped {
 
-        let mut low_points =
+        // -------------------------------------------------
+        // ONE point set for the leaf.
+        //
+        // If logical record i contains:
+        //
+        // (y_low, y_high)
+        //
+        // then:
+        //
+        // f(i) = y_low + y_high
+        // -------------------------------------------------
+
+        let mut points =
             Vec::new();
 
 
-        let mut high_points =
-            Vec::new();
+for evaluation in
+    &leaf_group.evaluations
+{
+    let x =
+        Fr::from(
+            evaluation.position_in_leaf as u64
+        );
 
 
-        for evaluation in
-            &leaf_group.evaluations
-        {
-
-            low_points.push(
-                (
-                    evaluation.x,
-                    evaluation.y_low
-                )
-            );
+    let y =
+        evaluation.y_low
+        +
+        evaluation.y_high;
 
 
-            high_points.push(
-                (
-                    evaluation.x,
-                    evaluation.y_high
-                )
-            );
-        }
+    points.push(
+        (
+            x,
+            y
+        )
+    );
+}
 
 
         // -------------------------------------------------
         // Lagrange interpolation
         // -------------------------------------------------
 
-        let low_coefficients =
+        let coefficients =
             lagrangeInterpolate(
-                &low_points
-            );
-
-
-        let high_coefficients =
-            lagrangeInterpolate(
-                &high_points
+                &points
             );
 
 
         // -------------------------------------------------
-        // KZG commitments
+        // ONE KZG commitment
         // -------------------------------------------------
 
-        let low_commitment =
+        let commitment =
             commitPolynomial(
-                &low_coefficients,
-                srs
-            );
-
-
-        let high_commitment =
-            commitPolynomial(
-                &high_coefficients,
+                &coefficients,
                 srs
             );
 
 
         result.push(
-            LeafPolynomials {
+            LeafPolynomial {
+
                 leaf_node_index:
                     leaf_group.leaf_node_index,
 
-                low_coefficients,
+                coefficients,
 
-                high_coefficients,
-
-                low_commitment,
-
-                high_commitment,
+                commitment,
             }
         );
     }
@@ -873,18 +900,21 @@ pub fn evaluatePolynomial(
 
 pub fn printAndVerifyLeafPolynomials(
     grouped: &[LeafPolynomialData],
-    polynomials: &[LeafPolynomials]
+    polynomials: &[LeafPolynomial]
 ) {
 
     println!();
+
 
     println!(
         "=========================================="
     );
 
+
     println!(
         "Leaf-Level Lagrange Polynomials"
     );
+
 
     println!(
         "=========================================="
@@ -903,11 +933,11 @@ pub fn printAndVerifyLeafPolynomials(
 
 
         // -------------------------------------------------
-        // Low polynomial
+        // Polynomial coefficients
         // -------------------------------------------------
 
         println!(
-            "Low Polynomial Coefficients:"
+            "Polynomial Coefficients:"
         );
 
 
@@ -915,7 +945,7 @@ pub fn printAndVerifyLeafPolynomials(
             degree,
             coefficient
         ) in polynomial
-            .low_coefficients
+            .coefficients
             .iter()
             .enumerate()
         {
@@ -929,49 +959,17 @@ pub fn printAndVerifyLeafPolynomials(
 
 
         // -------------------------------------------------
-        // High polynomial
+        // ONE KZG commitment
         // -------------------------------------------------
 
         println!(
-            "High Polynomial Coefficients:"
-        );
-
-
-        for (
-            degree,
-            coefficient
-        ) in polynomial
-            .high_coefficients
-            .iter()
-            .enumerate()
-        {
-
-            println!(
-                "  X^{} -> {}",
-                degree,
-                coefficient
-            );
-        }
-
-
-        // -------------------------------------------------
-        // KZG commitments
-        // -------------------------------------------------
-
-        println!(
-            "Low KZG Commitment: {:?}",
-            polynomial.low_commitment
-        );
-
-
-        println!(
-            "High KZG Commitment: {:?}",
-            polynomial.high_commitment
+            "KZG Commitment: {:?}",
+            polynomial.commitment
         );
 
 
         // -------------------------------------------------
-        // Find corresponding leaf evaluations
+        // Find corresponding logical leaf evaluations
         // -------------------------------------------------
 
         let leaf_group =
@@ -1000,29 +998,812 @@ pub fn printAndVerifyLeafPolynomials(
             &leaf_group.evaluations
         {
 
-            let low_result =
-                evaluatePolynomial(
-                    &polynomial.low_coefficients,
-                    evaluation.x
+            let position =
+                evaluation.position_in_leaf;
+
+
+            let x =
+                Fr::from(
+                    position as u64
                 );
 
 
-            let high_result =
+            let expected =
+                evaluation.y_low
+                +
+                evaluation.y_high;
+
+
+            let result =
                 evaluatePolynomial(
-                    &polynomial.high_coefficients,
-                    evaluation.x
+                    &polynomial.coefficients,
+                    x
                 );
 
 
             println!(
-                "  index={} key={} low_match={} high_match={}",
-                evaluation.global_index,
+                "  position={} key={} match={}",
+                position,
                 evaluation.key,
-                low_result
-                    == evaluation.y_low,
-                high_result
-                    == evaluation.y_high
+                result == expected
             );
         }
     }
+}
+
+ // Parent commitment
+
+fn commitmentToBytes(
+    commitment: &G1Affine
+) -> Vec<u8> {
+
+    let mut bytes =
+        Vec::new();
+
+    commitment
+        .serialize_compressed(
+            &mut bytes
+        )
+        .expect(
+            "Could not serialize commitment"
+        );
+
+    bytes
+}
+
+
+// Hash key + left commitment + right commitment
+
+fn hashInternalRecord(
+    key: i64,
+    leftCommitment: &G1Affine,
+    rightCommitment: &G1Affine
+) -> [u8; 32] {
+
+    let mut hasher =
+        Sha256::new();
+
+
+    hasher.update(
+        b"VPLUS_INTERNAL_NODE"
+    );
+
+
+    hasher.update(
+        key.to_be_bytes()
+    );
+
+
+    let left_bytes =
+        commitmentToBytes(
+            leftCommitment
+        );
+
+
+    let right_bytes =
+        commitmentToBytes(
+            rightCommitment
+        );
+
+
+    hasher.update(
+        &left_bytes
+    );
+
+
+    hasher.update(
+        &right_bytes
+    );
+
+
+    let result =
+        hasher.finalize();
+
+
+    let mut digest =
+        [0u8; 32];
+
+
+    digest.copy_from_slice(
+        &result
+    );
+
+
+    digest
+}
+
+
+// Build commitment for one node
+
+fn buildNodeCommitment(
+    tree: &VplusTree,
+    node_index: usize,
+    leaf_polynomials: &[LeafPolynomial],
+    srs: &KzgSrs
+) -> G1Affine {
+
+    let node =
+        &tree.nodes[
+            node_index
+        ];
+
+
+    // Leaf: return existing commitment
+
+    if node.is_leaf {
+
+        let leaf =
+            leaf_polynomials
+                .iter()
+                .find(
+                    |leaf|
+                        leaf.leaf_node_index
+                            == node_index
+                )
+                .expect(
+                    "Leaf commitment not found"
+                );
+
+
+        return leaf.commitment;
+    }
+
+
+    // Get child commitments
+
+    let mut child_commitments =
+        Vec::new();
+
+
+    for child_index in
+        &node.children
+    {
+
+        let commitment =
+            buildNodeCommitment(
+                tree,
+                *child_index,
+                leaf_polynomials,
+                srs
+            );
+
+
+        child_commitments.push(
+            commitment
+        );
+    }
+
+
+    // Build parent points
+
+    let mut points =
+        Vec::new();
+
+
+    for i in 0..node.keys.len() {
+
+        let key =
+            node.keys[i];
+
+
+        let left_commitment =
+            &child_commitments[i];
+
+
+        let right_commitment =
+            &child_commitments[i + 1];
+
+
+        let digest =
+            hashInternalRecord(
+                key,
+                left_commitment,
+                right_commitment
+            );
+
+
+        let (
+            y_low,
+            y_high
+        ) =
+            digestToFieldLimbs(
+                &digest
+            );
+
+
+        let x =
+            Fr::from(
+                i as u64
+            );
+
+
+        let y =
+            y_low
+            +
+            y_high;
+
+
+        points.push(
+            (
+                x,
+                y
+            )
+        );
+    }
+
+
+    // Build polynomial
+
+    let coefficients =
+        lagrangeInterpolate(
+            &points
+        );
+
+
+    // Build commitment
+
+    let commitment =
+        commitPolynomial(
+            &coefficients,
+            srs
+        );
+
+
+    println!(
+        "Internal Node {} Commitment: {:?}",
+        node_index,
+        commitment
+    );
+
+
+    commitment
+}
+
+
+// Build all commitments up to root
+
+pub fn buildTreeCommitment(
+    tree: &VplusTree,
+    leaf_polynomials: &[LeafPolynomial],
+    srs: &KzgSrs
+) -> G1Affine {
+
+    let root_commitment =
+        buildNodeCommitment(
+            tree,
+            tree.root,
+            leaf_polynomials,
+            srs
+        );
+
+
+    println!(
+        "Root Commitment: {:?}",
+        root_commitment
+    );
+
+
+    root_commitment
+}                  
+
+// ---------------------------------------------------------
+// Compute KZG Witness For One Polynomial
+// ---------------------------------------------------------
+
+pub fn computeKzgWitness(
+    coefficients: &[Fr],
+    i: Fr,
+    srs: &KzgSrs
+) -> G1Affine {
+
+    if coefficients.is_empty() {
+
+        panic!(
+            "Cannot compute witness for empty polynomial"
+        );
+    }
+
+
+    // f(i)
+
+    let y =
+        evaluatePolynomial(
+            coefficients,
+            i
+        );
+
+
+    // f(X) - f(i)
+
+    let mut numerator =
+        coefficients
+            .to_vec();
+
+
+    numerator[0] -=
+        y;
+
+
+    // f(i) - f(i) must be zero
+
+    assert!(
+        evaluatePolynomial(
+            &numerator,
+            i
+        )
+        == Fr::zero(),
+        "Witness error: numerator is not zero at i"
+    );
+
+
+    // Constant polynomial
+
+    if coefficients.len()
+        == 1
+    {
+
+        let quotient =
+            vec![
+                Fr::zero()
+            ];
+
+
+        return commitPolynomial(
+            &quotient,
+            srs
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // Synthetic Division
+    //
+    // q(X) =
+    //
+    // f(X) - f(i)
+    // -------------
+    //    X - i
+    // -----------------------------------------------------
+
+    let mut quotient =
+        vec![
+            Fr::zero();
+            numerator.len() - 1
+        ];
+
+
+    let highest =
+        quotient.len() - 1;
+
+
+    quotient[highest] =
+        numerator[
+            numerator.len() - 1
+        ];
+
+
+    if quotient.len()
+        > 1
+    {
+
+        for j in
+            (
+                1..
+                quotient.len()
+            )
+            .rev()
+        {
+
+            quotient[j - 1] =
+                numerator[j]
+                +
+                i
+                *
+                quotient[j];
+        }
+    }
+
+
+    // -----------------------------------------------------
+    // Division Remainder
+    //
+    // numerator =
+    //
+    // (X - i)q(X) + remainder
+    //
+    // therefore:
+    //
+    // remainder =
+    //
+    // numerator[0] + i * quotient[0]
+    // -----------------------------------------------------
+
+    let remainder =
+        numerator[0]
+        +
+        i
+        *
+        quotient[0];
+
+
+    assert!(
+        remainder
+            == Fr::zero(),
+        "Witness error: polynomial division remainder is not zero"
+    );
+
+
+    // -----------------------------------------------------
+    // Reconstruct:
+    //
+    // q(X)(X - i)
+    //
+    // and verify that it equals:
+    //
+    // f(X) - f(i)
+    // -----------------------------------------------------
+
+    let mut reconstructed =
+        vec![
+            Fr::zero();
+            numerator.len()
+        ];
+
+
+    for j in
+        0..quotient.len()
+    {
+
+        reconstructed[j] -=
+            quotient[j]
+            *
+            i;
+
+
+        reconstructed[j + 1] +=
+            quotient[j];
+    }
+
+
+    assert_eq!(
+        reconstructed,
+        numerator,
+        "Witness error: polynomial reconstruction failed"
+    );
+
+
+    // -----------------------------------------------------
+    // KZG Witness
+    //
+    // witness = Commit(q)
+    // -----------------------------------------------------
+
+    let witness =
+        commitPolynomial(
+            &quotient,
+            srs
+        );
+
+
+    witness
+}
+
+
+// ---------------------------------------------------------
+// Compute KZG Witness Recursively
+//
+// Starts from the root.
+//
+// Recursion follows:
+//
+// Root
+//   -> Internal Node
+//       -> Internal Node
+//           -> Leaf
+//
+// Witnesses are added while recursion returns:
+//
+// Leaf
+//   -> Parent
+//       -> Parent
+//           -> Root
+// ---------------------------------------------------------
+
+pub fn computeKzgWitnessRecursive(
+    tree: &VplusTree,
+    node_index: usize,
+    searchKey: i64,
+    leaf_polynomials: &[LeafPolynomial],
+    srs: &KzgSrs
+) -> Vec<G1Affine> {
+
+    // -----------------------------------------------------
+    // Leaf
+    // -----------------------------------------------------
+
+    if tree.nodes[node_index]
+        .is_leaf
+    {
+
+        let leaf =
+            leaf_polynomials
+                .iter()
+                .find(
+                    |leaf|
+                        leaf.leaf_node_index
+                            == node_index
+                )
+                .expect(
+                    "Leaf polynomial not found"
+                );
+
+
+        let mut i =
+            0usize;
+
+
+        while i
+            < tree.nodes[node_index]
+                .keys
+                .len()
+            &&
+            tree.nodes[node_index]
+                .keys[i]
+                != searchKey
+        {
+
+            i +=
+                1;
+        }
+
+
+        if i
+            == tree.nodes[node_index]
+                .keys
+                .len()
+        {
+
+            panic!(
+                "Search key not found in leaf"
+            );
+        }
+
+
+        // Verify the polynomial commitment before witness
+
+        assert_eq!(
+            commitPolynomial(
+                &leaf.coefficients,
+                srs
+            ),
+            leaf.commitment,
+            "Leaf commitment does not match leaf polynomial"
+        );
+
+
+        let witness =
+            computeKzgWitness(
+                &leaf.coefficients,
+                Fr::from(
+                    i as u64
+                ),
+                srs
+            );
+
+
+        return vec![
+            witness
+        ];
+    }
+
+
+    // -----------------------------------------------------
+    // Find Child Position
+    //
+    // Same search rule already used by V+ Tree
+    // -----------------------------------------------------
+
+    let mut childPosition =
+        0usize;
+
+
+    while childPosition
+        < tree.nodes[node_index]
+            .keys
+            .len()
+        &&
+        searchKey
+            >= tree.nodes[node_index]
+                .keys[
+                    childPosition
+                ]
+    {
+
+        childPosition +=
+            1;
+    }
+
+
+    let child_index =
+        tree.nodes[node_index]
+            .children[
+                childPosition
+            ];
+
+
+    // -----------------------------------------------------
+    // Recursive Call
+    // -----------------------------------------------------
+
+    let mut witnesses =
+        computeKzgWitnessRecursive(
+            tree,
+            child_index,
+            searchKey,
+            leaf_polynomials,
+            srs
+        );
+
+
+    // -----------------------------------------------------
+    // Build Commitments Of Children
+    // -----------------------------------------------------
+
+    let mut child_commitments =
+        Vec::new();
+
+
+    for child_index in
+        &tree.nodes[node_index]
+            .children
+    {
+
+        let commitment =
+            buildNodeCommitment(
+                tree,
+                *child_index,
+                leaf_polynomials,
+                srs
+            );
+
+
+        child_commitments.push(
+            commitment
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // Build Same Internal Polynomial
+    // Used By buildNodeCommitment()
+    // -----------------------------------------------------
+
+    let mut points =
+        Vec::new();
+
+
+    for j in
+        0..tree.nodes[node_index]
+            .keys
+            .len()
+    {
+
+        let key =
+            tree.nodes[node_index]
+                .keys[j];
+
+
+        let digest =
+            hashInternalRecord(
+                key,
+                &child_commitments[j],
+                &child_commitments[j + 1]
+            );
+
+
+        let (
+            y_low,
+            y_high
+        ) =
+            digestToFieldLimbs(
+                &digest
+            );
+
+
+        let i =
+            Fr::from(
+                j as u64
+            );
+
+
+        let y =
+            y_low
+            +
+            y_high;
+
+
+        points.push(
+            (
+                i,
+                y
+            )
+        );
+    }
+
+
+    let coefficients =
+        lagrangeInterpolate(
+            &points
+        );
+
+
+    // -----------------------------------------------------
+    // Verify Internal Polynomial Commitment
+    // -----------------------------------------------------
+
+    assert_eq!(
+        commitPolynomial(
+            &coefficients,
+            srs
+        ),
+        buildNodeCommitment(
+            tree,
+            node_index,
+            leaf_polynomials,
+            srs
+        ),
+        "Internal node commitment does not match polynomial"
+    );
+
+
+    // -----------------------------------------------------
+    // Select Record Containing Chosen Child Commitment
+    //
+    // C0 -> record 0 LPC
+    // C1 -> record 1 LPC
+    // C2 -> record 2 LPC
+    //
+    // Last child:
+    //
+    // Cn -> last record RPC
+    // -----------------------------------------------------
+
+    let i =
+        if childPosition
+            < tree.nodes[node_index]
+                .keys
+                .len()
+        {
+
+            childPosition
+        }
+        else {
+
+            tree.nodes[node_index]
+                .keys
+                .len()
+                - 1
+        };
+
+
+    // -----------------------------------------------------
+    // Compute Witness For This Internal Node
+    // -----------------------------------------------------
+
+    let witness =
+        computeKzgWitness(
+            &coefficients,
+            Fr::from(
+                i as u64
+            ),
+            srs
+        );
+
+
+    witnesses.push(
+        witness
+    );
+
+
+    witnesses
 }
