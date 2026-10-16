@@ -1,25 +1,11 @@
 use std::time::Instant;
 
-use ark_bn254::{
-    Config,
-    Fq,
-    Fq2,
-    Fq6,
-    Fq12,
-    G1Affine,
-    G2Affine,
-};
+use ark_bn254::{Config, Fq, Fq2, Fq6, Fq12, G1Affine, G2Affine};
 use ark_ec::{
-    bn::{BnConfig, G2Prepared},
     AffineRepr,
+    bn::{BnConfig, G2Prepared},
 };
-use ark_ff::{
-    BigInteger,
-    Field,
-    One,
-    PrimeField,
-    Zero,
-};
+use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 
 use num_bigint::{BigInt, BigUint, Sign};
 
@@ -27,20 +13,14 @@ use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{
-    extension::BinomialExtensionField,
-    PrimeCharacteristicRing,
-};
+use p3_field::{PrimeCharacteristicRing, extension::BinomialExtensionField};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256;
-use p3_symmetric::{
-    CompressionFunctionFromHasher,
-    SerializingHasher,
-};
-use p3_uni_stark::{prove, verify, StarkConfig};
+use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
+use p3_uni_stark::{StarkConfig, prove, verify};
 
 type Val = Goldilocks;
 type Challenge = BinomialExtensionField<Val, 2>;
@@ -58,10 +38,8 @@ const FQ12_LIMBS: usize = FQ_COUNT_IN_FQ12 * LIMBS;
 
 // q in little-endian base 2^16.
 const Q_LIMBS: [u64; LIMBS] = [
-    64839, 55420, 35862, 15392,
-    51853, 26737, 27281, 38785,
-    22621, 33153, 17846, 47184,
-    41001, 57649, 20082, 12388,
+    64839, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+    57649, 20082, 12388,
 ];
 
 // ============================================================
@@ -138,21 +116,16 @@ const SQ_Q_SIGN_START: usize = ACC_BITS_END;
 const SQ_Q_SIGN_END: usize = SQ_Q_SIGN_START + FQ_COUNT_IN_FQ12;
 
 const SQ_Q_BITS_START: usize = SQ_Q_SIGN_END;
-const SQ_Q_BITS_COUNT: usize =
-    FQ_COUNT_IN_FQ12 * SQ_Q_LIMBS * LIMB_BITS;
+const SQ_Q_BITS_COUNT: usize = FQ_COUNT_IN_FQ12 * SQ_Q_LIMBS * LIMB_BITS;
 const SQ_Q_BITS_END: usize = SQ_Q_BITS_START + SQ_Q_BITS_COUNT;
 
 const SQ_CARRY_SIGN_START: usize = SQ_Q_BITS_END;
-const SQ_CARRY_SIGN_COUNT: usize =
-    FQ_COUNT_IN_FQ12 * SQ_CARRY_COUNT;
-const SQ_CARRY_SIGN_END: usize =
-    SQ_CARRY_SIGN_START + SQ_CARRY_SIGN_COUNT;
+const SQ_CARRY_SIGN_COUNT: usize = FQ_COUNT_IN_FQ12 * SQ_CARRY_COUNT;
+const SQ_CARRY_SIGN_END: usize = SQ_CARRY_SIGN_START + SQ_CARRY_SIGN_COUNT;
 
 const SQ_CARRY_BITS_START: usize = SQ_CARRY_SIGN_END;
-const SQ_CARRY_BITS_COUNT: usize =
-    FQ_COUNT_IN_FQ12 * SQ_CARRY_COUNT * SQ_CARRY_BITS;
-const SQ_CARRY_BITS_END: usize =
-    SQ_CARRY_BITS_START + SQ_CARRY_BITS_COUNT;
+const SQ_CARRY_BITS_COUNT: usize = FQ_COUNT_IN_FQ12 * SQ_CARRY_COUNT * SQ_CARRY_BITS;
+const SQ_CARRY_BITS_END: usize = SQ_CARRY_BITS_START + SQ_CARRY_BITS_COUNT;
 
 const WIDTH: usize = SQ_CARRY_BITS_END;
 
@@ -189,18 +162,8 @@ struct NativeRow {
 
 fn fq12_to_coords(x: &Fq12) -> [Fq; 12] {
     [
-        x.c0.c0.c0,
-        x.c0.c0.c1,
-        x.c0.c1.c0,
-        x.c0.c1.c1,
-        x.c0.c2.c0,
-        x.c0.c2.c1,
-        x.c1.c0.c0,
-        x.c1.c0.c1,
-        x.c1.c1.c0,
-        x.c1.c1.c1,
-        x.c1.c2.c0,
-        x.c1.c2.c1,
+        x.c0.c0.c0, x.c0.c0.c1, x.c0.c1.c0, x.c0.c1.c1, x.c0.c2.c0, x.c0.c2.c1, x.c1.c0.c0,
+        x.c1.c0.c1, x.c1.c1.c0, x.c1.c1.c1, x.c1.c2.c0, x.c1.c2.c1,
     ]
 }
 
@@ -346,9 +309,7 @@ fn fq_to_limbs(x: &Fq) -> [u64; LIMBS] {
     biguint_to_limbs::<LIMBS>(&fq_to_biguint(x))
 }
 
-fn signed_bigint_abs_limbs<const N: usize>(
-    x: &BigInt,
-) -> (bool, [u64; N]) {
+fn signed_bigint_abs_limbs<const N: usize>(x: &BigInt) -> (bool, [u64; N]) {
     let negative = x.sign() == Sign::Minus;
 
     let abs = match x.sign() {
@@ -360,9 +321,7 @@ fn signed_bigint_abs_limbs<const N: usize>(
     (negative, biguint_to_limbs::<N>(&abs))
 }
 
-fn limbs_to_bits<const N: usize>(
-    limbs: &[u64; N],
-) -> Vec<u64> {
+fn limbs_to_bits<const N: usize>(limbs: &[u64; N]) -> Vec<u64> {
     let mut bits = Vec::with_capacity(N * LIMB_BITS);
 
     for &limb in limbs {
@@ -376,10 +335,7 @@ fn limbs_to_bits<const N: usize>(
     bits
 }
 
-fn signed_i128_bits(
-    x: i128,
-    bit_count: usize,
-) -> (bool, Vec<u64>) {
+fn signed_i128_bits(x: i128, bit_count: usize) -> (bool, Vec<u64>) {
     let negative = x < 0;
     let mag: u128 = x.unsigned_abs();
 
@@ -405,19 +361,12 @@ fn signed_i128_bits(
 // S_r = sum_{i,j} coeff(r,i,j) * A_i * A_j
 // ============================================================
 
-fn square_integer_output(
-    input: &[BigUint; 12],
-    out_coord: usize,
-) -> BigInt {
+fn square_integer_output(input: &[BigUint; 12], out_coord: usize) -> BigInt {
     let mut s = BigInt::from(0);
 
     for i in 0..12 {
         for j in 0..12 {
-            let prod =
-                BigInt::from_biguint(
-                    Sign::Plus,
-                    &input[i] * &input[j],
-                );
+            let prod = BigInt::from_biguint(Sign::Plus, &input[i] * &input[j]);
 
             for (k, coeff) in basis_product(i, j) {
                 if k == out_coord {
@@ -441,15 +390,11 @@ struct SquareWitness {
     carry_mags: [[u64; SQ_CARRY_COUNT]; 12],
 }
 
-fn build_square_witness(
-    input: &Fq12,
-    output: &Fq12,
-) -> SquareWitness {
+fn build_square_witness(input: &Fq12, output: &Fq12) -> SquareWitness {
     let in_coords_fq = fq12_to_coords(input);
     let out_coords_fq = fq12_to_coords(output);
 
-    let in_big: [BigUint; 12] =
-        std::array::from_fn(|i| fq_to_biguint(&in_coords_fq[i]));
+    let in_big: [BigUint; 12] = std::array::from_fn(|i| fq_to_biguint(&in_coords_fq[i]));
 
     let q_big = modulus_biguint();
 
@@ -475,8 +420,7 @@ fn build_square_witness(
 
         let quotient = diff / &q_int;
 
-        let (q_neg, q_abs_limbs) =
-            signed_bigint_abs_limbs::<SQ_Q_LIMBS>(&quotient);
+        let (q_neg, q_abs_limbs) = signed_bigint_abs_limbs::<SQ_Q_LIMBS>(&quotient);
 
         q_signs[r] = q_neg;
         q_limbs[r] = q_abs_limbs;
@@ -496,8 +440,7 @@ fn build_square_witness(
 
         let out_limbs = fq_to_limbs(&out_coords_fq[r]);
 
-        let q_sign_factor: i128 =
-            if q_neg { -1 } else { 1 };
+        let q_sign_factor: i128 = if q_neg { -1 } else { 1 };
 
         let mut carry: i128 = 0;
 
@@ -527,8 +470,7 @@ fn build_square_witness(
                         let bj = t - ai;
 
                         if bj < LIMBS {
-                            limb_sum +=
-                                structure_coeff as i128
+                            limb_sum += structure_coeff as i128
                                 * input_limbs[i][ai] as i128
                                 * input_limbs[j][bj] as i128;
                         }
@@ -545,10 +487,7 @@ fn build_square_witness(
                 let qj = t - ki;
 
                 if qj < LIMBS {
-                    limb_sum -=
-                        q_sign_factor
-                        * q_abs_limbs[ki] as i128
-                        * Q_LIMBS[qj] as i128;
+                    limb_sum -= q_sign_factor * q_abs_limbs[ki] as i128 * Q_LIMBS[qj] as i128;
                 }
             }
 
@@ -565,15 +504,10 @@ fn build_square_witness(
                 t
             );
 
-            let next_carry =
-                limb_sum / BASE as i128;
+            let next_carry = limb_sum / BASE as i128;
 
             if t < 31 {
-                let (neg, bits) =
-                    signed_i128_bits(
-                        next_carry,
-                        SQ_CARRY_BITS,
-                    );
+                let (neg, bits) = signed_i128_bits(next_carry, SQ_CARRY_BITS);
 
                 carry_signs[r][t] = neg;
 
@@ -606,10 +540,7 @@ fn build_square_witness(
 // Pairing schedule
 // ============================================================
 
-fn evaluated_line(
-    coeff: &(Fq2, Fq2, Fq2),
-    p: &G1Affine,
-) -> (Fq2, Fq2, Fq2) {
+fn evaluated_line(coeff: &(Fq2, Fq2, Fq2), p: &G1Affine) -> (Fq2, Fq2, Fq2) {
     let mut c0 = coeff.0;
     let mut c3 = coeff.1;
     let c4 = coeff.2;
@@ -625,14 +556,8 @@ fn build_miller_schedule() -> Vec<NativeRow> {
     let q = G2Affine::generator();
     let prepared_q = G2Prepared::<Config>::from(q);
 
-    println!(
-        "ATE loop digits       : {}",
-        Config::ATE_LOOP_COUNT.len()
-    );
-    println!(
-        "Prepared line coeffs  : {}",
-        prepared_q.ell_coeffs.len()
-    );
+    println!("ATE loop digits       : {}", Config::ATE_LOOP_COUNT.len());
+    println!("Prepared line coeffs  : {}", prepared_q.ell_coeffs.len());
 
     let mut rows = Vec::<NativeRow>::new();
     let mut f = Fq12::one();
@@ -699,9 +624,7 @@ fn build_miller_schedule() -> Vec<NativeRow> {
     }
 
     if Config::X_IS_NEGATIVE {
-        panic!(
-            "X_IS_NEGATIVE=true requires a separate constrained inverse row"
-        );
+        panic!("X_IS_NEGATIVE=true requires a separate constrained inverse row");
     }
 
     for _ in 0..2 {
@@ -774,23 +697,13 @@ fn push_selectors(row: &mut Vec<Val>, op: Op) {
     };
 
     for i in 0..NUM_SELECTORS {
-        row.push(if i == active {
-            Val::ONE
-        } else {
-            Val::ZERO
-        });
+        row.push(if i == active { Val::ONE } else { Val::ZERO });
     }
 }
 
-fn push_bits_u64(
-    row: &mut Vec<Val>,
-    value: u64,
-    bit_count: usize,
-) {
+fn push_bits_u64(row: &mut Vec<Val>, value: u64, bit_count: usize) {
     for b in 0..bit_count {
-        row.push(
-            Val::from_u64((value >> b) & 1)
-        );
+        row.push(Val::from_u64((value >> b) & 1));
     }
 }
 
@@ -799,10 +712,7 @@ fn push_bits_u64(
 // `next_acc` is needed to build the SQUARE witness.
 // ============================================================
 
-fn encode_row(
-    native: &NativeRow,
-    next_acc: &Fq12,
-) -> Vec<Val> {
+fn encode_row(native: &NativeRow, next_acc: &Fq12) -> Vec<Val> {
     let mut row = Vec::with_capacity(WIDTH);
 
     push_selectors(&mut row, native.op);
@@ -847,55 +757,39 @@ fn encode_row(
     // SQUARE witness.
     // --------------------------------------------------------
     if native.op == Op::Square {
-        let witness =
-            build_square_witness(
-                &native.accumulator,
-                next_acc,
-            );
+        let witness = build_square_witness(&native.accumulator, next_acc);
 
         // Quotient signs.
         for r in 0..12 {
-            row.push(
-                if witness.q_signs[r] {
-                    Val::ONE
-                } else {
-                    Val::ZERO
-                }
-            );
+            row.push(if witness.q_signs[r] {
+                Val::ONE
+            } else {
+                Val::ZERO
+            });
         }
 
         // Quotient limbs as bits.
         for r in 0..12 {
             for limb in 0..SQ_Q_LIMBS {
-                push_bits_u64(
-                    &mut row,
-                    witness.q_limbs[r][limb],
-                    LIMB_BITS,
-                );
+                push_bits_u64(&mut row, witness.q_limbs[r][limb], LIMB_BITS);
             }
         }
 
         // Carry signs.
         for r in 0..12 {
             for c in 0..SQ_CARRY_COUNT {
-                row.push(
-                    if witness.carry_signs[r][c] {
-                        Val::ONE
-                    } else {
-                        Val::ZERO
-                    }
-                );
+                row.push(if witness.carry_signs[r][c] {
+                    Val::ONE
+                } else {
+                    Val::ZERO
+                });
             }
         }
 
         // Carry magnitudes as bits.
         for r in 0..12 {
             for c in 0..SQ_CARRY_COUNT {
-                push_bits_u64(
-                    &mut row,
-                    witness.carry_mags[r][c],
-                    SQ_CARRY_BITS,
-                );
+                push_bits_u64(&mut row, witness.carry_mags[r][c], SQ_CARRY_BITS);
             }
         }
     } else {
@@ -904,11 +798,7 @@ fn encode_row(
         }
     }
 
-    assert_eq!(
-        row.len(),
-        WIDTH,
-        "encoded row width mismatch"
-    );
+    assert_eq!(row.len(), WIDTH, "encoded row width mismatch");
 
     row
 }
@@ -925,67 +815,41 @@ fn make_trace() -> (RowMajorMatrix<Val>, usize, usize) {
     let mut values = Vec::with_capacity(WIDTH * height);
 
     for i in 0..schedule.len() {
-        let next_acc =
-            if i + 1 < schedule.len() {
-                schedule[i + 1].accumulator
-            } else {
-                schedule[i].accumulator
-            };
+        let next_acc = if i + 1 < schedule.len() {
+            schedule[i + 1].accumulator
+        } else {
+            schedule[i].accumulator
+        };
 
-        values.extend_from_slice(
-            &encode_row(
-                &schedule[i],
-                &next_acc,
-            )
-        );
+        values.extend_from_slice(&encode_row(&schedule[i], &next_acc));
     }
 
-    let terminal =
-        schedule.last().unwrap().clone();
+    let terminal = schedule.last().unwrap().clone();
 
     assert_eq!(terminal.op, Op::Pad);
     assert_eq!(terminal.coeff_index, 87);
 
     while values.len() / WIDTH < height {
-        values.extend_from_slice(
-            &encode_row(
-                &terminal,
-                &terminal.accumulator,
-            )
-        );
+        values.extend_from_slice(&encode_row(&terminal, &terminal.accumulator));
     }
 
-    (
-        RowMajorMatrix::new(values, WIDTH),
-        real_rows,
-        height,
-    )
+    (RowMajorMatrix::new(values, WIDTH), real_rows, height)
 }
 
 // ============================================================
 // AIR expression helpers
 // ============================================================
 
-fn expr_from_bits<AB: AirBuilder>(
-    row: &[AB::Var],
-    start: usize,
-    bit_count: usize,
-) -> AB::Expr {
+fn expr_from_bits<AB: AirBuilder>(row: &[AB::Var], start: usize, bit_count: usize) -> AB::Expr {
     let mut acc = AB::Expr::ZERO;
     let mut weight = AB::Expr::ONE;
 
     for b in 0..bit_count {
-        let bit: AB::Expr =
-            row[start + b].into();
+        let bit: AB::Expr = row[start + b].into();
 
-        acc =
-            acc
-            + bit
-                * weight.clone();
+        acc = acc + bit * weight.clone();
 
-        weight =
-            weight.clone()
-            + weight;
+        weight = weight.clone() + weight;
     }
 
     acc
@@ -997,35 +861,16 @@ fn signed_expr_from_bits<AB: AirBuilder>(
     bits_start: usize,
     bit_count: usize,
 ) -> AB::Expr {
-    let sign: AB::Expr =
-        row[sign_col].into();
+    let sign: AB::Expr = row[sign_col].into();
 
-    let mag =
-        expr_from_bits::<AB>(
-            row,
-            bits_start,
-            bit_count,
-        );
+    let mag = expr_from_bits::<AB>(row, bits_start, bit_count);
 
     // (1 - 2s) * mag
-    (
-        AB::Expr::ONE
-        - sign.clone()
-        - sign
-    ) * mag
+    (AB::Expr::ONE - sign.clone() - sign) * mag
 }
 
-fn acc_limb_expr<AB: AirBuilder>(
-    row: &[AB::Var],
-    coord: usize,
-    limb: usize,
-) -> AB::Expr {
-    row[
-        ACC_START
-        + coord * LIMBS
-        + limb
-    ]
-    .into()
+fn acc_limb_expr<AB: AirBuilder>(row: &[AB::Var], coord: usize, limb: usize) -> AB::Expr {
+    row[ACC_START + coord * LIMBS + limb].into()
 }
 
 fn quotient_limb_expr<AB: AirBuilder>(
@@ -1033,19 +878,9 @@ fn quotient_limb_expr<AB: AirBuilder>(
     output_coord: usize,
     q_limb: usize,
 ) -> AB::Expr {
-    let start =
-        SQ_Q_BITS_START
-        + (
-            output_coord
-            * SQ_Q_LIMBS
-            + q_limb
-        ) * LIMB_BITS;
+    let start = SQ_Q_BITS_START + (output_coord * SQ_Q_LIMBS + q_limb) * LIMB_BITS;
 
-    expr_from_bits::<AB>(
-        row,
-        start,
-        LIMB_BITS,
-    )
+    expr_from_bits::<AB>(row, start, LIMB_BITS)
 }
 
 fn signed_carry_expr<AB: AirBuilder>(
@@ -1053,24 +888,12 @@ fn signed_carry_expr<AB: AirBuilder>(
     output_coord: usize,
     carry_index: usize,
 ) -> AB::Expr {
-    let sign_col =
-        SQ_CARRY_SIGN_START
-        + output_coord * SQ_CARRY_COUNT
-        + carry_index;
+    let sign_col = SQ_CARRY_SIGN_START + output_coord * SQ_CARRY_COUNT + carry_index;
 
     let bits_start =
-        SQ_CARRY_BITS_START
-        + (
-            output_coord * SQ_CARRY_COUNT
-            + carry_index
-        ) * SQ_CARRY_BITS;
+        SQ_CARRY_BITS_START + (output_coord * SQ_CARRY_COUNT + carry_index) * SQ_CARRY_BITS;
 
-    signed_expr_from_bits::<AB>(
-        row,
-        sign_col,
-        bits_start,
-        SQ_CARRY_BITS,
-    )
+    signed_expr_from_bits::<AB>(row, sign_col, bits_start, SQ_CARRY_BITS)
 }
 
 // ============================================================
@@ -1095,23 +918,14 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // Selector validity
         // ====================================================
 
-        let mut selector_sum =
-            AB::Expr::ZERO;
+        let mut selector_sum = AB::Expr::ZERO;
 
         for i in 0..NUM_SELECTORS {
-            let s: AB::Expr =
-                local[i].into();
+            let s: AB::Expr = local[i].into();
 
-            builder.assert_zero(
-                s.clone()
-                    * (
-                        s.clone()
-                        - AB::Expr::ONE
-                    )
-            );
+            builder.assert_zero(s.clone() * (s.clone() - AB::Expr::ONE));
 
-            selector_sum =
-                selector_sum + s;
+            selector_sum = selector_sum + s;
         }
 
         builder.assert_one(selector_sum);
@@ -1120,16 +934,10 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // First accumulator = 1
         // ====================================================
 
-        builder
-            .when_first_row()
-            .assert_one(
-                local[ACC_START]
-            );
+        builder.when_first_row().assert_one(local[ACC_START]);
 
         for i in (ACC_START + 1)..ACC_END {
-            builder
-                .when_first_row()
-                .assert_zero(local[i]);
+            builder.when_first_row().assert_zero(local[i]);
         }
 
         // ====================================================
@@ -1137,43 +945,18 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // ====================================================
 
         for limb_index in 0..FQ12_LIMBS {
-            let limb: AB::Expr =
-                local[
-                    ACC_START
-                    + limb_index
-                ]
-                .into();
+            let limb: AB::Expr = local[ACC_START + limb_index].into();
 
-            let bits_start =
-                ACC_BITS_START
-                + limb_index * LIMB_BITS;
+            let bits_start = ACC_BITS_START + limb_index * LIMB_BITS;
 
-            let reconstructed =
-                expr_from_bits::<AB>(
-                    local,
-                    bits_start,
-                    LIMB_BITS,
-                );
+            let reconstructed = expr_from_bits::<AB>(local, bits_start, LIMB_BITS);
 
-            builder.assert_eq(
-                limb,
-                reconstructed,
-            );
+            builder.assert_eq(limb, reconstructed);
 
             for b in 0..LIMB_BITS {
-                let bit: AB::Expr =
-                    local[
-                        bits_start + b
-                    ]
-                    .into();
+                let bit: AB::Expr = local[bits_start + b].into();
 
-                builder.assert_zero(
-                    bit.clone()
-                        * (
-                            bit
-                            - AB::Expr::ONE
-                        )
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
@@ -1181,84 +964,51 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // Basic schedule constraints
         // ====================================================
 
-        let square: AB::Expr =
-            local[SEL_SQUARE].into();
+        let square: AB::Expr = local[SEL_SQUARE].into();
 
-        let pad: AB::Expr =
-            local[SEL_PAD].into();
+        let pad: AB::Expr = local[SEL_PAD].into();
 
         // SQUARE and PAD carry no line.
         for i in LINE_START..LINE_END {
-            builder
-                .when(square.clone())
-                .assert_zero(local[i]);
+            builder.when(square.clone()).assert_zero(local[i]);
 
-            builder
-                .when(pad.clone())
-                .assert_zero(local[i]);
+            builder.when(pad.clone()).assert_zero(local[i]);
         }
 
         // Ate digit ∈ {-1,0,+1}.
-        let digit: AB::Expr =
-            local[ATE_DIGIT].into();
+        let digit: AB::Expr = local[ATE_DIGIT].into();
 
-        builder.assert_zero(
-            digit.clone()
-                * (
-                    digit.clone()
-                    - AB::Expr::ONE
-                )
-                * (
-                    digit
-                    + AB::Expr::ONE
-                )
-        );
+        builder
+            .assert_zero(digit.clone() * (digit.clone() - AB::Expr::ONE) * (digit + AB::Expr::ONE));
 
-        let coeff: AB::Expr =
-            local[COEFF_INDEX].into();
+        let coeff: AB::Expr = local[COEFF_INDEX].into();
 
-        let next_coeff: AB::Expr =
-            next[COEFF_INDEX].into();
+        let next_coeff: AB::Expr = next[COEFF_INDEX].into();
 
         builder
             .when_transition()
             .when(square.clone())
-            .assert_eq(
-                next_coeff.clone(),
-                coeff.clone(),
-            );
+            .assert_eq(next_coeff.clone(), coeff.clone());
 
         builder
             .when_transition()
             .when(pad.clone())
-            .assert_eq(
-                next_coeff.clone(),
-                coeff.clone(),
-            );
+            .assert_eq(next_coeff.clone(), coeff.clone());
 
-        let dbl: AB::Expr =
-            local[SEL_DOUBLE].into();
+        let dbl: AB::Expr = local[SEL_DOUBLE].into();
 
-        let add: AB::Expr =
-            local[SEL_ADD].into();
+        let add: AB::Expr = local[SEL_ADD].into();
 
-        let final_line: AB::Expr =
-            local[SEL_FINAL].into();
+        let final_line: AB::Expr = local[SEL_FINAL].into();
 
-        let consumes =
-            dbl + add + final_line;
+        let consumes = dbl + add + final_line;
 
         builder
             .when_transition()
             .when(consumes)
-            .assert_eq(
-                next_coeff,
-                coeff
-                    + AB::Expr::ONE,
-            );
+            .assert_eq(next_coeff, coeff + AB::Expr::ONE);
 
-        let next_pad: AB::Expr =
-            next[SEL_PAD].into();
+        let next_pad: AB::Expr = next[SEL_PAD].into();
 
         builder
             .when_transition()
@@ -1266,16 +1016,11 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
             .assert_one(next_pad);
 
         for i in ACC_START..ACC_END {
-            let a: AB::Expr =
-                local[i].into();
+            let a: AB::Expr = local[i].into();
 
-            let b: AB::Expr =
-                next[i].into();
+            let b: AB::Expr = next[i].into();
 
-            builder
-                .when_transition()
-                .when(pad.clone())
-                .assert_eq(a, b);
+            builder.when_transition().when(pad.clone()).assert_eq(a, b);
         }
 
         // ====================================================
@@ -1283,88 +1028,43 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // ====================================================
 
         for r in 0..12 {
-            let sign_col =
-                SQ_Q_SIGN_START + r;
+            let sign_col = SQ_Q_SIGN_START + r;
 
-            let s: AB::Expr =
-                local[sign_col].into();
+            let s: AB::Expr = local[sign_col].into();
 
             builder
                 .when(square.clone())
-                .assert_zero(
-                    s.clone()
-                        * (
-                            s
-                            - AB::Expr::ONE
-                        )
-                );
+                .assert_zero(s.clone() * (s - AB::Expr::ONE));
 
             for ql in 0..SQ_Q_LIMBS {
-                let start =
-                    SQ_Q_BITS_START
-                    + (
-                        r * SQ_Q_LIMBS
-                        + ql
-                    ) * LIMB_BITS;
+                let start = SQ_Q_BITS_START + (r * SQ_Q_LIMBS + ql) * LIMB_BITS;
 
                 for b in 0..LIMB_BITS {
-                    let bit: AB::Expr =
-                        local[start + b]
-                            .into();
+                    let bit: AB::Expr = local[start + b].into();
 
                     builder
                         .when(square.clone())
-                        .assert_zero(
-                            bit.clone()
-                                * (
-                                    bit
-                                    - AB::Expr::ONE
-                                )
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
 
             for c in 0..SQ_CARRY_COUNT {
-                let sign_col =
-                    SQ_CARRY_SIGN_START
-                    + r * SQ_CARRY_COUNT
-                    + c;
+                let sign_col = SQ_CARRY_SIGN_START + r * SQ_CARRY_COUNT + c;
 
-                let cs: AB::Expr =
-                    local[sign_col]
-                        .into();
+                let cs: AB::Expr = local[sign_col].into();
 
                 builder
                     .when(square.clone())
-                    .assert_zero(
-                        cs.clone()
-                            * (
-                                cs
-                                - AB::Expr::ONE
-                            )
-                    );
+                    .assert_zero(cs.clone() * (cs - AB::Expr::ONE));
 
-                let bits_start =
-                    SQ_CARRY_BITS_START
-                    + (
-                        r * SQ_CARRY_COUNT
-                        + c
-                    ) * SQ_CARRY_BITS;
+                let bits_start = SQ_CARRY_BITS_START + (r * SQ_CARRY_COUNT + c) * SQ_CARRY_BITS;
 
                 for b in 0..SQ_CARRY_BITS {
-                    let bit: AB::Expr =
-                        local[bits_start + b]
-                            .into();
+                    let bit: AB::Expr = local[bits_start + b].into();
 
                     builder
                         .when(square.clone())
-                        .assert_zero(
-                            bit.clone()
-                                * (
-                                    bit
-                                    - AB::Expr::ONE
-                                )
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
         }
@@ -1386,43 +1086,25 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // ====================================================
 
         for r in 0..12 {
-            let q_sign: AB::Expr =
-                local[
-                    SQ_Q_SIGN_START + r
-                ]
-                .into();
+            let q_sign: AB::Expr = local[SQ_Q_SIGN_START + r].into();
 
             // sign factor = 1 - 2*q_sign
-            let q_sign_factor =
-                AB::Expr::ONE
-                - q_sign.clone()
-                - q_sign;
+            let q_sign_factor = AB::Expr::ONE - q_sign.clone() - q_sign;
 
             for t in 0..32 {
-                let carry_cur =
-                    if t == 0 {
-                        AB::Expr::ZERO
-                    } else {
-                        signed_carry_expr::<AB>(
-                            local,
-                            r,
-                            t - 1,
-                        )
-                    };
+                let carry_cur = if t == 0 {
+                    AB::Expr::ZERO
+                } else {
+                    signed_carry_expr::<AB>(local, r, t - 1)
+                };
 
-                let carry_next =
-                    if t == 31 {
-                        AB::Expr::ZERO
-                    } else {
-                        signed_carry_expr::<AB>(
-                            local,
-                            r,
-                            t,
-                        )
-                    };
+                let carry_next = if t == 31 {
+                    AB::Expr::ZERO
+                } else {
+                    signed_carry_expr::<AB>(local, r, t)
+                };
 
-                let mut expr =
-                    carry_cur;
+                let mut expr = carry_cur;
 
                 // S_r[t].
                 for i in 0..12 {
@@ -1450,49 +1132,27 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
                                 continue;
                             }
 
-                            let a =
-                                acc_limb_expr::<AB>(
-                                    local,
-                                    i,
-                                    ai,
-                                );
+                            let a = acc_limb_expr::<AB>(local, i, ai);
 
-                            let b =
-                                acc_limb_expr::<AB>(
-                                    local,
-                                    j,
-                                    bj,
-                                );
+                            let b = acc_limb_expr::<AB>(local, j, bj);
 
-                            let term =
-                                a * b;
+                            let term = a * b;
 
-                            let mag =
-                                structure_coeff
-                                    .unsigned_abs();
+                            let mag = structure_coeff.unsigned_abs();
 
-                            let scaled =
-                                term
-                                * AB::Expr::from_u64(
-                                    mag
-                                );
+                            let scaled = term * AB::Expr::from_u64(mag);
 
                             if structure_coeff > 0 {
-                                expr =
-                                    expr
-                                    + scaled;
+                                expr = expr + scaled;
                             } else {
-                                expr =
-                                    expr
-                                    - scaled;
+                                expr = expr - scaled;
                             }
                         }
                     }
                 }
 
                 // -(k*q)[t].
-                let mut kq =
-                    AB::Expr::ZERO;
+                let mut kq = AB::Expr::ZERO;
 
                 for ki in 0..SQ_Q_LIMBS {
                     if t < ki {
@@ -1505,47 +1165,22 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
                         continue;
                     }
 
-                    let klimb =
-                        quotient_limb_expr::<AB>(
-                            local,
-                            r,
-                            ki,
-                        );
+                    let klimb = quotient_limb_expr::<AB>(local, r, ki);
 
-                    kq =
-                        kq
-                        + klimb
-                            * AB::Expr::from_u64(
-                                Q_LIMBS[qj]
-                            );
+                    kq = kq + klimb * AB::Expr::from_u64(Q_LIMBS[qj]);
                 }
 
-                expr =
-                    expr
-                    - q_sign_factor.clone()
-                        * kq;
+                expr = expr - q_sign_factor.clone() * kq;
 
                 // - output limb.
                 if t < LIMBS {
-                    let out: AB::Expr =
-                        next[
-                            ACC_START
-                            + r * LIMBS
-                            + t
-                        ]
-                        .into();
+                    let out: AB::Expr = next[ACC_START + r * LIMBS + t].into();
 
-                    expr =
-                        expr - out;
+                    expr = expr - out;
                 }
 
                 // -BASE*carry_next.
-                expr =
-                    expr
-                    - carry_next
-                        * AB::Expr::from_u64(
-                            BASE
-                        );
+                expr = expr - carry_next * AB::Expr::from_u64(BASE);
 
                 builder
                     .when_transition()
@@ -1573,12 +1208,7 @@ fn main() {
     println!("Fq representation    : 16 x 16-bit limbs");
     println!();
 
-    let (
-        trace,
-        real_rows,
-        trace_height,
-    ) =
-        make_trace();
+    let (trace, real_rows, trace_height) = make_trace();
 
     println!();
     println!("==============================================");
@@ -1603,150 +1233,62 @@ fn main() {
     // ========================================================
 
     type ByteHash = Sha256;
-    type FieldHash =
-        SerializingHasher<ByteHash>;
+    type FieldHash = SerializingHasher<ByteHash>;
 
     let byte_hash = ByteHash {};
-    let field_hash =
-        FieldHash::new(byte_hash);
+    let field_hash = FieldHash::new(byte_hash);
 
-    type Compress =
-        CompressionFunctionFromHasher<
-            ByteHash,
-            2,
-            32,
-        >;
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
 
-    let compress =
-        Compress::new(byte_hash);
+    let compress = Compress::new(byte_hash);
 
-    type ValMmcs =
-        MerkleTreeMmcs<
-            Val,
-            u8,
-            FieldHash,
-            Compress,
-            2,
-            32,
-        >;
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
 
-    let val_mmcs =
-        ValMmcs::new(
-            field_hash,
-            compress,
-            3,
-        );
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
 
-    type ChallengeMmcs =
-        ExtensionMmcs<
-            Val,
-            Challenge,
-            ValMmcs,
-        >;
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
 
-    let challenge_mmcs =
-        ChallengeMmcs::new(
-            val_mmcs.clone()
-        );
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
 
-    type Dft =
-        Radix2DitParallel<Val>;
+    type Dft = Radix2DitParallel<Val>;
 
     let dft = Dft::default();
 
-    let fri_params =
-        FriParameters::new_benchmark(
-            challenge_mmcs
-        );
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
 
-    type Pcs =
-        TwoAdicFriPcs<
-            Val,
-            Dft,
-            ValMmcs,
-            ChallengeMmcs,
-        >;
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
 
-    let pcs =
-        Pcs::new(
-            dft,
-            val_mmcs,
-            fri_params,
-        );
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
 
-    type Challenger =
-        SerializingChallenger64<
-            Val,
-            HashChallenger<
-                u8,
-                ByteHash,
-                32,
-            >,
-        >;
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
 
-    let challenger =
-        Challenger::from_hasher(
-            vec![],
-            byte_hash,
-        );
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
 
-    type ConfigType =
-        StarkConfig<
-            Pcs,
-            Challenge,
-            Challenger,
-        >;
+    type ConfigType = StarkConfig<Pcs, Challenge, Challenger>;
 
-    let config =
-        ConfigType::new(
-            pcs,
-            challenger,
-        );
+    let config = ConfigType::new(pcs, challenger);
 
     // ========================================================
     // Prove
     // ========================================================
 
-    let prove_start =
-        Instant::now();
+    let prove_start = Instant::now();
 
-    let proof =
-        prove(
-            &config,
-            &PairingAir,
-            trace,
-            &[],
-        )
-        .expect("proof generation failed");
+    let proof = prove(&config, &PairingAir, trace, &[]).expect("proof generation failed");
 
-    let proving_time =
-        prove_start.elapsed();
+    let proving_time = prove_start.elapsed();
 
-    let proof_bytes =
-        postcard::to_allocvec(
-            &proof
-        )
-        .expect(
-            "proof serialization failed"
-        );
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
 
     // ========================================================
     // Verify
     // ========================================================
 
-    let verify_start =
-        Instant::now();
+    let verify_start = Instant::now();
 
-    verify(
-        &config,
-        &PairingAir,
-        &proof,
-        &[],
-    )
-    .expect("verification failed");
+    verify(&config, &PairingAir, &proof, &[]).expect("verification failed");
 
-    let verification_time =
-        verify_start.elapsed();
+    let verification_time = verify_start.elapsed();
 
     println!("==============================================");
     println!(" STARK result");

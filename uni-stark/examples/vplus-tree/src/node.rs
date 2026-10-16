@@ -2,7 +2,6 @@ use ark_bn254::G1Affine;
 
 use std::fmt;
 
-
 // This represents one node in the V+ Tree.
 #[derive(Debug)]
 pub struct Node {
@@ -26,7 +25,6 @@ pub struct Node {
     // Parent node index.
     pub parent_node: Option<usize>,
 
-
     // -----------------------------------------------------
     // Internal-node pointer commitments
     //
@@ -45,106 +43,57 @@ pub struct Node {
     //
     // Leaf nodes should keep these vectors empty.
     // -----------------------------------------------------
+    pub left_pointer_commitments: Vec<Option<G1Affine>>,
 
-    pub left_pointer_commitments:
-        Vec<Option<G1Affine>>,
-
-    pub right_pointer_commitments:
-        Vec<Option<G1Affine>>,
+    pub right_pointer_commitments: Vec<Option<G1Affine>>,
 }
 
-
 impl Node {
-
     // Create a new node.
-    pub fn new(
-        order: usize,
-        is_leaf: bool
-    ) -> Self {
-
+    pub fn new(order: usize, is_leaf: bool) -> Self {
         Node {
             order,
             is_leaf,
 
-            keys:
-                Vec::new(),
+            keys: Vec::new(),
 
-            children:
-                Vec::new(),
+            children: Vec::new(),
 
-            values:
-                Vec::new(),
+            values: Vec::new(),
 
-            next_node:
-                None,
+            next_node: None,
 
-            parent_node:
-                None,
+            parent_node: None,
 
-            left_pointer_commitments:
-                Vec::new(),
+            left_pointer_commitments: Vec::new(),
 
-            right_pointer_commitments:
-                Vec::new(),
+            right_pointer_commitments: Vec::new(),
         }
     }
 
-
     // Split the children into left and right parts.
-    pub fn retrieveChildren(
-        &self,
-        promoteIndex: usize
-    ) -> (Vec<usize>, Vec<usize>) {
-
+    pub fn retrieveChildren(&self, promoteIndex: usize) -> (Vec<usize>, Vec<usize>) {
         // Children after the promoted key
         // start from promoteIndex + 1.
-        let splitAt =
-            promoteIndex + 1;
-
+        let splitAt = promoteIndex + 1;
 
         // Children that stay on the left node.
-        let leftChildren =
-            self.children[..splitAt]
-                .to_vec();
-
+        let leftChildren = self.children[..splitAt].to_vec();
 
         // Children that move to the right node.
-        let rightChildren =
-            self.children[splitAt..]
-                .to_vec();
+        let rightChildren = self.children[splitAt..].to_vec();
 
-
-        (
-            leftChildren,
-            rightChildren
-        )
+        (leftChildren, rightChildren)
     }
 }
 
-
 // This controls how a node is printed.
 impl fmt::Display for Node {
-
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter<'_>
-    ) -> fmt::Result {
-
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_leaf {
-
-            write!(
-                f,
-                "<Leaf {:?}>",
-                self.keys
-            )
-
+            write!(f, "<Leaf {:?}>", self.keys)
         } else {
-
-            write!(
-                f,
-                "<Internal {:?}>",
-                self.keys
-            )
+            write!(f, "<Internal {:?}>", self.keys)
         }
     }
-}   
+}

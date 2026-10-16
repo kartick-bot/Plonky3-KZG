@@ -31,6 +31,7 @@ tracing.workspace = true
 ark-bn254 = "0.5"
 ark-ec = "0.5"
 ark-ff = "0.5"
+ark-serialize = "0.5"
 num-bigint.workspace = true
 p3-baby-bear = { path = "../baby-bear" }
 p3-bn254 = { path = "../bn254" }
@@ -48,7 +49,7 @@ p3-sha256 = { path = "../sha256" }
 p3-stir = { path = "../stir" }
 p3-symmetric = { path = "../symmetric" }
 postcard = { workspace = true, features = ["alloc"] }
-rand = { workspace = true, features = ["std_rng"] }
+rand = { workspace = true, features = ["std_rng", "thread_rng"] }
 serde_json.workspace = true
 
 [lints]

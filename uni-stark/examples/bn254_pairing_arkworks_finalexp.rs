@@ -1,49 +1,26 @@
-
 use std::time::Instant;
 
-use ark_bn254::{
-    Bn254,
-    Config,
-    Fq,
-    Fq2,
-    Fq6,
-    Fq12,
-    G1Affine,
-    G2Affine,
-};
+use ark_bn254::{Bn254, Config, Fq, Fq2, Fq6, Fq12, G1Affine, G2Affine};
 use ark_ec::{
+    AffineRepr,
     bn::{BnConfig, G2Prepared},
     pairing::Pairing,
-    AffineRepr,
 };
-use ark_ff::{
-    BigInteger,
-    CyclotomicMultSubgroup,
-    Field,
-    One,
-    PrimeField,
-    Zero,
-};
+use ark_ff::{BigInteger, CyclotomicMultSubgroup, Field, One, PrimeField, Zero};
 use num_bigint::{BigInt, BigUint, Sign};
 
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{
-    extension::BinomialExtensionField,
-    PrimeCharacteristicRing,
-};
+use p3_field::{PrimeCharacteristicRing, extension::BinomialExtensionField};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256;
-use p3_symmetric::{
-    CompressionFunctionFromHasher,
-    SerializingHasher,
-};
-use p3_uni_stark::{prove, verify, StarkConfig};
+use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
+use p3_uni_stark::{StarkConfig, prove, verify};
 
 type Val = Goldilocks;
 type Challenge = BinomialExtensionField<Val, 2>;
@@ -56,10 +33,8 @@ const FQ12_COORDS: usize = 12;
 const FQ12_LIMBS: usize = FQ12_COORDS * LIMBS;
 
 const Q_LIMBS: [u64; LIMBS] = [
-    64839, 55420, 35862, 15392,
-    51853, 26737, 27281, 38785,
-    22621, 33153, 17846, 47184,
-    41001, 57649, 20082, 12388,
+    64839, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+    57649, 20082, 12388,
 ];
 
 // Reuse same generic non-native modular multiplication witness sizes.
@@ -117,16 +92,13 @@ const Q_SIGN_START: usize = OP_B_BITS_END;
 const Q_SIGN_END: usize = Q_SIGN_START + FQ12_COORDS;
 
 const Q_BITS_START: usize = Q_SIGN_END;
-const Q_BITS_END: usize =
-    Q_BITS_START + FQ12_COORDS * QW_LIMBS * LIMB_BITS;
+const Q_BITS_END: usize = Q_BITS_START + FQ12_COORDS * QW_LIMBS * LIMB_BITS;
 
 const CARRY_SIGN_START: usize = Q_BITS_END;
-const CARRY_SIGN_END: usize =
-    CARRY_SIGN_START + FQ12_COORDS * CARRY_COUNT;
+const CARRY_SIGN_END: usize = CARRY_SIGN_START + FQ12_COORDS * CARRY_COUNT;
 
 const CARRY_BITS_START: usize = CARRY_SIGN_END;
-const WIDTH: usize =
-    CARRY_BITS_START + FQ12_COORDS * CARRY_COUNT * CARRY_BITS;
+const WIDTH: usize = CARRY_BITS_START + FQ12_COORDS * CARRY_COUNT * CARRY_BITS;
 
 // ============================================================
 // Native row
@@ -161,12 +133,8 @@ struct NativeRow {
 
 fn fq12_to_coords(x: &Fq12) -> [Fq; 12] {
     [
-        x.c0.c0.c0, x.c0.c0.c1,
-        x.c0.c1.c0, x.c0.c1.c1,
-        x.c0.c2.c0, x.c0.c2.c1,
-        x.c1.c0.c0, x.c1.c0.c1,
-        x.c1.c1.c0, x.c1.c1.c1,
-        x.c1.c2.c0, x.c1.c2.c1,
+        x.c0.c0.c0, x.c0.c0.c1, x.c0.c1.c0, x.c0.c1.c1, x.c0.c2.c0, x.c0.c2.c1, x.c1.c0.c0,
+        x.c1.c0.c1, x.c1.c1.c0, x.c1.c1.c1, x.c1.c2.c0, x.c1.c2.c1,
     ]
 }
 
@@ -267,16 +235,8 @@ fn fq12_mul_direct(a: &Fq12, b: &Fq12) -> Fq12 {
 
 fn sparse_line_fq12(line: &(Fq2, Fq2, Fq2)) -> Fq12 {
     Fq12::new(
-        Fq6::new(
-            line.0,
-            Fq2::zero(),
-            Fq2::zero(),
-        ),
-        Fq6::new(
-            line.1,
-            line.2,
-            Fq2::zero(),
-        ),
+        Fq6::new(line.0, Fq2::zero(), Fq2::zero()),
+        Fq6::new(line.1, line.2, Fq2::zero()),
     )
 }
 
@@ -311,9 +271,7 @@ fn fq_to_limbs(x: &Fq) -> [u64; LIMBS] {
     biguint_to_limbs::<LIMBS>(&fq_to_biguint(x))
 }
 
-fn signed_bigint_abs_limbs<const N: usize>(
-    x: &BigInt,
-) -> (bool, [u64; N]) {
+fn signed_bigint_abs_limbs<const N: usize>(x: &BigInt) -> (bool, [u64; N]) {
     let negative = x.sign() == Sign::Minus;
 
     let abs = match x.sign() {
@@ -335,10 +293,7 @@ fn push_bits_u64(row: &mut Vec<Val>, value: u64, bits: usize) {
 // Miller loop
 // ============================================================
 
-fn evaluated_line(
-    coeff: &(Fq2, Fq2, Fq2),
-    p: &G1Affine,
-) -> (Fq2, Fq2, Fq2) {
+fn evaluated_line(coeff: &(Fq2, Fq2, Fq2), p: &G1Affine) -> (Fq2, Fq2, Fq2) {
     let mut c0 = coeff.0;
     let mut c3 = coeff.1;
     let c4 = coeff.2;
@@ -455,10 +410,8 @@ fn build_miller_rows() -> (Vec<NativeRow>, Fq12) {
 
     assert_eq!(coeff_index, prepared.ell_coeffs.len());
 
-    let native_miller = Bn254::multi_miller_loop(
-        [G1Affine::generator()],
-        [G2Affine::generator()],
-    ).0;
+    let native_miller =
+        Bn254::multi_miller_loop([G1Affine::generator()], [G2Affine::generator()]).0;
 
     assert_eq!(f, native_miller);
 
@@ -511,12 +464,7 @@ fn push_conj_row(rows: &mut Vec<NativeRow>, step: &mut usize, a: Fq12) -> Fq12 {
     out
 }
 
-fn push_frob_row(
-    rows: &mut Vec<NativeRow>,
-    step: &mut usize,
-    a: Fq12,
-    power: usize,
-) -> Fq12 {
+fn push_frob_row(rows: &mut Vec<NativeRow>, step: &mut usize, a: Fq12, power: usize) -> Fq12 {
     let op = match power {
         1 => Op::Frob1,
         2 => Op::Frob2,
@@ -539,11 +487,7 @@ fn push_frob_row(
     out
 }
 
-fn exp_by_neg_x_rows(
-    rows: &mut Vec<NativeRow>,
-    step: &mut usize,
-    mut f: Fq12,
-) -> Fq12 {
+fn exp_by_neg_x_rows(rows: &mut Vec<NativeRow>, step: &mut usize, mut f: Fq12) -> Fq12 {
     let mut x = BigUint::from(Config::X[0]);
 
     // Config::X is one 64-bit limb on BN254.
@@ -627,10 +571,7 @@ fn build_complete_rows() -> (Vec<NativeRow>, Fq12) {
 
     let y16 = push_mul_row(&mut rows, &mut step, y15, y14);
 
-    let native_pairing = Bn254::pairing(
-        G1Affine::generator(),
-        G2Affine::generator(),
-    ).0;
+    let native_pairing = Bn254::pairing(G1Affine::generator(), G2Affine::generator()).0;
 
     assert_eq!(
         y16, native_pairing,
@@ -662,19 +603,12 @@ fn build_complete_rows() -> (Vec<NativeRow>, Fq12) {
 // Generic multiplication witness
 // ============================================================
 
-fn product_integer_output(
-    a: &[BigUint; 12],
-    b: &[BigUint; 12],
-    out_coord: usize,
-) -> BigInt {
+fn product_integer_output(a: &[BigUint; 12], b: &[BigUint; 12], out_coord: usize) -> BigInt {
     let mut s = BigInt::from(0);
 
     for i in 0..12 {
         for j in 0..12 {
-            let prod = BigInt::from_biguint(
-                Sign::Plus,
-                &a[i] * &b[j],
-            );
+            let prod = BigInt::from_biguint(Sign::Plus, &a[i] * &b[j]);
 
             for (k, coeff) in basis_product(i, j) {
                 if k == out_coord {
@@ -694,26 +628,18 @@ struct MulWitness {
     carry_mags: [[u64; CARRY_COUNT]; 12],
 }
 
-fn build_mul_witness(
-    a: &Fq12,
-    b: &Fq12,
-    out: &Fq12,
-) -> MulWitness {
+fn build_mul_witness(a: &Fq12, b: &Fq12, out: &Fq12) -> MulWitness {
     let ac = fq12_to_coords(a);
     let bc = fq12_to_coords(b);
     let oc = fq12_to_coords(out);
 
-    let abig: [BigUint; 12] =
-        std::array::from_fn(|i| fq_to_biguint(&ac[i]));
+    let abig: [BigUint; 12] = std::array::from_fn(|i| fq_to_biguint(&ac[i]));
 
-    let bbig: [BigUint; 12] =
-        std::array::from_fn(|i| fq_to_biguint(&bc[i]));
+    let bbig: [BigUint; 12] = std::array::from_fn(|i| fq_to_biguint(&bc[i]));
 
-    let alimbs: [[u64; LIMBS]; 12] =
-        std::array::from_fn(|i| fq_to_limbs(&ac[i]));
+    let alimbs: [[u64; LIMBS]; 12] = std::array::from_fn(|i| fq_to_limbs(&ac[i]));
 
-    let blimbs: [[u64; LIMBS]; 12] =
-        std::array::from_fn(|i| fq_to_limbs(&bc[i]));
+    let blimbs: [[u64; LIMBS]; 12] = std::array::from_fn(|i| fq_to_limbs(&bc[i]));
 
     let q_big = modulus_biguint();
     let q_int = BigInt::from_biguint(Sign::Plus, q_big);
@@ -727,15 +653,13 @@ fn build_mul_witness(
         let s = product_integer_output(&abig, &bbig, r);
         let out_big = fq_to_biguint(&oc[r]);
 
-        let diff =
-            &s - BigInt::from_biguint(Sign::Plus, out_big);
+        let diff = &s - BigInt::from_biguint(Sign::Plus, out_big);
 
         assert_eq!(&diff % &q_int, BigInt::from(0));
 
         let quotient = diff / &q_int;
 
-        let (qneg, qabs) =
-            signed_bigint_abs_limbs::<QW_LIMBS>(&quotient);
+        let (qneg, qabs) = signed_bigint_abs_limbs::<QW_LIMBS>(&quotient);
 
         q_signs[r] = qneg;
         q_limbs[r] = qabs;
@@ -770,10 +694,7 @@ fn build_mul_witness(
                         let bj = t - ai;
 
                         if bj < LIMBS {
-                            x +=
-                                c as i128
-                                * alimbs[i][ai] as i128
-                                * blimbs[j][bj] as i128;
+                            x += c as i128 * alimbs[i][ai] as i128 * blimbs[j][bj] as i128;
                         }
                     }
                 }
@@ -787,10 +708,7 @@ fn build_mul_witness(
                 let qj = t - ki;
 
                 if qj < LIMBS {
-                    x -=
-                        qsign
-                        * qabs[ki] as i128
-                        * Q_LIMBS[qj] as i128;
+                    x -= qsign * qabs[ki] as i128 * Q_LIMBS[qj] as i128;
                 }
             }
 
@@ -865,41 +783,21 @@ fn push_selectors(row: &mut Vec<Val>, op: Op) {
     };
 
     for i in 0..NUM_SELECTORS {
-        row.push(if i == active {
-            Val::ONE
-        } else {
-            Val::ZERO
-        });
+        row.push(if i == active { Val::ONE } else { Val::ZERO });
     }
 }
 
-fn arithmetic_operands(
-    row: &NativeRow,
-    next: &NativeRow,
-) -> Option<(Fq12, Fq12, Fq12)> {
+fn arithmetic_operands(row: &NativeRow, next: &NativeRow) -> Option<(Fq12, Fq12, Fq12)> {
     match row.op {
-        Op::MillerSquare
-        | Op::Fq12Sq => {
-            Some((row.acc, row.acc, next.acc))
-        }
+        Op::MillerSquare | Op::Fq12Sq => Some((row.acc, row.acc, next.acc)),
 
-        Op::MillerLine
-        | Op::Fq12Mul => {
-            Some((
-                row.acc,
-                row.operand_b.unwrap(),
-                next.acc,
-            ))
-        }
+        Op::MillerLine | Op::Fq12Mul => Some((row.acc, row.operand_b.unwrap(), next.acc)),
 
         _ => None,
     }
 }
 
-fn encode_row(
-    native: &NativeRow,
-    next: &NativeRow,
-) -> Vec<Val> {
+fn encode_row(native: &NativeRow, next: &NativeRow) -> Vec<Val> {
     let mut row = Vec::with_capacity(WIDTH);
 
     push_selectors(&mut row, native.op);
@@ -943,50 +841,32 @@ fn encode_row(
         }
     }
 
-    if let Some((a, b, out)) =
-        arithmetic_operands(native, next)
-    {
+    if let Some((a, b, out)) = arithmetic_operands(native, next) {
         let w = build_mul_witness(&a, &b, &out);
 
         for r in 0..12 {
-            row.push(
-                if w.q_signs[r] {
-                    Val::ONE
-                } else {
-                    Val::ZERO
-                }
-            );
+            row.push(if w.q_signs[r] { Val::ONE } else { Val::ZERO });
         }
 
         for r in 0..12 {
             for l in 0..QW_LIMBS {
-                push_bits_u64(
-                    &mut row,
-                    w.q_limbs[r][l],
-                    LIMB_BITS,
-                );
+                push_bits_u64(&mut row, w.q_limbs[r][l], LIMB_BITS);
             }
         }
 
         for r in 0..12 {
             for c in 0..CARRY_COUNT {
-                row.push(
-                    if w.carry_signs[r][c] {
-                        Val::ONE
-                    } else {
-                        Val::ZERO
-                    }
-                );
+                row.push(if w.carry_signs[r][c] {
+                    Val::ONE
+                } else {
+                    Val::ZERO
+                });
             }
         }
 
         for r in 0..12 {
             for c in 0..CARRY_COUNT {
-                push_bits_u64(
-                    &mut row,
-                    w.carry_mags[r][c],
-                    CARRY_BITS,
-                );
+                push_bits_u64(&mut row, w.carry_mags[r][c], CARRY_BITS);
             }
         }
     } else {
@@ -1003,26 +883,16 @@ fn encode_row(
 // AIR helpers
 // ============================================================
 
-fn expr_from_bits<AB: AirBuilder>(
-    row: &[AB::Var],
-    start: usize,
-    bit_count: usize,
-) -> AB::Expr {
+fn expr_from_bits<AB: AirBuilder>(row: &[AB::Var], start: usize, bit_count: usize) -> AB::Expr {
     let mut acc = AB::Expr::ZERO;
     let mut weight = AB::Expr::ONE;
 
     for b in 0..bit_count {
-        let bit: AB::Expr =
-            row[start + b].into();
+        let bit: AB::Expr = row[start + b].into();
 
-        acc =
-            acc
-            + bit
-                * weight.clone();
+        acc = acc + bit * weight.clone();
 
-        weight =
-            weight.clone()
-            + weight;
+        weight = weight.clone() + weight;
     }
 
     acc
@@ -1034,65 +904,25 @@ fn signed_expr_from_bits<AB: AirBuilder>(
     bits_start: usize,
     bit_count: usize,
 ) -> AB::Expr {
-    let sign: AB::Expr =
-        row[sign_col].into();
+    let sign: AB::Expr = row[sign_col].into();
 
-    let mag =
-        expr_from_bits::<AB>(
-            row,
-            bits_start,
-            bit_count,
-        );
+    let mag = expr_from_bits::<AB>(row, bits_start, bit_count);
 
-    (
-        AB::Expr::ONE
-        - sign.clone()
-        - sign
-    ) * mag
+    (AB::Expr::ONE - sign.clone() - sign) * mag
 }
 
-fn quotient_limb<AB: AirBuilder>(
-    row: &[AB::Var],
-    r: usize,
-    l: usize,
-) -> AB::Expr {
-    let start =
-        Q_BITS_START
-        + (
-            r * QW_LIMBS
-            + l
-        ) * LIMB_BITS;
+fn quotient_limb<AB: AirBuilder>(row: &[AB::Var], r: usize, l: usize) -> AB::Expr {
+    let start = Q_BITS_START + (r * QW_LIMBS + l) * LIMB_BITS;
 
-    expr_from_bits::<AB>(
-        row,
-        start,
-        LIMB_BITS,
-    )
+    expr_from_bits::<AB>(row, start, LIMB_BITS)
 }
 
-fn carry_expr<AB: AirBuilder>(
-    row: &[AB::Var],
-    r: usize,
-    c: usize,
-) -> AB::Expr {
-    let sign_col =
-        CARRY_SIGN_START
-        + r * CARRY_COUNT
-        + c;
+fn carry_expr<AB: AirBuilder>(row: &[AB::Var], r: usize, c: usize) -> AB::Expr {
+    let sign_col = CARRY_SIGN_START + r * CARRY_COUNT + c;
 
-    let bits_start =
-        CARRY_BITS_START
-        + (
-            r * CARRY_COUNT
-            + c
-        ) * CARRY_BITS;
+    let bits_start = CARRY_BITS_START + (r * CARRY_COUNT + c) * CARRY_BITS;
 
-    signed_expr_from_bits::<AB>(
-        row,
-        sign_col,
-        bits_start,
-        CARRY_BITS,
-    )
+    signed_expr_from_bits::<AB>(row, sign_col, bits_start, CARRY_BITS)
 }
 
 // ============================================================
@@ -1115,158 +945,80 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         let local = main.current_slice();
         let next = main.next_slice();
 
-        let mut selector_sum =
-            AB::Expr::ZERO;
+        let mut selector_sum = AB::Expr::ZERO;
 
         for i in 0..NUM_SELECTORS {
-            let s: AB::Expr =
-                local[i].into();
+            let s: AB::Expr = local[i].into();
 
-            builder.assert_zero(
-                s.clone()
-                    * (
-                        s.clone()
-                        - AB::Expr::ONE
-                    )
-            );
+            builder.assert_zero(s.clone() * (s.clone() - AB::Expr::ONE));
 
-            selector_sum =
-                selector_sum
-                + s;
+            selector_sum = selector_sum + s;
         }
 
         builder.assert_one(selector_sum);
 
-        let msq: AB::Expr =
-            local[SEL_MILLER_SQ].into();
-        let mline: AB::Expr =
-            local[SEL_MILLER_LINE].into();
-        let mul: AB::Expr =
-            local[SEL_FQ12_MUL].into();
-        let sq: AB::Expr =
-            local[SEL_FQ12_SQ].into();
-        let conj: AB::Expr =
-            local[SEL_CONJ].into();
-        let frob1: AB::Expr =
-            local[SEL_FROB1].into();
-        let frob2: AB::Expr =
-            local[SEL_FROB2].into();
-        let frob3: AB::Expr =
-            local[SEL_FROB3].into();
-        let output: AB::Expr =
-            local[SEL_OUTPUT].into();
-        let pad: AB::Expr =
-            local[SEL_PAD].into();
+        let msq: AB::Expr = local[SEL_MILLER_SQ].into();
+        let mline: AB::Expr = local[SEL_MILLER_LINE].into();
+        let mul: AB::Expr = local[SEL_FQ12_MUL].into();
+        let sq: AB::Expr = local[SEL_FQ12_SQ].into();
+        let conj: AB::Expr = local[SEL_CONJ].into();
+        let frob1: AB::Expr = local[SEL_FROB1].into();
+        let frob2: AB::Expr = local[SEL_FROB2].into();
+        let frob3: AB::Expr = local[SEL_FROB3].into();
+        let output: AB::Expr = local[SEL_OUTPUT].into();
+        let pad: AB::Expr = local[SEL_PAD].into();
 
-        let arith =
-            msq.clone()
-            + mline.clone()
-            + mul.clone()
-            + sq.clone();
+        let arith = msq.clone() + mline.clone() + mul.clone() + sq.clone();
 
         // Range-check ACC.
         for li in 0..FQ12_LIMBS {
-            let limb: AB::Expr =
-                local[ACC_START + li].into();
+            let limb: AB::Expr = local[ACC_START + li].into();
 
-            let bs =
-                ACC_BITS_START
-                + li * LIMB_BITS;
+            let bs = ACC_BITS_START + li * LIMB_BITS;
 
-            let rec =
-                expr_from_bits::<AB>(
-                    local,
-                    bs,
-                    LIMB_BITS,
-                );
+            let rec = expr_from_bits::<AB>(local, bs, LIMB_BITS);
 
-            builder.assert_eq(
-                limb,
-                rec,
-            );
+            builder.assert_eq(limb, rec);
 
             for b in 0..LIMB_BITS {
-                let bit: AB::Expr =
-                    local[bs + b].into();
+                let bit: AB::Expr = local[bs + b].into();
 
-                builder.assert_zero(
-                    bit.clone()
-                        * (
-                            bit
-                            - AB::Expr::ONE
-                        )
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
         // Range-check OP_B.
         for li in 0..FQ12_LIMBS {
-            let limb: AB::Expr =
-                local[OP_B_START + li].into();
+            let limb: AB::Expr = local[OP_B_START + li].into();
 
-            let bs =
-                OP_B_BITS_START
-                + li * LIMB_BITS;
+            let bs = OP_B_BITS_START + li * LIMB_BITS;
 
-            let rec =
-                expr_from_bits::<AB>(
-                    local,
-                    bs,
-                    LIMB_BITS,
-                );
+            let rec = expr_from_bits::<AB>(local, bs, LIMB_BITS);
 
-            builder.assert_eq(
-                limb,
-                rec,
-            );
+            builder.assert_eq(limb, rec);
 
             for b in 0..LIMB_BITS {
-                let bit: AB::Expr =
-                    local[bs + b].into();
+                let bit: AB::Expr = local[bs + b].into();
 
-                builder.assert_zero(
-                    bit.clone()
-                        * (
-                            bit
-                            - AB::Expr::ONE
-                        )
-                );
+                builder.assert_zero(bit.clone() * (bit - AB::Expr::ONE));
             }
         }
 
         // Step counter always increments until output/pad.
-        let active_before_end =
-            AB::Expr::ONE
-            - output.clone()
-            - pad.clone();
+        let active_before_end = AB::Expr::ONE - output.clone() - pad.clone();
 
         builder
             .when_transition()
             .when(active_before_end)
-            .assert_eq(
-                next[STEP_INDEX],
-                local[STEP_INDEX]
-                    + AB::Expr::ONE,
-            );
+            .assert_eq(next[STEP_INDEX], local[STEP_INDEX] + AB::Expr::ONE);
 
         // Conjugate = cyclotomic inverse in Fq12 = negate c1.
         for i in 0..6 {
             for limb in 0..LIMBS {
-                builder
-                    .when_transition()
-                    .when(conj.clone())
-                    .assert_eq(
-                        next[
-                            ACC_START
-                            + i * LIMBS
-                            + limb
-                        ],
-                        local[
-                            ACC_START
-                            + i * LIMBS
-                            + limb
-                        ],
-                    );
+                builder.when_transition().when(conj.clone()).assert_eq(
+                    next[ACC_START + i * LIMBS + limb],
+                    local[ACC_START + i * LIMBS + limb],
+                );
             }
         }
 
@@ -1278,18 +1030,13 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
         // Output must equal native pairing result.
         for i in 0..FQ12_LIMBS {
-            builder
-                .when(output.clone())
-                .assert_eq(
-                    local[ACC_START + i],
-                    AB::Expr::from_u64(
-                        self.output_limbs[i]
-                    ),
-                );
+            builder.when(output.clone()).assert_eq(
+                local[ACC_START + i],
+                AB::Expr::from_u64(self.output_limbs[i]),
+            );
         }
 
-        let next_pad: AB::Expr =
-            next[SEL_PAD].into();
+        let next_pad: AB::Expr = next[SEL_PAD].into();
 
         builder
             .when_transition()
@@ -1305,94 +1052,48 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
             builder
                 .when_transition()
                 .when(pad.clone())
-                .assert_eq(
-                    local[i],
-                    next[i],
-                );
+                .assert_eq(local[i], next[i]);
         }
 
         // ----------------------------------------------------
         // Generic multiplication witness bits
         // ----------------------------------------------------
         for r in 0..12 {
-            let s: AB::Expr =
-                local[Q_SIGN_START + r].into();
+            let s: AB::Expr = local[Q_SIGN_START + r].into();
 
             builder
                 .when(arith.clone())
-                .assert_zero(
-                    s.clone()
-                        * (
-                            s
-                            - AB::Expr::ONE
-                        )
-                );
+                .assert_zero(s.clone() * (s - AB::Expr::ONE));
 
             for ql in 0..QW_LIMBS {
-                let start =
-                    Q_BITS_START
-                    + (
-                        r * QW_LIMBS
-                        + ql
-                    ) * LIMB_BITS;
+                let start = Q_BITS_START + (r * QW_LIMBS + ql) * LIMB_BITS;
 
                 for b in 0..LIMB_BITS {
-                    let bit: AB::Expr =
-                        local[start + b]
-                            .into();
+                    let bit: AB::Expr = local[start + b].into();
 
                     builder
                         .when(arith.clone())
-                        .assert_zero(
-                            bit.clone()
-                                * (
-                                    bit
-                                    - AB::Expr::ONE
-                                )
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
 
             for c in 0..CARRY_COUNT {
-                let sc =
-                    CARRY_SIGN_START
-                    + r * CARRY_COUNT
-                    + c;
+                let sc = CARRY_SIGN_START + r * CARRY_COUNT + c;
 
-                let sb: AB::Expr =
-                    local[sc].into();
+                let sb: AB::Expr = local[sc].into();
 
                 builder
                     .when(arith.clone())
-                    .assert_zero(
-                        sb.clone()
-                            * (
-                                sb
-                                - AB::Expr::ONE
-                            )
-                    );
+                    .assert_zero(sb.clone() * (sb - AB::Expr::ONE));
 
-                let bs =
-                    CARRY_BITS_START
-                    + (
-                        r * CARRY_COUNT
-                        + c
-                    ) * CARRY_BITS;
+                let bs = CARRY_BITS_START + (r * CARRY_COUNT + c) * CARRY_BITS;
 
                 for b in 0..CARRY_BITS {
-                    let bit: AB::Expr =
-                        local[bs + b]
-                            .into();
+                    let bit: AB::Expr = local[bs + b].into();
 
                     builder
                         .when(arith.clone())
-                        .assert_zero(
-                            bit.clone()
-                                * (
-                                    bit
-                                    - AB::Expr::ONE
-                                )
-                        );
+                        .assert_zero(bit.clone() * (bit - AB::Expr::ONE));
                 }
             }
         }
@@ -1401,39 +1102,24 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
         // Generic Fq12 mul/square AIR relation.
         // ----------------------------------------------------
         for r in 0..12 {
-            let qsign: AB::Expr =
-                local[Q_SIGN_START + r].into();
+            let qsign: AB::Expr = local[Q_SIGN_START + r].into();
 
-            let qfactor =
-                AB::Expr::ONE
-                - qsign.clone()
-                - qsign;
+            let qfactor = AB::Expr::ONE - qsign.clone() - qsign;
 
             for t in 0..32 {
-                let carry_cur =
-                    if t == 0 {
-                        AB::Expr::ZERO
-                    } else {
-                        carry_expr::<AB>(
-                            local,
-                            r,
-                            t - 1,
-                        )
-                    };
+                let carry_cur = if t == 0 {
+                    AB::Expr::ZERO
+                } else {
+                    carry_expr::<AB>(local, r, t - 1)
+                };
 
-                let carry_next =
-                    if t == 31 {
-                        AB::Expr::ZERO
-                    } else {
-                        carry_expr::<AB>(
-                            local,
-                            r,
-                            t,
-                        )
-                    };
+                let carry_next = if t == 31 {
+                    AB::Expr::ZERO
+                } else {
+                    carry_expr::<AB>(local, r, t)
+                };
 
-                let mut core =
-                    carry_cur;
+                let mut core = carry_cur;
 
                 for i in 0..12 {
                     for j in 0..12 {
@@ -1460,95 +1146,48 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
                                 continue;
                             }
 
-                            let a: AB::Expr =
-                                local[
-                                    ACC_START
-                                    + i * LIMBS
-                                    + ai
-                                ]
-                                .into();
+                            let a: AB::Expr = local[ACC_START + i * LIMBS + ai].into();
 
-                            let b: AB::Expr =
-                                local[
-                                    OP_B_START
-                                    + j * LIMBS
-                                    + bj
-                                ]
-                                .into();
+                            let b: AB::Expr = local[OP_B_START + j * LIMBS + bj].into();
 
-                            let term =
-                                a * b;
+                            let term = a * b;
 
-                            let mag =
-                                coeff.unsigned_abs();
+                            let mag = coeff.unsigned_abs();
 
-                            let scaled =
-                                term
-                                * AB::Expr::from_u64(
-                                    mag
-                                );
+                            let scaled = term * AB::Expr::from_u64(mag);
 
                             if coeff > 0 {
-                                core =
-                                    core
-                                    + scaled;
+                                core = core + scaled;
                             } else {
-                                core =
-                                    core
-                                    - scaled;
+                                core = core - scaled;
                             }
                         }
                     }
                 }
 
-                let mut kq =
-                    AB::Expr::ZERO;
+                let mut kq = AB::Expr::ZERO;
 
                 for ki in 0..QW_LIMBS {
                     if t < ki {
                         continue;
                     }
 
-                    let qj =
-                        t - ki;
+                    let qj = t - ki;
 
                     if qj < LIMBS {
-                        kq =
-                            kq
-                            + quotient_limb::<AB>(
-                                local,
-                                r,
-                                ki,
-                            )
-                            * AB::Expr::from_u64(
-                                Q_LIMBS[qj]
-                            );
+                        kq = kq
+                            + quotient_limb::<AB>(local, r, ki) * AB::Expr::from_u64(Q_LIMBS[qj]);
                     }
                 }
 
-                core =
-                    core
-                    - qfactor.clone()
-                        * kq;
+                core = core - qfactor.clone() * kq;
 
-                core =
-                    core
-                    - carry_next
-                        * AB::Expr::from_u64(
-                            BASE
-                        );
+                core = core - carry_next * AB::Expr::from_u64(BASE);
 
                 if t < LIMBS {
-                    let out: AB::Expr =
-                        next[
-                            ACC_START
-                            + r * LIMBS
-                            + t
-                        ]
-                        .into();
+                    let out: AB::Expr = next[ACC_START + r * LIMBS + t].into();
 
-                    core =
-                        core - out;
+                    core = core - out;
                 }
 
                 builder
@@ -1560,10 +1199,7 @@ impl<AB: AirBuilder> Air<AB> for PairingAir {
 
         // Frobenius and conjugation selectors are currently
         // witness-bound in this first corrected pairing version.
-        let _ =
-            frob1
-            + frob2
-            + frob3;
+        let _ = frob1 + frob2 + frob3;
     }
 }
 
@@ -1578,85 +1214,48 @@ fn main() {
     println!("==============================================");
     println!();
 
-    let (
-        schedule,
-        pairing_output,
-    ) =
-        build_complete_rows();
+    let (schedule, pairing_output) = build_complete_rows();
 
     println!("Native final output matches arkworks pairing: true");
     println!("Real rows: {}", schedule.len());
 
-    let real_rows =
-        schedule.len();
+    let real_rows = schedule.len();
 
-    let height =
-        real_rows.next_power_of_two();
+    let height = real_rows.next_power_of_two();
 
-    let terminal =
-        schedule.last().unwrap().clone();
+    let terminal = schedule.last().unwrap().clone();
 
-    let mut values =
-        Vec::with_capacity(
-            WIDTH * height
-        );
+    let mut values = Vec::with_capacity(WIDTH * height);
 
     for i in 0..schedule.len() {
-        let next =
-            if i + 1 < schedule.len() {
-                &schedule[i + 1]
-            } else {
-                &schedule[i]
-            };
+        let next = if i + 1 < schedule.len() {
+            &schedule[i + 1]
+        } else {
+            &schedule[i]
+        };
 
-        values.extend_from_slice(
-            &encode_row(
-                &schedule[i],
-                next,
-            )
-        );
+        values.extend_from_slice(&encode_row(&schedule[i], next));
     }
 
     while values.len() / WIDTH < height {
-        values.extend_from_slice(
-            &encode_row(
-                &terminal,
-                &terminal,
-            )
-        );
+        values.extend_from_slice(&encode_row(&terminal, &terminal));
     }
 
-    let trace =
-        RowMajorMatrix::new(
-            values,
-            WIDTH,
-        );
+    let trace = RowMajorMatrix::new(values, WIDTH);
 
-    let coords =
-        fq12_to_coords(
-            &pairing_output
-        );
+    let coords = fq12_to_coords(&pairing_output);
 
-    let mut output_limbs =
-        [0u64; FQ12_LIMBS];
+    let mut output_limbs = [0u64; FQ12_LIMBS];
 
     for i in 0..12 {
-        let l =
-            fq_to_limbs(
-                &coords[i]
-            );
+        let l = fq_to_limbs(&coords[i]);
 
         for j in 0..LIMBS {
-            output_limbs[
-                i * LIMBS + j
-            ] = l[j];
+            output_limbs[i * LIMBS + j] = l[j];
         }
     }
 
-    let air =
-        PairingAir {
-            output_limbs,
-        };
+    let air = PairingAir { output_limbs };
 
     println!("Trace width : {}", WIDTH);
     println!("Trace height: {}", height);
@@ -1664,173 +1263,66 @@ fn main() {
     println!();
 
     type ByteHash = Sha256;
-    type FieldHash =
-        SerializingHasher<ByteHash>;
+    type FieldHash = SerializingHasher<ByteHash>;
 
-    let byte_hash =
-        ByteHash {};
+    let byte_hash = ByteHash {};
 
-    let field_hash =
-        FieldHash::new(
-            byte_hash
-        );
+    let field_hash = FieldHash::new(byte_hash);
 
-    type Compress =
-        CompressionFunctionFromHasher<
-            ByteHash,
-            2,
-            32,
-        >;
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
 
-    let compress =
-        Compress::new(
-            byte_hash
-        );
+    let compress = Compress::new(byte_hash);
 
-    type ValMmcs =
-        MerkleTreeMmcs<
-            Val,
-            u8,
-            FieldHash,
-            Compress,
-            2,
-            32,
-        >;
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
 
-    let val_mmcs =
-        ValMmcs::new(
-            field_hash,
-            compress,
-            3,
-        );
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
 
-    type ChallengeMmcs =
-        ExtensionMmcs<
-            Val,
-            Challenge,
-            ValMmcs,
-        >;
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
 
-    let challenge_mmcs =
-        ChallengeMmcs::new(
-            val_mmcs.clone()
-        );
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
 
-    type Dft =
-        Radix2DitParallel<Val>;
+    type Dft = Radix2DitParallel<Val>;
 
-    let dft =
-        Dft::default();
+    let dft = Dft::default();
 
-    let fri_params =
-        FriParameters::new_benchmark(
-            challenge_mmcs
-        );
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
 
-    type Pcs =
-        TwoAdicFriPcs<
-            Val,
-            Dft,
-            ValMmcs,
-            ChallengeMmcs,
-        >;
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
 
-    let pcs =
-        Pcs::new(
-            dft,
-            val_mmcs,
-            fri_params,
-        );
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
 
-    type Challenger =
-        SerializingChallenger64<
-            Val,
-            HashChallenger<
-                u8,
-                ByteHash,
-                32,
-            >,
-        >;
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
 
-    let challenger =
-        Challenger::from_hasher(
-            vec![],
-            byte_hash,
-        );
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
 
-    type ConfigType =
-        StarkConfig<
-            Pcs,
-            Challenge,
-            Challenger,
-        >;
+    type ConfigType = StarkConfig<Pcs, Challenge, Challenger>;
 
-    let config =
-        ConfigType::new(
-            pcs,
-            challenger,
-        );
+    let config = ConfigType::new(pcs, challenger);
 
-    let prove_start =
-        Instant::now();
+    let prove_start = Instant::now();
 
-    let proof =
-        prove(
-            &config,
-            &air,
-            trace,
-            &[],
-        )
-        .expect(
-            "proof generation failed"
-        );
+    let proof = prove(&config, &air, trace, &[]).expect("proof generation failed");
 
-    let proving_time =
-        prove_start.elapsed();
+    let proving_time = prove_start.elapsed();
 
-    let proof_bytes =
-        postcard::to_allocvec(
-            &proof
-        )
-        .expect(
-            "proof serialization failed"
-        );
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
 
-    let verify_start =
-        Instant::now();
+    let verify_start = Instant::now();
 
-    verify(
-        &config,
-        &air,
-        &proof,
-        &[],
-    )
-    .expect(
-        "verification failed"
-    );
+    verify(&config, &air, &proof, &[]).expect("verification failed");
 
-    let verification_time =
-        verify_start.elapsed();
+    let verification_time = verify_start.elapsed();
 
     println!("==============================================");
     println!(" PAIRING RESULT");
     println!("==============================================");
     println!();
 
-    println!(
-        "Proof size        : {} bytes",
-        proof_bytes.len()
-    );
+    println!("Proof size        : {} bytes", proof_bytes.len());
 
-    println!(
-        "Proving time      : {:?}",
-        proving_time
-    );
+    println!("Proving time      : {:?}", proving_time);
 
-    println!(
-        "Verification time : {:?}",
-        verification_time
-    );
+    println!("Verification time : {:?}", verification_time);
 
     println!();
     println!("Pairing trace verified.");

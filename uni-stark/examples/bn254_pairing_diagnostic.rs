@@ -1,28 +1,16 @@
-
 use ark_bn254::{Bn254, Config, Fq, Fq2, Fq6, Fq12, Fr, G1Affine, G2Affine};
 use ark_ec::{
+    AffineRepr,
     bn::{BnConfig, G2Prepared},
     pairing::Pairing,
-    AffineRepr,
 };
-use ark_ff::{
-    BigInteger,
-    CyclotomicMultSubgroup,
-    Field,
-    One,
-    PrimeField,
-    Zero,
-};
+use ark_ff::{BigInteger, CyclotomicMultSubgroup, Field, One, PrimeField, Zero};
 use num_bigint::BigUint;
 
 fn fq12_to_coords(x: &Fq12) -> [Fq; 12] {
     [
-        x.c0.c0.c0, x.c0.c0.c1,
-        x.c0.c1.c0, x.c0.c1.c1,
-        x.c0.c2.c0, x.c0.c2.c1,
-        x.c1.c0.c0, x.c1.c0.c1,
-        x.c1.c1.c0, x.c1.c1.c1,
-        x.c1.c2.c0, x.c1.c2.c1,
+        x.c0.c0.c0, x.c0.c0.c1, x.c0.c1.c0, x.c0.c1.c1, x.c0.c2.c0, x.c0.c2.c1, x.c1.c0.c0,
+        x.c1.c0.c1, x.c1.c1.c0, x.c1.c1.c1, x.c1.c2.c0, x.c1.c2.c1,
     ]
 }
 
@@ -125,10 +113,7 @@ fn sparse_line_fq12(line: &(Fq2, Fq2, Fq2)) -> Fq12 {
     )
 }
 
-fn evaluated_line(
-    coeff: &(Fq2, Fq2, Fq2),
-    p: &G1Affine,
-) -> (Fq2, Fq2, Fq2) {
+fn evaluated_line(coeff: &(Fq2, Fq2, Fq2), p: &G1Affine) -> (Fq2, Fq2, Fq2) {
     let mut c0 = coeff.0;
     let mut c3 = coeff.1;
     let c4 = coeff.2;
@@ -243,7 +228,10 @@ fn main() {
     let pow_limbs = e.to_u64_digits();
     let ark_pow = ours_miller.pow(pow_limbs.as_slice());
 
-    println!("Full exponent via arkworks pow matches pairing: {}", ark_pow == direct_pairing);
+    println!(
+        "Full exponent via arkworks pow matches pairing: {}",
+        ark_pow == direct_pairing
+    );
 
     if ark_pow != direct_pairing {
         println!("STOP: exponent formula itself is wrong.");
@@ -311,7 +299,10 @@ fn main() {
         round += 1;
     }
 
-    println!("Our RTL exponent matches pairing: {}", acc == direct_pairing);
+    println!(
+        "Our RTL exponent matches pairing: {}",
+        acc == direct_pairing
+    );
 
     if acc == direct_pairing {
         println!("ALL NATIVE DIAGNOSTICS PASSED.");

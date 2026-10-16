@@ -4,20 +4,14 @@ use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
-use p3_field::{
-    extension::BinomialExtensionField,
-    PrimeCharacteristicRing,
-};
+use p3_field::{PrimeCharacteristicRing, extension::BinomialExtensionField};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
 use p3_goldilocks::Goldilocks;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256;
-use p3_symmetric::{
-    CompressionFunctionFromHasher,
-    SerializingHasher,
-};
-use p3_uni_stark::{prove, verify, StarkConfig};
+use p3_symmetric::{CompressionFunctionFromHasher, SerializingHasher};
+use p3_uni_stark::{StarkConfig, prove, verify};
 
 type Val = Goldilocks;
 type Challenge = BinomialExtensionField<Val, 2>;
@@ -39,41 +33,22 @@ const RADIX: u64 = 1 << LIMB_BITS;
 // ============================================================
 
 const Q: [u64; LIMBS] = [
-    64839, 55420, 35862, 15392,
-    51853, 26737, 27281, 38785,
-    22621, 33153, 17846, 47184,
-    41001, 57649, 20082, 12388,
+    64839, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+    57649, 20082, 12388,
 ];
 
 const ZERO: [u64; LIMBS] = [0; LIMBS];
 
-const ONE: [u64; LIMBS] = [
-    1, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-];
+const ONE: [u64; LIMBS] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-const TWO: [u64; LIMBS] = [
-    2, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-];
+const TWO: [u64; LIMBS] = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-const FOUR: [u64; LIMBS] = [
-    4, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-];
+const FOUR: [u64; LIMBS] = [4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 // q - 3
 const Q_MINUS_3: [u64; LIMBS] = [
-    64836, 55420, 35862, 15392,
-    51853, 26737, 27281, 38785,
-    22621, 33153, 17846, 47184,
-    41001, 57649, 20082, 12388,
+    64836, 55420, 35862, 15392, 51853, 26737, 27281, 38785, 22621, 33153, 17846, 47184, 41001,
+    57649, 20082, 12388,
 ];
 
 // ============================================================
@@ -87,40 +62,29 @@ const B_OFF: usize = A_OFF + LIMBS;
 const C_OFF: usize = B_OFF + LIMBS;
 const K_OFF: usize = C_OFF + LIMBS;
 
-const AB_OFF: usize =
-    K_OFF + LIMBS;
+const AB_OFF: usize = K_OFF + LIMBS;
 
-const AB_CARRY_OFF: usize =
-    AB_OFF + WIDE_LIMBS;
+const AB_CARRY_OFF: usize = AB_OFF + WIDE_LIMBS;
 
-const KQ_OFF: usize =
-    AB_CARRY_OFF + 33;
+const KQ_OFF: usize = AB_CARRY_OFF + 33;
 
-const KQ_CARRY_OFF: usize =
-    KQ_OFF + WIDE_LIMBS;
+const KQ_CARRY_OFF: usize = KQ_OFF + WIDE_LIMBS;
 
-const ADD_CARRY_OFF: usize =
-    KQ_CARRY_OFF + 33;
+const ADD_CARRY_OFF: usize = KQ_CARRY_OFF + 33;
 
-const RANGE_LIMBS: usize =
-    4 * LIMBS + 2 * WIDE_LIMBS;
+const RANGE_LIMBS: usize = 4 * LIMBS + 2 * WIDE_LIMBS;
 
-const LIMB_BIT_OFF: usize =
-    ADD_CARRY_OFF + 33;
+const LIMB_BIT_OFF: usize = ADD_CARRY_OFF + 33;
 
-const LIMB_BIT_COLS: usize =
-    RANGE_LIMBS * LIMB_BITS;
+const LIMB_BIT_COLS: usize = RANGE_LIMBS * LIMB_BITS;
 
 const MUL_CARRIES: usize = 66;
 
-const CARRY_BIT_OFF: usize =
-    LIMB_BIT_OFF + LIMB_BIT_COLS;
+const CARRY_BIT_OFF: usize = LIMB_BIT_OFF + LIMB_BIT_COLS;
 
-const CARRY_BIT_COLS: usize =
-    MUL_CARRIES * CARRY_BITS;
+const CARRY_BIT_COLS: usize = MUL_CARRIES * CARRY_BITS;
 
-const BLOCK_WIDTH: usize =
-    CARRY_BIT_OFF + CARRY_BIT_COLS;
+const BLOCK_WIDTH: usize = CARRY_BIT_OFF + CARRY_BIT_COLS;
 
 // ============================================================
 // Three Fq multiplication blocks
@@ -132,14 +96,11 @@ const BLOCK_WIDTH: usize =
 
 const MUL1_BASE: usize = 0;
 
-const MUL2_BASE: usize =
-    MUL1_BASE + BLOCK_WIDTH;
+const MUL2_BASE: usize = MUL1_BASE + BLOCK_WIDTH;
 
-const MUL3_BASE: usize =
-    MUL2_BASE + BLOCK_WIDTH;
+const MUL3_BASE: usize = MUL2_BASE + BLOCK_WIDTH;
 
-const MUL_END: usize =
-    MUL3_BASE + BLOCK_WIDTH;
+const MUL_END: usize = MUL3_BASE + BLOCK_WIDTH;
 
 // ============================================================
 // Fq2 outputs:
@@ -147,11 +108,9 @@ const MUL_END: usize =
 // c0 + c1*u
 // ============================================================
 
-const C0_START: usize =
-    MUL_END;
+const C0_START: usize = MUL_END;
 
-const C1_START: usize =
-    C0_START + LIMBS;
+const C1_START: usize = C0_START + LIMBS;
 
 // ============================================================
 // Two modular-add relations
@@ -167,397 +126,197 @@ const NUM_MODADDS: usize = 2;
 
 const MODADD_CARRY_COUNT: usize = 17;
 
-const MODADD_WIDTH: usize =
-    1
-    + MODADD_CARRY_COUNT
-    + MODADD_CARRY_COUNT;
+const MODADD_WIDTH: usize = 1 + MODADD_CARRY_COUNT + MODADD_CARRY_COUNT;
 
-const MODADD_START: usize =
-    C1_START + LIMBS;
+const MODADD_START: usize = C1_START + LIMBS;
 
-const MODADD_END: usize =
-    MODADD_START
-    + NUM_MODADDS * MODADD_WIDTH;
+const MODADD_END: usize = MODADD_START + NUM_MODADDS * MODADD_WIDTH;
 
 // ============================================================
 // Range-check c0,c1
 // ============================================================
 
-const EXTRA_LIMBS: usize =
-    2 * LIMBS;
+const EXTRA_LIMBS: usize = 2 * LIMBS;
 
-const EXTRA_BIT_START: usize =
-    MODADD_END;
+const EXTRA_BIT_START: usize = MODADD_END;
 
-const EXTRA_BIT_COLS: usize =
-    EXTRA_LIMBS * LIMB_BITS;
+const EXTRA_BIT_COLS: usize = EXTRA_LIMBS * LIMB_BITS;
 
-const WIDTH: usize =
-    EXTRA_BIT_START
-    + EXTRA_BIT_COLS;
+const WIDTH: usize = EXTRA_BIT_START + EXTRA_BIT_COLS;
 
 // ============================================================
 // Fq modular multiplication AIR
 // ============================================================
 
-fn eval_modmul<AB: AirBuilder>(
-    builder: &mut AB,
-    row: &[AB::Var],
-    base: usize,
-) {
-    let radix =
-        AB::Expr::from_u64(RADIX);
+fn eval_modmul<AB: AirBuilder>(builder: &mut AB, row: &[AB::Var], base: usize) {
+    let radix = AB::Expr::from_u64(RADIX);
 
-    let a_start =
-        base + A_OFF;
+    let a_start = base + A_OFF;
 
-    let b_start =
-        base + B_OFF;
+    let b_start = base + B_OFF;
 
-    let c_start =
-        base + C_OFF;
+    let c_start = base + C_OFF;
 
-    let k_start =
-        base + K_OFF;
+    let k_start = base + K_OFF;
 
-    let ab_start =
-        base + AB_OFF;
+    let ab_start = base + AB_OFF;
 
-    let ab_carry_start =
-        base + AB_CARRY_OFF;
+    let ab_carry_start = base + AB_CARRY_OFF;
 
-    let kq_start =
-        base + KQ_OFF;
+    let kq_start = base + KQ_OFF;
 
-    let kq_carry_start =
-        base + KQ_CARRY_OFF;
+    let kq_carry_start = base + KQ_CARRY_OFF;
 
-    let add_carry_start =
-        base + ADD_CARRY_OFF;
+    let add_carry_start = base + ADD_CARRY_OFF;
 
-    let limb_bit_start =
-        base + LIMB_BIT_OFF;
+    let limb_bit_start = base + LIMB_BIT_OFF;
 
-    let carry_bit_start =
-        base + CARRY_BIT_OFF;
+    let carry_bit_start = base + CARRY_BIT_OFF;
 
     // ========================================================
     // a*b
     // ========================================================
 
-    let carry0: AB::Expr =
-        row[ab_carry_start].into();
+    let carry0: AB::Expr = row[ab_carry_start].into();
 
-    builder.assert_zero(
-        carry0
-    );
+    builder.assert_zero(carry0);
 
     for out in 0..WIDE_LIMBS {
-        let mut acc: AB::Expr =
-            row[
-                ab_carry_start + out
-            ]
-            .into();
+        let mut acc: AB::Expr = row[ab_carry_start + out].into();
 
         for i in 0..LIMBS {
             if out >= i {
-                let j =
-                    out - i;
+                let j = out - i;
 
                 if j < LIMBS {
-                    let a_i: AB::Expr =
-                        row[
-                            a_start + i
-                        ]
-                        .into();
+                    let a_i: AB::Expr = row[a_start + i].into();
 
-                    let b_j: AB::Expr =
-                        row[
-                            b_start + j
-                        ]
-                        .into();
+                    let b_j: AB::Expr = row[b_start + j].into();
 
-                    acc =
-                        acc
-                        + a_i * b_j;
+                    acc = acc + a_i * b_j;
                 }
             }
         }
 
-        let result: AB::Expr =
-            row[
-                ab_start + out
-            ]
-            .into();
+        let result: AB::Expr = row[ab_start + out].into();
 
-        let carry_out: AB::Expr =
-            row[
-                ab_carry_start
-                + out
-                + 1
-            ]
-            .into();
+        let carry_out: AB::Expr = row[ab_carry_start + out + 1].into();
 
-        builder.assert_zero(
-            acc
-                - result
-                - radix.clone()
-                    * carry_out
-        );
+        builder.assert_zero(acc - result - radix.clone() * carry_out);
     }
 
-    let final_ab: AB::Expr =
-        row[
-            ab_carry_start
-            + WIDE_LIMBS
-        ]
-        .into();
+    let final_ab: AB::Expr = row[ab_carry_start + WIDE_LIMBS].into();
 
-    builder.assert_zero(
-        final_ab
-    );
+    builder.assert_zero(final_ab);
 
     // ========================================================
     // k*q
     // ========================================================
 
-    let kq0: AB::Expr =
-        row[kq_carry_start].into();
+    let kq0: AB::Expr = row[kq_carry_start].into();
 
-    builder.assert_zero(
-        kq0
-    );
+    builder.assert_zero(kq0);
 
     for out in 0..WIDE_LIMBS {
-        let mut acc: AB::Expr =
-            row[
-                kq_carry_start
-                + out
-            ]
-            .into();
+        let mut acc: AB::Expr = row[kq_carry_start + out].into();
 
         for i in 0..LIMBS {
             if out >= i {
-                let j =
-                    out - i;
+                let j = out - i;
 
                 if j < LIMBS {
-                    let k_i: AB::Expr =
-                        row[
-                            k_start + i
-                        ]
-                        .into();
+                    let k_i: AB::Expr = row[k_start + i].into();
 
-                    let q_j =
-                        AB::Expr::from_u64(
-                            Q[j]
-                        );
+                    let q_j = AB::Expr::from_u64(Q[j]);
 
-                    acc =
-                        acc
-                        + k_i * q_j;
+                    acc = acc + k_i * q_j;
                 }
             }
         }
 
-        let result: AB::Expr =
-            row[
-                kq_start + out
-            ]
-            .into();
+        let result: AB::Expr = row[kq_start + out].into();
 
-        let carry_out: AB::Expr =
-            row[
-                kq_carry_start
-                + out
-                + 1
-            ]
-            .into();
+        let carry_out: AB::Expr = row[kq_carry_start + out + 1].into();
 
-        builder.assert_zero(
-            acc
-                - result
-                - radix.clone()
-                    * carry_out
-        );
+        builder.assert_zero(acc - result - radix.clone() * carry_out);
     }
 
-    let final_kq: AB::Expr =
-        row[
-            kq_carry_start
-            + WIDE_LIMBS
-        ]
-        .into();
+    let final_kq: AB::Expr = row[kq_carry_start + WIDE_LIMBS].into();
 
-    builder.assert_zero(
-        final_kq
-    );
+    builder.assert_zero(final_kq);
 
     // ========================================================
     // c + kq = ab
     // ========================================================
 
-    let add0: AB::Expr =
-        row[
-            add_carry_start
-        ]
-        .into();
+    let add0: AB::Expr = row[add_carry_start].into();
 
-    builder.assert_zero(
-        add0
-    );
+    builder.assert_zero(add0);
 
     for i in 0..WIDE_LIMBS {
-        let carry_in: AB::Expr =
-            row[
-                add_carry_start + i
-            ]
-            .into();
+        let carry_in: AB::Expr = row[add_carry_start + i].into();
 
-        let carry_out: AB::Expr =
-            row[
-                add_carry_start
-                + i
-                + 1
-            ]
-            .into();
+        let carry_out: AB::Expr = row[add_carry_start + i + 1].into();
 
-        let kq_i: AB::Expr =
-            row[
-                kq_start + i
-            ]
-            .into();
+        let kq_i: AB::Expr = row[kq_start + i].into();
 
-        let ab_i: AB::Expr =
-            row[
-                ab_start + i
-            ]
-            .into();
+        let ab_i: AB::Expr = row[ab_start + i].into();
 
-        let c_i =
-            if i < LIMBS {
-                let x: AB::Expr =
-                    row[
-                        c_start + i
-                    ]
-                    .into();
+        let c_i = if i < LIMBS {
+            let x: AB::Expr = row[c_start + i].into();
 
-                x
-            } else {
-                AB::Expr::ZERO
-            };
+            x
+        } else {
+            AB::Expr::ZERO
+        };
 
-        builder.assert_zero(
-            c_i
-                + kq_i
-                + carry_in
-                - ab_i
-                - radix.clone()
-                    * carry_out.clone()
-        );
+        builder.assert_zero(c_i + kq_i + carry_in - ab_i - radix.clone() * carry_out.clone());
 
-        builder.assert_zero(
-            carry_out.clone()
-                * (
-                    carry_out
-                    - AB::Expr::ONE
-                )
-        );
+        builder.assert_zero(carry_out.clone() * (carry_out - AB::Expr::ONE));
     }
 
-    let final_add: AB::Expr =
-        row[
-            add_carry_start
-            + WIDE_LIMBS
-        ]
-        .into();
+    let final_add: AB::Expr = row[add_carry_start + WIDE_LIMBS].into();
 
-    builder.assert_zero(
-        final_add
-    );
+    builder.assert_zero(final_add);
 
     // ========================================================
     // Limb range checks
     // ========================================================
 
     for range_idx in 0..RANGE_LIMBS {
-        let value_col =
-            if range_idx < LIMBS {
-                a_start + range_idx
+        let value_col = if range_idx < LIMBS {
+            a_start + range_idx
+        } else if range_idx < 2 * LIMBS {
+            b_start + range_idx - LIMBS
+        } else if range_idx < 3 * LIMBS {
+            c_start + range_idx - 2 * LIMBS
+        } else if range_idx < 4 * LIMBS {
+            k_start + range_idx - 3 * LIMBS
+        } else if range_idx < 4 * LIMBS + WIDE_LIMBS {
+            ab_start + range_idx - 4 * LIMBS
+        } else {
+            kq_start + range_idx - 4 * LIMBS - WIDE_LIMBS
+        };
 
-            } else if range_idx < 2 * LIMBS {
-                b_start
-                    + range_idx
-                    - LIMBS
+        let value: AB::Expr = row[value_col].into();
 
-            } else if range_idx < 3 * LIMBS {
-                c_start
-                    + range_idx
-                    - 2 * LIMBS
+        let mut reconstructed = AB::Expr::ZERO;
 
-            } else if range_idx < 4 * LIMBS {
-                k_start
-                    + range_idx
-                    - 3 * LIMBS
-
-            } else if range_idx
-                < 4 * LIMBS
-                + WIDE_LIMBS
-            {
-                ab_start
-                    + range_idx
-                    - 4 * LIMBS
-
-            } else {
-                kq_start
-                    + range_idx
-                    - 4 * LIMBS
-                    - WIDE_LIMBS
-            };
-
-        let value: AB::Expr =
-            row[
-                value_col
-            ]
-            .into();
-
-        let mut reconstructed =
-            AB::Expr::ZERO;
-
-        let mut power =
-            1u64;
+        let mut power = 1u64;
 
         for bit in 0..LIMB_BITS {
-            let col =
-                limb_bit_start
-                + range_idx
-                    * LIMB_BITS
-                + bit;
+            let col = limb_bit_start + range_idx * LIMB_BITS + bit;
 
-            let b: AB::Expr =
-                row[col].into();
+            let b: AB::Expr = row[col].into();
 
-            builder.assert_zero(
-                b.clone()
-                    * (
-                        b.clone()
-                        - AB::Expr::ONE
-                    )
-            );
+            builder.assert_zero(b.clone() * (b.clone() - AB::Expr::ONE));
 
-            reconstructed =
-                reconstructed
-                + AB::Expr::from_u64(
-                    power
-                ) * b;
+            reconstructed = reconstructed + AB::Expr::from_u64(power) * b;
 
             power <<= 1;
         }
 
-        builder.assert_zero(
-            value
-                - reconstructed
-        );
+        builder.assert_zero(value - reconstructed);
     }
 
     // ========================================================
@@ -565,59 +324,31 @@ fn eval_modmul<AB: AirBuilder>(
     // ========================================================
 
     for idx in 0..MUL_CARRIES {
-        let value_col =
-            if idx < 33 {
-                ab_carry_start
-                    + idx
-            } else {
-                kq_carry_start
-                    + idx
-                    - 33
-            };
+        let value_col = if idx < 33 {
+            ab_carry_start + idx
+        } else {
+            kq_carry_start + idx - 33
+        };
 
-        let value: AB::Expr =
-            row[
-                value_col
-            ]
-            .into();
+        let value: AB::Expr = row[value_col].into();
 
-        let mut reconstructed =
-            AB::Expr::ZERO;
+        let mut reconstructed = AB::Expr::ZERO;
 
-        let mut power =
-            1u64;
+        let mut power = 1u64;
 
         for bit in 0..CARRY_BITS {
-            let col =
-                carry_bit_start
-                + idx
-                    * CARRY_BITS
-                + bit;
+            let col = carry_bit_start + idx * CARRY_BITS + bit;
 
-            let b: AB::Expr =
-                row[col].into();
+            let b: AB::Expr = row[col].into();
 
-            builder.assert_zero(
-                b.clone()
-                    * (
-                        b.clone()
-                        - AB::Expr::ONE
-                    )
-            );
+            builder.assert_zero(b.clone() * (b.clone() - AB::Expr::ONE));
 
-            reconstructed =
-                reconstructed
-                + AB::Expr::from_u64(
-                    power
-                ) * b;
+            reconstructed = reconstructed + AB::Expr::from_u64(power) * b;
 
             power <<= 1;
         }
 
-        builder.assert_zero(
-            value
-                - reconstructed
-        );
+        builder.assert_zero(value - reconstructed);
     }
 }
 
@@ -635,155 +366,58 @@ fn eval_modadd<AB: AirBuilder>(
     b_start: usize,
     c_start: usize,
 ) {
-    let base =
-        MODADD_START
-        + relation * MODADD_WIDTH;
+    let base = MODADD_START + relation * MODADD_WIDTH;
 
-    let r_col =
-        base;
+    let r_col = base;
 
-    let lhs_carry_start =
-        base + 1;
+    let lhs_carry_start = base + 1;
 
-    let rhs_carry_start =
-        lhs_carry_start
-        + MODADD_CARRY_COUNT;
+    let rhs_carry_start = lhs_carry_start + MODADD_CARRY_COUNT;
 
-    let r: AB::Expr =
-        row[r_col].into();
+    let r: AB::Expr = row[r_col].into();
 
-    builder.assert_zero(
-        r.clone()
-            * (
-                r.clone()
-                - AB::Expr::ONE
-            )
-    );
+    builder.assert_zero(r.clone() * (r.clone() - AB::Expr::ONE));
 
-    let lhs0: AB::Expr =
-        row[
-            lhs_carry_start
-        ]
-        .into();
+    let lhs0: AB::Expr = row[lhs_carry_start].into();
 
-    let rhs0: AB::Expr =
-        row[
-            rhs_carry_start
-        ]
-        .into();
+    let rhs0: AB::Expr = row[rhs_carry_start].into();
 
     builder.assert_zero(lhs0);
     builder.assert_zero(rhs0);
 
-    let radix =
-        AB::Expr::from_u64(
-            RADIX
-        );
+    let radix = AB::Expr::from_u64(RADIX);
 
     for i in 0..LIMBS {
-        let a: AB::Expr =
-            row[
-                a_start + i
-            ]
-            .into();
+        let a: AB::Expr = row[a_start + i].into();
 
-        let b: AB::Expr =
-            row[
-                b_start + i
-            ]
-            .into();
+        let b: AB::Expr = row[b_start + i].into();
 
-        let c: AB::Expr =
-            row[
-                c_start + i
-            ]
-            .into();
+        let c: AB::Expr = row[c_start + i].into();
 
-        let lhs_in: AB::Expr =
-            row[
-                lhs_carry_start + i
-            ]
-            .into();
+        let lhs_in: AB::Expr = row[lhs_carry_start + i].into();
 
-        let lhs_out: AB::Expr =
-            row[
-                lhs_carry_start
-                + i
-                + 1
-            ]
-            .into();
+        let lhs_out: AB::Expr = row[lhs_carry_start + i + 1].into();
 
-        let rhs_in: AB::Expr =
-            row[
-                rhs_carry_start + i
-            ]
-            .into();
+        let rhs_in: AB::Expr = row[rhs_carry_start + i].into();
 
-        let rhs_out: AB::Expr =
-            row[
-                rhs_carry_start
-                + i
-                + 1
-            ]
-            .into();
+        let rhs_out: AB::Expr = row[rhs_carry_start + i + 1].into();
 
-        builder.assert_zero(
-            lhs_out.clone()
-                * (
-                    lhs_out.clone()
-                    - AB::Expr::ONE
-                )
-        );
+        builder.assert_zero(lhs_out.clone() * (lhs_out.clone() - AB::Expr::ONE));
 
-        builder.assert_zero(
-            rhs_out.clone()
-                * (
-                    rhs_out.clone()
-                    - AB::Expr::ONE
-                )
-        );
+        builder.assert_zero(rhs_out.clone() * (rhs_out.clone() - AB::Expr::ONE));
 
-        let lhs_digit =
-            a
-            + b
-            + lhs_in
-            - radix.clone()
-                * lhs_out;
+        let lhs_digit = a + b + lhs_in - radix.clone() * lhs_out;
 
-        let rhs_digit =
-            c
-            + r.clone()
-                * AB::Expr::from_u64(
-                    Q[i]
-                )
-            + rhs_in
-            - radix.clone()
-                * rhs_out;
+        let rhs_digit = c + r.clone() * AB::Expr::from_u64(Q[i]) + rhs_in - radix.clone() * rhs_out;
 
-        builder.assert_zero(
-            lhs_digit
-                - rhs_digit
-        );
+        builder.assert_zero(lhs_digit - rhs_digit);
     }
 
-    let lhs_final: AB::Expr =
-        row[
-            lhs_carry_start
-            + LIMBS
-        ]
-        .into();
+    let lhs_final: AB::Expr = row[lhs_carry_start + LIMBS].into();
 
-    let rhs_final: AB::Expr =
-        row[
-            rhs_carry_start
-            + LIMBS
-        ]
-        .into();
+    let rhs_final: AB::Expr = row[rhs_carry_start + LIMBS].into();
 
-    builder.assert_zero(
-        lhs_final
-            - rhs_final
-    );
+    builder.assert_zero(lhs_final - rhs_final);
 }
 
 // ============================================================
@@ -792,48 +426,27 @@ fn eval_modadd<AB: AirBuilder>(
 
 struct Fq2SquareAir;
 
-impl<F> BaseAir<F>
-    for Fq2SquareAir
-{
+impl<F> BaseAir<F> for Fq2SquareAir {
     fn width(&self) -> usize {
         WIDTH
     }
 }
 
-impl<AB: AirBuilder> Air<AB>
-    for Fq2SquareAir
-{
-    fn eval(
-        &self,
-        builder: &mut AB,
-    ) {
-        let main =
-            builder.main();
+impl<AB: AirBuilder> Air<AB> for Fq2SquareAir {
+    fn eval(&self, builder: &mut AB) {
+        let main = builder.main();
 
-        let row =
-            main.current_slice();
+        let row = main.current_slice();
 
         // ====================================================
         // Three Fq multiplications
         // ====================================================
 
-        eval_modmul(
-            builder,
-            row,
-            MUL1_BASE,
-        );
+        eval_modmul(builder, row, MUL1_BASE);
 
-        eval_modmul(
-            builder,
-            row,
-            MUL2_BASE,
-        );
+        eval_modmul(builder, row, MUL2_BASE);
 
-        eval_modmul(
-            builder,
-            row,
-            MUL3_BASE,
-        );
+        eval_modmul(builder, row, MUL3_BASE);
 
         // ====================================================
         // Dynamic input linking
@@ -846,77 +459,31 @@ impl<AB: AirBuilder> Air<AB>
         for i in 0..LIMBS {
             // M1.a == M1.b
 
-            let m1a: AB::Expr =
-                row[
-                    MUL1_BASE
-                    + A_OFF
-                    + i
-                ]
-                .into();
+            let m1a: AB::Expr = row[MUL1_BASE + A_OFF + i].into();
 
-            let m1b: AB::Expr =
-                row[
-                    MUL1_BASE
-                    + B_OFF
-                    + i
-                ]
-                .into();
+            let m1b: AB::Expr = row[MUL1_BASE + B_OFF + i].into();
 
-            builder.assert_zero(
-                m1a.clone()
-                    - m1b
-            );
+            builder.assert_zero(m1a.clone() - m1b);
 
             // M2.a == M2.b
 
-            let m2a: AB::Expr =
-                row[
-                    MUL2_BASE
-                    + A_OFF
-                    + i
-                ]
-                .into();
+            let m2a: AB::Expr = row[MUL2_BASE + A_OFF + i].into();
 
-            let m2b: AB::Expr =
-                row[
-                    MUL2_BASE
-                    + B_OFF
-                    + i
-                ]
-                .into();
+            let m2b: AB::Expr = row[MUL2_BASE + B_OFF + i].into();
 
-            builder.assert_zero(
-                m2a.clone()
-                    - m2b
-            );
+            builder.assert_zero(m2a.clone() - m2b);
 
             // M3.a = a
 
-            let m3a: AB::Expr =
-                row[
-                    MUL3_BASE
-                    + A_OFF
-                    + i
-                ]
-                .into();
+            let m3a: AB::Expr = row[MUL3_BASE + A_OFF + i].into();
 
-            builder.assert_zero(
-                m3a - m1a
-            );
+            builder.assert_zero(m3a - m1a);
 
             // M3.b = b
 
-            let m3b: AB::Expr =
-                row[
-                    MUL3_BASE
-                    + B_OFF
-                    + i
-                ]
-                .into();
+            let m3b: AB::Expr = row[MUL3_BASE + B_OFF + i].into();
 
-            builder.assert_zero(
-                m3b - m2a
-            );
+            builder.assert_zero(m3b - m2a);
         }
 
         // ====================================================
@@ -960,52 +527,27 @@ impl<AB: AirBuilder> Air<AB>
         // ====================================================
 
         for idx in 0..EXTRA_LIMBS {
-            let value_col =
-                C0_START + idx;
+            let value_col = C0_START + idx;
 
-            let value: AB::Expr =
-                row[
-                    value_col
-                ]
-                .into();
+            let value: AB::Expr = row[value_col].into();
 
-            let mut reconstructed =
-                AB::Expr::ZERO;
+            let mut reconstructed = AB::Expr::ZERO;
 
-            let mut power =
-                1u64;
+            let mut power = 1u64;
 
             for bit in 0..LIMB_BITS {
-                let col =
-                    EXTRA_BIT_START
-                    + idx
-                        * LIMB_BITS
-                    + bit;
+                let col = EXTRA_BIT_START + idx * LIMB_BITS + bit;
 
-                let b: AB::Expr =
-                    row[col].into();
+                let b: AB::Expr = row[col].into();
 
-                builder.assert_zero(
-                    b.clone()
-                        * (
-                            b.clone()
-                            - AB::Expr::ONE
-                        )
-                );
+                builder.assert_zero(b.clone() * (b.clone() - AB::Expr::ONE));
 
-                reconstructed =
-                    reconstructed
-                    + AB::Expr::from_u64(
-                        power
-                    ) * b;
+                reconstructed = reconstructed + AB::Expr::from_u64(power) * b;
 
                 power <<= 1;
             }
 
-            builder.assert_zero(
-                value
-                    - reconstructed
-            );
+            builder.assert_zero(value - reconstructed);
         }
     }
 }
@@ -1014,58 +556,32 @@ impl<AB: AirBuilder> Air<AB>
 // Witness helpers
 // ============================================================
 
-fn multiply_limbs(
-    a: &[u64; LIMBS],
-    b: &[u64; LIMBS],
-) -> (
-    [u64; WIDE_LIMBS],
-    [u64; 33],
-) {
-    let mut product =
-        [0u64; WIDE_LIMBS];
+fn multiply_limbs(a: &[u64; LIMBS], b: &[u64; LIMBS]) -> ([u64; WIDE_LIMBS], [u64; 33]) {
+    let mut product = [0u64; WIDE_LIMBS];
 
-    let mut carries =
-        [0u64; 33];
+    let mut carries = [0u64; 33];
 
     for out in 0..WIDE_LIMBS {
-        let mut acc =
-            carries[out] as u128;
+        let mut acc = carries[out] as u128;
 
         for i in 0..LIMBS {
             if out >= i {
-                let j =
-                    out - i;
+                let j = out - i;
 
                 if j < LIMBS {
-                    acc +=
-                        (a[i] as u128)
-                        * (b[j] as u128);
+                    acc += (a[i] as u128) * (b[j] as u128);
                 }
             }
         }
 
-        product[out] =
-            (
-                acc
-                % RADIX as u128
-            ) as u64;
+        product[out] = (acc % RADIX as u128) as u64;
 
-        carries[out + 1] =
-            (
-                acc
-                / RADIX as u128
-            ) as u64;
+        carries[out + 1] = (acc / RADIX as u128) as u64;
     }
 
-    assert_eq!(
-        carries[WIDE_LIMBS],
-        0
-    );
+    assert_eq!(carries[WIDE_LIMBS], 0);
 
-    (
-        product,
-        carries,
-    )
+    (product, carries)
 }
 
 fn add_c_plus_kq(
@@ -1073,63 +589,30 @@ fn add_c_plus_kq(
     kq: &[u64; WIDE_LIMBS],
     expected: &[u64; WIDE_LIMBS],
 ) -> [u64; 33] {
-    let mut carries =
-        [0u64; 33];
+    let mut carries = [0u64; 33];
 
     for i in 0..WIDE_LIMBS {
-        let c_i =
-            if i < LIMBS {
-                c[i]
-            } else {
-                0
-            };
+        let c_i = if i < LIMBS { c[i] } else { 0 };
 
-        let acc =
-            c_i as u128
-            + kq[i] as u128
-            + carries[i] as u128;
+        let acc = c_i as u128 + kq[i] as u128 + carries[i] as u128;
 
-        let limb =
-            (
-                acc
-                % RADIX as u128
-            ) as u64;
+        let limb = (acc % RADIX as u128) as u64;
 
-        carries[i + 1] =
-            (
-                acc
-                / RADIX as u128
-            ) as u64;
+        carries[i + 1] = (acc / RADIX as u128) as u64;
 
-        assert_eq!(
-            limb,
-            expected[i]
-        );
+        assert_eq!(limb, expected[i]);
     }
 
-    assert_eq!(
-        carries[WIDE_LIMBS],
-        0
-    );
+    assert_eq!(carries[WIDE_LIMBS], 0);
 
     carries
 }
 
-fn push_bits(
-    row: &mut Vec<Val>,
-    value: u64,
-    bits: usize,
-) {
-    assert!(
-        value < (1u64 << bits)
-    );
+fn push_bits(row: &mut Vec<Val>, value: u64, bits: usize) {
+    assert!(value < (1u64 << bits));
 
     for i in 0..bits {
-        row.push(
-            Val::from_u64(
-                (value >> i) & 1
-            )
-        );
+        row.push(Val::from_u64((value >> i) & 1));
     }
 }
 
@@ -1139,158 +622,83 @@ fn build_modmul_block(
     c: [u64; LIMBS],
     k: [u64; LIMBS],
 ) -> Vec<Val> {
-    let (
-        ab,
-        ab_carries,
-    ) =
-        multiply_limbs(
-            &a,
-            &b,
-        );
+    let (ab, ab_carries) = multiply_limbs(&a, &b);
 
-    let (
-        kq,
-        kq_carries,
-    ) =
-        multiply_limbs(
-            &k,
-            &Q,
-        );
+    let (kq, kq_carries) = multiply_limbs(&k, &Q);
 
-    let add_carries =
-        add_c_plus_kq(
-            &c,
-            &kq,
-            &ab,
-        );
+    let add_carries = add_c_plus_kq(&c, &kq, &ab);
 
-    let mut row =
-        Vec::with_capacity(
-            BLOCK_WIDTH
-        );
+    let mut row = Vec::with_capacity(BLOCK_WIDTH);
 
     for x in a {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in b {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in c {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in k {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in ab {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in ab_carries {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in kq {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in kq_carries {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in add_carries {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in a {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in b {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in c {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in k {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in ab {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in kq {
-        push_bits(
-            &mut row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut row, x, LIMB_BITS);
     }
 
     for x in ab_carries {
-        push_bits(
-            &mut row,
-            x,
-            CARRY_BITS,
-        );
+        push_bits(&mut row, x, CARRY_BITS);
     }
 
     for x in kq_carries {
-        push_bits(
-            &mut row,
-            x,
-            CARRY_BITS,
-        );
+        push_bits(&mut row, x, CARRY_BITS);
     }
 
-    assert_eq!(
-        row.len(),
-        BLOCK_WIDTH
-    );
+    assert_eq!(row.len(), BLOCK_WIDTH);
 
     row
 }
@@ -1299,48 +707,25 @@ fn build_modmul_block(
 // Modular-addition witness helpers
 // ============================================================
 
-fn addition_carries(
-    a: &[u64; LIMBS],
-    b: &[u64; LIMBS],
-) -> [u64; MODADD_CARRY_COUNT] {
-    let mut carry =
-        [0u64; MODADD_CARRY_COUNT];
+fn addition_carries(a: &[u64; LIMBS], b: &[u64; LIMBS]) -> [u64; MODADD_CARRY_COUNT] {
+    let mut carry = [0u64; MODADD_CARRY_COUNT];
 
     for i in 0..LIMBS {
-        let v =
-            a[i] as u128
-            + b[i] as u128
-            + carry[i] as u128;
+        let v = a[i] as u128 + b[i] as u128 + carry[i] as u128;
 
-        carry[i + 1] =
-            (
-                v
-                / RADIX as u128
-            ) as u64;
+        carry[i + 1] = (v / RADIX as u128) as u64;
     }
 
     carry
 }
 
-fn addition_rhs_carries(
-    c: &[u64; LIMBS],
-    reduction: u64,
-) -> [u64; MODADD_CARRY_COUNT] {
-    let mut carry =
-        [0u64; MODADD_CARRY_COUNT];
+fn addition_rhs_carries(c: &[u64; LIMBS], reduction: u64) -> [u64; MODADD_CARRY_COUNT] {
+    let mut carry = [0u64; MODADD_CARRY_COUNT];
 
     for i in 0..LIMBS {
-        let v =
-            c[i] as u128
-            + reduction as u128
-                * Q[i] as u128
-            + carry[i] as u128;
+        let v = c[i] as u128 + reduction as u128 * Q[i] as u128 + carry[i] as u128;
 
-        carry[i + 1] =
-            (
-                v
-                / RADIX as u128
-            ) as u64;
+        carry[i + 1] = (v / RADIX as u128) as u64;
     }
 
     carry
@@ -1353,63 +738,30 @@ fn push_modadd_witness(
     c: &[u64; LIMBS],
     reduction: u64,
 ) {
-    let lhs =
-        addition_carries(
-            a,
-            b,
-        );
+    let lhs = addition_carries(a, b);
 
-    let rhs =
-        addition_rhs_carries(
-            c,
-            reduction,
-        );
+    let rhs = addition_rhs_carries(c, reduction);
 
     for i in 0..LIMBS {
         let lhs_digit =
-            a[i] as i128
-            + b[i] as i128
-            + lhs[i] as i128
-            - RADIX as i128
-                * lhs[i + 1]
-                    as i128;
+            a[i] as i128 + b[i] as i128 + lhs[i] as i128 - RADIX as i128 * lhs[i + 1] as i128;
 
-        let rhs_digit =
-            c[i] as i128
-            + reduction as i128
-                * Q[i] as i128
-            + rhs[i] as i128
-            - RADIX as i128
-                * rhs[i + 1]
-                    as i128;
+        let rhs_digit = c[i] as i128 + reduction as i128 * Q[i] as i128 + rhs[i] as i128
+            - RADIX as i128 * rhs[i + 1] as i128;
 
-        assert_eq!(
-            lhs_digit,
-            rhs_digit
-        );
+        assert_eq!(lhs_digit, rhs_digit);
     }
 
-    assert_eq!(
-        lhs[LIMBS],
-        rhs[LIMBS]
-    );
+    assert_eq!(lhs[LIMBS], rhs[LIMBS]);
 
-    row.push(
-        Val::from_u64(
-            reduction
-        )
-    );
+    row.push(Val::from_u64(reduction));
 
     for x in lhs {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 
     for x in rhs {
-        row.push(
-            Val::from_u64(x)
-        );
+        row.push(Val::from_u64(x));
     }
 }
 
@@ -1417,9 +769,7 @@ fn push_modadd_witness(
 // Trace
 // ============================================================
 
-fn make_trace(
-    height: usize,
-) -> RowMajorMatrix<Val> {
+fn make_trace(height: usize) -> RowMajorMatrix<Val> {
     // ========================================================
     // A = 1 + 2u
     //
@@ -1435,83 +785,45 @@ fn make_trace(
     // (q-3) + 4u
     // ========================================================
 
-    let a =
-        ONE;
+    let a = ONE;
 
-    let b =
-        TWO;
+    let b = TWO;
 
-    let a2 =
-        ONE;
+    let a2 = ONE;
 
-    let b2 =
-        FOUR;
+    let b2 = FOUR;
 
-    let ab =
-        TWO;
+    let ab = TWO;
 
-    let c0 =
-        Q_MINUS_3;
+    let c0 = Q_MINUS_3;
 
-    let c1 =
-        FOUR;
+    let c1 = FOUR;
 
     // M1 = a*a
-    let block1 =
-        build_modmul_block(
-            a,
-            a,
-            a2,
-            ZERO,
-        );
+    let block1 = build_modmul_block(a, a, a2, ZERO);
 
     // M2 = b*b
-    let block2 =
-        build_modmul_block(
-            b,
-            b,
-            b2,
-            ZERO,
-        );
+    let block2 = build_modmul_block(b, b, b2, ZERO);
 
     // M3 = a*b
-    let block3 =
-        build_modmul_block(
-            a,
-            b,
-            ab,
-            ZERO,
-        );
+    let block3 = build_modmul_block(a, b, ab, ZERO);
 
-    let mut one_row =
-        Vec::with_capacity(
-            WIDTH
-        );
+    let mut one_row = Vec::with_capacity(WIDTH);
 
-    one_row.extend_from_slice(
-        &block1
-    );
+    one_row.extend_from_slice(&block1);
 
-    one_row.extend_from_slice(
-        &block2
-    );
+    one_row.extend_from_slice(&block2);
 
-    one_row.extend_from_slice(
-        &block3
-    );
+    one_row.extend_from_slice(&block3);
 
     // c0
     for x in c0 {
-        one_row.push(
-            Val::from_u64(x)
-        );
+        one_row.push(Val::from_u64(x));
     }
 
     // c1
     for x in c1 {
-        one_row.push(
-            Val::from_u64(x)
-        );
+        one_row.push(Val::from_u64(x));
     }
 
     // ========================================================
@@ -1524,13 +836,7 @@ fn make_trace(
     // reduction = 1
     // ========================================================
 
-    push_modadd_witness(
-        &mut one_row,
-        &c0,
-        &b2,
-        &a2,
-        1,
-    );
+    push_modadd_witness(&mut one_row, &c0, &b2, &a2, 1);
 
     // ========================================================
     // R1:
@@ -1540,32 +846,18 @@ fn make_trace(
     // 2+2 = 4
     // ========================================================
 
-    push_modadd_witness(
-        &mut one_row,
-        &ab,
-        &ab,
-        &c1,
-        0,
-    );
+    push_modadd_witness(&mut one_row, &ab, &ab, &c1, 0);
 
     // ========================================================
     // Output range checks
     // ========================================================
 
     for x in c0 {
-        push_bits(
-            &mut one_row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut one_row, x, LIMB_BITS);
     }
 
     for x in c1 {
-        push_bits(
-            &mut one_row,
-            x,
-            LIMB_BITS,
-        );
+        push_bits(&mut one_row, x, LIMB_BITS);
     }
 
     assert_eq!(
@@ -1576,21 +868,13 @@ fn make_trace(
         WIDTH
     );
 
-    let mut values =
-        Vec::with_capacity(
-            WIDTH * height
-        );
+    let mut values = Vec::with_capacity(WIDTH * height);
 
     for _ in 0..height {
-        values.extend_from_slice(
-            &one_row
-        );
+        values.extend_from_slice(&one_row);
     }
 
-    RowMajorMatrix::new(
-        values,
-        WIDTH,
-    )
+    RowMajorMatrix::new(values, WIDTH)
 }
 
 // ============================================================
@@ -1598,241 +882,111 @@ fn make_trace(
 // ============================================================
 
 fn main() {
-    println!(
-        "=============================================="
-    );
+    println!("==============================================");
 
-    println!(
-        " Plonky3 BN254 Fq2 Squaring"
-    );
+    println!(" Plonky3 BN254 Fq2 Squaring");
 
-    println!(
-        "=============================================="
-    );
+    println!("==============================================");
 
     println!();
 
-    println!(
-        "Native proving field : Goldilocks"
-    );
+    println!("Native proving field : Goldilocks");
 
-    println!(
-        "Target field         : BN254 Fq2"
-    );
+    println!("Target field         : BN254 Fq2");
 
-    println!(
-        "Non-residue          : u^2 = -1"
-    );
+    println!("Non-residue          : u^2 = -1");
 
     println!();
 
-    println!(
-        "Test:"
-    );
+    println!("Test:");
 
-    println!(
-        "  A = 1 + 2u"
-    );
+    println!("  A = 1 + 2u");
 
     println!();
 
-    println!(
-        "Expected:"
-    );
+    println!("Expected:");
 
-    println!(
-        "  A^2 = (1^2 - 2^2) + 2*1*2u"
-    );
+    println!("  A^2 = (1^2 - 2^2) + 2*1*2u");
 
-    println!(
-        "      = -3 + 4u"
-    );
+    println!("      = -3 + 4u");
 
-    println!(
-        "      = (q-3) + 4u"
-    );
+    println!("      = (q-3) + 4u");
 
     println!();
 
-    let trace_height =
-        8usize;
+    let trace_height = 8usize;
 
-    let trace =
-        make_trace(
-            trace_height
-        );
+    let trace = make_trace(trace_height);
 
     // ========================================================
     // Merkle / FRI
     // ========================================================
 
-    type ByteHash =
-        Sha256;
+    type ByteHash = Sha256;
 
-    type FieldHash =
-        SerializingHasher<
-            ByteHash
-        >;
+    type FieldHash = SerializingHasher<ByteHash>;
 
-    let byte_hash =
-        ByteHash {};
+    let byte_hash = ByteHash {};
 
-    let field_hash =
-        FieldHash::new(
-            byte_hash
-        );
+    let field_hash = FieldHash::new(byte_hash);
 
-    type Compress =
-        CompressionFunctionFromHasher<
-            ByteHash,
-            2,
-            32,
-        >;
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
 
-    let compress =
-        Compress::new(
-            byte_hash
-        );
+    let compress = Compress::new(byte_hash);
 
-    type ValMmcs =
-        MerkleTreeMmcs<
-            Val,
-            u8,
-            FieldHash,
-            Compress,
-            2,
-            32,
-        >;
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
 
-    let val_mmcs =
-        ValMmcs::new(
-            field_hash,
-            compress,
-            3,
-        );
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
 
-    type ChallengeMmcs =
-        ExtensionMmcs<
-            Val,
-            Challenge,
-            ValMmcs,
-        >;
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
 
-    let challenge_mmcs =
-        ChallengeMmcs::new(
-            val_mmcs.clone()
-        );
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
 
-    type Dft =
-        Radix2DitParallel<Val>;
+    type Dft = Radix2DitParallel<Val>;
 
-    let dft =
-        Dft::default();
+    let dft = Dft::default();
 
-    let fri_params =
-        FriParameters::new_benchmark(
-            challenge_mmcs
-        );
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
 
-    type Pcs =
-        TwoAdicFriPcs<
-            Val,
-            Dft,
-            ValMmcs,
-            ChallengeMmcs,
-        >;
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
 
-    let pcs =
-        Pcs::new(
-            dft,
-            val_mmcs,
-            fri_params,
-        );
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
 
-    type Challenger =
-        SerializingChallenger64<
-            Val,
-            HashChallenger<
-                u8,
-                ByteHash,
-                32,
-            >,
-        >;
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
 
-    let challenger =
-        Challenger::from_hasher(
-            vec![],
-            byte_hash,
-        );
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
 
-    type Config =
-        StarkConfig<
-            Pcs,
-            Challenge,
-            Challenger,
-        >;
+    type Config = StarkConfig<Pcs, Challenge, Challenger>;
 
-    let config =
-        Config::new(
-            pcs,
-            challenger,
-        );
+    let config = Config::new(pcs, challenger);
 
     // ========================================================
     // Prove
     // ========================================================
 
-    let prove_start =
-        Instant::now();
+    let prove_start = Instant::now();
 
-    let proof =
-        prove(
-            &config,
-            &Fq2SquareAir,
-            trace,
-            &[],
-        )
-        .expect(
-            "proof generation failed"
-        );
+    let proof = prove(&config, &Fq2SquareAir, trace, &[]).expect("proof generation failed");
 
-    let prove_time =
-        prove_start.elapsed();
+    let prove_time = prove_start.elapsed();
 
-    let proof_bytes =
-        postcard::to_allocvec(
-            &proof
-        )
-        .expect(
-            "proof serialization failed"
-        );
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
 
     // ========================================================
     // Verify
     // ========================================================
 
-    let verify_start =
-        Instant::now();
+    let verify_start = Instant::now();
 
-    verify(
-        &config,
-        &Fq2SquareAir,
-        &proof,
-        &[],
-    )
-    .expect(
-        "verification failed"
-    );
+    verify(&config, &Fq2SquareAir, &proof, &[]).expect("verification failed");
 
-    let verify_time =
-        verify_start.elapsed();
+    let verify_time = verify_start.elapsed();
 
     // ========================================================
     // Metrics
     // ========================================================
 
-    const MODMUL_CONSTRAINTS: usize =
-        3696;
+    const MODMUL_CONSTRAINTS: usize = 3696;
 
     // M1.a=M1.b
     // M2.a=M2.b
@@ -1840,116 +994,59 @@ fn main() {
     // M3.b=M2.a
     //
     // 4 links per limb
-    const LINK_CONSTRAINTS: usize =
-        4 * LIMBS;
+    const LINK_CONSTRAINTS: usize = 4 * LIMBS;
 
-    const MODADD_CONSTRAINTS_PER: usize =
-        52;
+    const MODADD_CONSTRAINTS_PER: usize = 52;
 
-    const MODADD_CONSTRAINTS: usize =
-        NUM_MODADDS
-        * MODADD_CONSTRAINTS_PER;
+    const MODADD_CONSTRAINTS: usize = NUM_MODADDS * MODADD_CONSTRAINTS_PER;
 
-    const EXTRA_RANGE_CONSTRAINTS: usize =
-        EXTRA_LIMBS
-        * (LIMB_BITS + 1);
+    const EXTRA_RANGE_CONSTRAINTS: usize = EXTRA_LIMBS * (LIMB_BITS + 1);
 
     let total_constraints =
-        3 * MODMUL_CONSTRAINTS
-        + LINK_CONSTRAINTS
-        + MODADD_CONSTRAINTS
-        + EXTRA_RANGE_CONSTRAINTS;
+        3 * MODMUL_CONSTRAINTS + LINK_CONSTRAINTS + MODADD_CONSTRAINTS + EXTRA_RANGE_CONSTRAINTS;
 
-    println!(
-        "=============================================="
-    );
+    println!("==============================================");
 
-    println!(
-        " Metrics"
-    );
+    println!(" Metrics");
 
-    println!(
-        "=============================================="
-    );
+    println!("==============================================");
 
     println!();
 
-    println!(
-        "Fq multiplications         : 3"
-    );
+    println!("Fq multiplications         : 3");
 
-    println!(
-        "Fq modular additions       : 2"
-    );
+    println!("Fq modular additions       : 2");
 
-    println!(
-        "Constraints / Fq mul       : {}",
-        MODMUL_CONSTRAINTS
-    );
+    println!("Constraints / Fq mul       : {}", MODMUL_CONSTRAINTS);
 
-    println!(
-        "Input link constraints     : {}",
-        LINK_CONSTRAINTS
-    );
+    println!("Input link constraints     : {}", LINK_CONSTRAINTS);
 
-    println!(
-        "Modadd constraints         : {}",
-        MODADD_CONSTRAINTS
-    );
+    println!("Modadd constraints         : {}", MODADD_CONSTRAINTS);
 
-    println!(
-        "Output range constraints   : {}",
-        EXTRA_RANGE_CONSTRAINTS
-    );
+    println!("Output range constraints   : {}", EXTRA_RANGE_CONSTRAINTS);
 
-    println!(
-        "AIR constraint expressions : {}",
-        total_constraints
-    );
+    println!("AIR constraint expressions : {}", total_constraints);
 
-    println!(
-        "Maximum constraint degree  : 2"
-    );
+    println!("Maximum constraint degree  : 2");
 
-    println!(
-        "Trace width                : {} columns",
-        WIDTH
-    );
+    println!("Trace width                : {} columns", WIDTH);
 
-    println!(
-        "Trace height               : {} rows",
-        trace_height
-    );
+    println!("Trace height               : {} rows", trace_height);
 
-    println!(
-        "Trace cells                : {}",
-        WIDTH * trace_height
-    );
+    println!("Trace cells                : {}", WIDTH * trace_height);
 
     println!(
         "Row-wise evaluations       : {}",
-        total_constraints
-            * trace_height
+        total_constraints * trace_height
     );
 
-    println!(
-        "Proof size                 : {} bytes",
-        proof_bytes.len()
-    );
+    println!("Proof size                 : {} bytes", proof_bytes.len());
 
-    println!(
-        "Proving time               : {:?}",
-        prove_time
-    );
+    println!("Proving time               : {:?}", prove_time);
 
-    println!(
-        "Verification time          : {:?}",
-        verify_time
-    );
+    println!("Verification time          : {:?}", verify_time);
 
     println!();
 
-    println!(
-        "BN254 Fq2 squaring proof verified!"
-    );
+    println!("BN254 Fq2 squaring proof verified!");
 }

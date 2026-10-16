@@ -1,6 +1,5 @@
 use crate::node::Node;
 
-
 // ---------------------------------------------------------
 // Search Path Structure
 // ---------------------------------------------------------
@@ -26,7 +25,6 @@ pub struct SearchPathStep {
     pub rightChildIndex: Option<usize>,
     pub rightChildKeys: Option<Vec<i64>>,
 }
-
 
 // ---------------------------------------------------------
 // Proof Path Structure
@@ -56,7 +54,6 @@ pub struct ProofPathStep {
     pub rightKeys: Option<Vec<i64>>,
 }
 
-
 // ---------------------------------------------------------
 // V+ Tree Structure
 // ---------------------------------------------------------
@@ -71,28 +68,21 @@ pub struct VplusTree {
     pub nodes: Vec<Node>,
 }
 
-
 // ---------------------------------------------------------
 // V+ Tree Implementation
 // ---------------------------------------------------------
 
 impl VplusTree {
-
     // ---------------------------------------------------------
     // Constructor
     // ---------------------------------------------------------
 
     pub fn new(order: usize) -> Self {
-
         if order < 3 {
             panic!("Order must be at least 3");
         }
 
-        let rootNode =
-            Node::new(
-                order,
-                true
-            );
+        let rootNode = Node::new(order, true);
 
         VplusTree {
             order,
@@ -100,7 +90,6 @@ impl VplusTree {
             nodes: vec![rootNode],
         }
     }
-
 
     // ---------------------------------------------------------
     // Maximum Keys
@@ -110,7 +99,6 @@ impl VplusTree {
         self.order - 1
     }
 
-
     // ---------------------------------------------------------
     // Minimum Internal Keys
     // ---------------------------------------------------------
@@ -118,7 +106,6 @@ impl VplusTree {
     pub fn minInternalKeys(&self) -> usize {
         (self.order - 1) / 2
     }
-
 
     // ---------------------------------------------------------
     // Minimum Leaf Keys
@@ -128,154 +115,79 @@ impl VplusTree {
         self.order / 2
     }
 
-
     // ---------------------------------------------------------
     // Underflow Check
     // ---------------------------------------------------------
 
-    pub fn isUnderflow(
-        &self,
-        nodeIndex: usize
-    ) -> bool {
-
-        let node =
-            &self.nodes[nodeIndex];
+    pub fn isUnderflow(&self, nodeIndex: usize) -> bool {
+        let node = &self.nodes[nodeIndex];
 
         if nodeIndex == self.root {
             node.keys.len() < 1
-        }
-        else if node.is_leaf {
-            node.keys.len()
-                < self.minLeafKeys()
-        }
-        else {
-            node.keys.len()
-                < self.minInternalKeys()
+        } else if node.is_leaf {
+            node.keys.len() < self.minLeafKeys()
+        } else {
+            node.keys.len() < self.minInternalKeys()
         }
     }
-
 
     // ---------------------------------------------------------
     // Unified Split Helper
     // ---------------------------------------------------------
 
-    pub fn splitNodeHelper(
-        node: &mut Node
-    ) -> (Node, i64) {
-
-        let order =
-            node.order;
-
+    pub fn splitNodeHelper(node: &mut Node) -> (Node, i64) {
+        let order = node.order;
 
         // -----------------------------------------------------
         // Leaf Split
         // -----------------------------------------------------
 
         if node.is_leaf {
+            let midIndex = order / 2;
 
-            let midIndex =
-                order / 2;
-
-
-            let mut rightNode =
-                Node::new(
-                    order,
-                    true
-                );
-
+            let mut rightNode = Node::new(order, true);
 
             // Keys moving to the right leaf.
-            rightNode.keys =
-                node.keys[
-                    midIndex..
-                ]
-                .to_vec();
-
+            rightNode.keys = node.keys[midIndex..].to_vec();
 
             // Corresponding SHA-256 values move with the keys.
-            rightNode.values =
-                node.values[
-                    midIndex..
-                ]
-                .to_vec();
-
+            rightNode.values = node.values[midIndex..].to_vec();
 
             // Keys remaining in the left leaf.
-            node.keys =
-                node.keys[
-                    ..midIndex
-                ]
-                .to_vec();
-
+            node.keys = node.keys[..midIndex].to_vec();
 
             // Corresponding SHA-256 values remain with them.
-            node.values =
-                node.values[
-                    ..midIndex
-                ]
-                .to_vec();
+            node.values = node.values[..midIndex].to_vec();
 
+            rightNode.next_node = node.next_node;
 
-            rightNode.next_node =
-                node.next_node;
+            rightNode.parent_node = node.parent_node;
 
+            let promoteKey = rightNode.keys[0];
 
-            rightNode.parent_node =
-                node.parent_node;
-
-
-            let promoteKey =
-                rightNode.keys[0];
-
-
-            return (
-                rightNode,
-                promoteKey
-            );
+            return (rightNode, promoteKey);
         }
-
 
         // -----------------------------------------------------
         // Internal Node Split
         // -----------------------------------------------------
 
-        let midIndex =
-            (order - 1) / 2;
-
+        let midIndex = (order - 1) / 2;
 
         // Key promoted to the parent.
-        let promoteKey =
-            node.keys[midIndex];
-
+        let promoteKey = node.keys[midIndex];
 
         // Split children around the promoted key.
-        let (
-            leftChildren,
-            rightChildren
-        ) =
-            node.retrieveChildren(
-                midIndex
-            );
-
+        let (leftChildren, rightChildren) = node.retrieveChildren(midIndex);
 
         // -----------------------------------------------------
         // Preserve commitment metadata for the keys
         // remaining on the left.
         // -----------------------------------------------------
 
-        let leftLeftPointerCommitments =
-            node.left_pointer_commitments[
-                ..midIndex
-            ]
-            .to_vec();
+        let leftLeftPointerCommitments = node.left_pointer_commitments[..midIndex].to_vec();
 
-
-        let leftRightPointerCommitments =
-            node.right_pointer_commitments[
-                ..midIndex
-            ]
-            .to_vec();
-
+        let leftRightPointerCommitments = node.right_pointer_commitments[..midIndex].to_vec();
 
         // -----------------------------------------------------
         // Preserve commitment metadata for the keys
@@ -284,767 +196,360 @@ impl VplusTree {
         // The promoted key at midIndex is removed.
         // -----------------------------------------------------
 
-        let rightLeftPointerCommitments =
-            node.left_pointer_commitments[
-                midIndex + 1..
-            ]
-            .to_vec();
+        let rightLeftPointerCommitments = node.left_pointer_commitments[midIndex + 1..].to_vec();
 
-
-        let rightRightPointerCommitments =
-            node.right_pointer_commitments[
-                midIndex + 1..
-            ]
-            .to_vec();
-
+        let rightRightPointerCommitments = node.right_pointer_commitments[midIndex + 1..].to_vec();
 
         // -----------------------------------------------------
         // Construct right internal node
         // -----------------------------------------------------
 
-        let mut rightNode =
-            Node::new(
-                order,
-                false
-            );
+        let mut rightNode = Node::new(order, false);
 
+        rightNode.keys = node.keys[midIndex + 1..].to_vec();
 
-        rightNode.keys =
-            node.keys[
-                midIndex + 1..
-            ]
-            .to_vec();
+        rightNode.children = rightChildren;
 
+        rightNode.left_pointer_commitments = rightLeftPointerCommitments;
 
-        rightNode.children =
-            rightChildren;
-
-
-        rightNode.left_pointer_commitments =
-            rightLeftPointerCommitments;
-
-
-        rightNode.right_pointer_commitments =
-            rightRightPointerCommitments;
-
+        rightNode.right_pointer_commitments = rightRightPointerCommitments;
 
         // -----------------------------------------------------
         // Keep left half in original node
         // -----------------------------------------------------
 
-        node.keys =
-            node.keys[
-                ..midIndex
-            ]
-            .to_vec();
+        node.keys = node.keys[..midIndex].to_vec();
 
+        node.children = leftChildren;
 
-        node.children =
-            leftChildren;
+        node.left_pointer_commitments = leftLeftPointerCommitments;
 
+        node.right_pointer_commitments = leftRightPointerCommitments;
 
-        node.left_pointer_commitments =
-            leftLeftPointerCommitments;
+        rightNode.parent_node = node.parent_node;
 
-
-        node.right_pointer_commitments =
-            leftRightPointerCommitments;
-
-
-        rightNode.parent_node =
-            node.parent_node;
-
-
-        (
-            rightNode,
-            promoteKey
-        )
+        (rightNode, promoteKey)
     }
 
     // ---------------------------------------------------------
-// Print Internal Node Records
-// ---------------------------------------------------------
+    // Print Internal Node Records
+    // ---------------------------------------------------------
 
-pub fn printInternalNodeRecords(
-    &self
-) {
-
-    println!();
-    println!(
-        "=========================================="
-    );
-
-    println!(
-        "Internal Node Records"
-    );
-
-    println!(
-        "=========================================="
-    );
-
-
-    for (
-        nodeIndex,
-        node
-    ) in self.nodes.iter().enumerate() {
-
-        if node.is_leaf {
-            continue;
-        }
-
-
+    pub fn printInternalNodeRecords(&self) {
         println!();
+        println!("==========================================");
 
-        println!(
-            "Internal Node Index: {}",
-            nodeIndex
-        );
+        println!("Internal Node Records");
 
+        println!("==========================================");
 
-        for i in 0..node.keys.len() {
+        for (nodeIndex, node) in self.nodes.iter().enumerate() {
+            if node.is_leaf {
+                continue;
+            }
 
-            println!(
-                "  Record {}:",
-                i
-            );
+            println!();
 
-            println!(
-                "    key = {}",
-                node.keys[i]
-            );
+            println!("Internal Node Index: {}", nodeIndex);
 
-            println!(
-                "    LPC = {:?}",
-                node.left_pointer_commitments[i]
-            );
+            for i in 0..node.keys.len() {
+                println!("  Record {}:", i);
 
-            println!(
-                "    RPC = {:?}",
-                node.right_pointer_commitments[i]
-            );
+                println!("    key = {}", node.keys[i]);
+
+                println!("    LPC = {:?}", node.left_pointer_commitments[i]);
+
+                println!("    RPC = {:?}", node.right_pointer_commitments[i]);
+            }
         }
     }
-}
-
 
     // ---------------------------------------------------------
     // Search
     // ---------------------------------------------------------
 
-    pub fn search(
-        &self,
-        key: i64
-    ) -> usize {
-
-        let mut currentNode =
-            self.root;
-
+    pub fn search(&self, key: i64) -> usize {
+        let mut currentNode = self.root;
 
         while !self.nodes[currentNode].is_leaf {
-
-            let mut index =
-                0;
-
+            let mut index = 0;
 
             // Same behavior as Python bisect_right
-            while index
-                < self.nodes[currentNode].keys.len()
-                && key
-                    >= self.nodes[currentNode].keys[index]
+            while index < self.nodes[currentNode].keys.len()
+                && key >= self.nodes[currentNode].keys[index]
             {
                 index += 1;
             }
 
-
-            currentNode =
-                self.nodes[currentNode]
-                    .children[index];
+            currentNode = self.nodes[currentNode].children[index];
         }
-
 
         currentNode
     }
-
 
     // ---------------------------------------------------------
     // Search Path
     // ---------------------------------------------------------
 
-    pub fn searchPath(
-        &self,
-        key: i64
-    ) -> (
-        usize,
-        Vec<SearchPathStep>
-    ) {
+    pub fn searchPath(&self, key: i64) -> (usize, Vec<SearchPathStep>) {
+        let mut path = Vec::new();
 
-        let mut path =
-            Vec::new();
-
-
-        let mut currentNode =
-            self.root;
-
+        let mut currentNode = self.root;
 
         while !self.nodes[currentNode].is_leaf {
+            let mut index = 0;
 
-            let mut index =
-                0;
-
-
-            while index
-                < self.nodes[currentNode].keys.len()
-                && key
-                    >= self.nodes[currentNode].keys[index]
+            while index < self.nodes[currentNode].keys.len()
+                && key >= self.nodes[currentNode].keys[index]
             {
                 index += 1;
             }
-
 
             // -------------------------------------------------
             // Chosen child
             // -------------------------------------------------
 
-            let chosenChild =
-                self.nodes[currentNode]
-                    .children[index];
-
+            let chosenChild = self.nodes[currentNode].children[index];
 
             // -------------------------------------------------
             // Left sibling
             // -------------------------------------------------
 
-            let leftChildIndex =
-                if index > 0 {
+            let leftChildIndex = if index > 0 {
+                Some(self.nodes[currentNode].children[index - 1])
+            } else {
+                None
+            };
 
-                    Some(
-                        self.nodes[currentNode]
-                            .children[index - 1]
-                    )
-                }
-                else {
+            let leftChildKeys = match leftChildIndex {
+                Some(leftIndex) => Some(self.nodes[leftIndex].keys.clone()),
 
-                    None
-                };
-
-
-            let leftChildKeys =
-                match leftChildIndex {
-
-                    Some(leftIndex) => {
-
-                        Some(
-                            self.nodes[leftIndex]
-                                .keys
-                                .clone()
-                        )
-                    }
-
-                    None => {
-
-                        None
-                    }
-                };
-
+                None => None,
+            };
 
             // -------------------------------------------------
             // Right sibling
             // -------------------------------------------------
 
-            let rightChildIndex =
-                if index + 1
-                    < self.nodes[currentNode]
-                        .children
-                        .len()
-                {
+            let rightChildIndex = if index + 1 < self.nodes[currentNode].children.len() {
+                Some(self.nodes[currentNode].children[index + 1])
+            } else {
+                None
+            };
 
-                    Some(
-                        self.nodes[currentNode]
-                            .children[index + 1]
-                    )
-                }
-                else {
+            let rightChildKeys = match rightChildIndex {
+                Some(rightIndex) => Some(self.nodes[rightIndex].keys.clone()),
 
-                    None
-                };
-
-
-            let rightChildKeys =
-                match rightChildIndex {
-
-                    Some(rightIndex) => {
-
-                        Some(
-                            self.nodes[rightIndex]
-                                .keys
-                                .clone()
-                        )
-                    }
-
-                    None => {
-
-                        None
-                    }
-                };
-
+                None => None,
+            };
 
             // -------------------------------------------------
             // Store this search-path step
             // -------------------------------------------------
 
-            path.push(
-                SearchPathStep {
+            path.push(SearchPathStep {
+                nodeIndex: currentNode,
 
-                    nodeIndex:
-                        currentNode,
+                nodeKeys: self.nodes[currentNode].keys.clone(),
 
-                    nodeKeys:
-                        self.nodes[currentNode]
-                            .keys
-                            .clone(),
+                index,
 
-                    index,
+                leftChildIndex,
+                leftChildKeys,
 
-                    leftChildIndex,
-                    leftChildKeys,
+                chosenChildIndex: chosenChild,
 
-                    chosenChildIndex:
-                        chosenChild,
+                chosenChildKeys: self.nodes[chosenChild].keys.clone(),
 
-                    chosenChildKeys:
-                        self.nodes[chosenChild]
-                            .keys
-                            .clone(),
+                rightChildIndex,
+                rightChildKeys,
+            });
 
-                    rightChildIndex,
-                    rightChildKeys,
-                }
-            );
-
-
-            currentNode =
-                chosenChild;
+            currentNode = chosenChild;
         }
 
-
-        (
-            currentNode,
-            path
-        )
+        (currentNode, path)
     }
-
 
     // ---------------------------------------------------------
     // Build Proof Path
     // ---------------------------------------------------------
 
-    pub fn buildProofPath(
-        &self,
-        key: i64
-    ) -> (
-        usize,
-        Vec<ProofPathStep>
-    ) {
+    pub fn buildProofPath(&self, key: i64) -> (usize, Vec<ProofPathStep>) {
+        let (leafIndex, searchPath) = self.searchPath(key);
 
-        let (
-            leafIndex,
-            searchPath
-        ) =
-            self.searchPath(
-                key
-            );
-
-
-        let mut proofPath =
-            Vec::new();
-
+        let mut proofPath = Vec::new();
 
         for step in searchPath {
+            proofPath.push(ProofPathStep {
+                parentIndex: step.nodeIndex,
 
-            proofPath.push(
-                ProofPathStep {
+                chosenChildIndex: step.chosenChildIndex,
 
-                    parentIndex:
-                        step.nodeIndex,
+                leftIndex: step.leftChildIndex,
 
-                    chosenChildIndex:
-                        step.chosenChildIndex,
+                rightIndex: step.rightChildIndex,
 
-                    leftIndex:
-                        step.leftChildIndex,
+                leftKeys: step.leftChildKeys,
 
-                    rightIndex:
-                        step.rightChildIndex,
+                chosenKeys: step.chosenChildKeys,
 
-                    leftKeys:
-                        step.leftChildKeys,
-
-                    chosenKeys:
-                        step.chosenChildKeys,
-
-                    rightKeys:
-                        step.rightChildKeys,
-                }
-            );
+                rightKeys: step.rightChildKeys,
+            });
         }
 
-
-        (
-            leafIndex,
-            proofPath
-        )
+        (leafIndex, proofPath)
     }
-
 
     // ---------------------------------------------------------
     // Retrieve Left Child
     // ---------------------------------------------------------
 
-    pub fn retrieveLeft(
-        &self,
-        parentIndex: usize,
-        chosenChildPosition: usize
-    ) -> Option<usize> {
-
+    pub fn retrieveLeft(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
         if chosenChildPosition == 0 {
-
             return None;
         }
 
-
-        Some(
-            self.nodes[parentIndex]
-                .children[
-                    chosenChildPosition - 1
-                ]
-        )
+        Some(self.nodes[parentIndex].children[chosenChildPosition - 1])
     }
-
 
     // ---------------------------------------------------------
     // Retrieve Right Child
     // ---------------------------------------------------------
 
-    pub fn retrieveRight(
-        &self,
-        parentIndex: usize,
-        chosenChildPosition: usize
-    ) -> Option<usize> {
+    pub fn retrieveRight(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+        let children = &self.nodes[parentIndex].children;
 
-        let children =
-            &self.nodes[parentIndex]
-                .children;
-
-
-        if chosenChildPosition + 1
-            >= children.len()
-        {
-
+        if chosenChildPosition + 1 >= children.len() {
             return None;
         }
 
-
-        Some(
-            children[
-                chosenChildPosition + 1
-            ]
-        )
+        Some(children[chosenChildPosition + 1])
     }
-
 
     // ---------------------------------------------------------
     // Get
     // ---------------------------------------------------------
 
-    pub fn get(
-        &self,
-        key: i64
-    ) -> Option<[u8; 32]> {
+    pub fn get(&self, key: i64) -> Option<[u8; 32]> {
+        let leafIndex = self.search(key);
 
-        let leafIndex =
-            self.search(
-                key
-            );
+        let leaf = &self.nodes[leafIndex];
 
+        let mut index = 0;
 
-        let leaf =
-            &self.nodes[leafIndex];
-
-
-        let mut index =
-            0;
-
-
-        while index
-            < leaf.keys.len()
-            && leaf.keys[index]
-                < key
-        {
+        while index < leaf.keys.len() && leaf.keys[index] < key {
             index += 1;
         }
 
-
-        if index
-            < leaf.keys.len()
-            && leaf.keys[index]
-                == key
-        {
-
-            return Some(
-                leaf.values[index]
-            );
+        if index < leaf.keys.len() && leaf.keys[index] == key {
+            return Some(leaf.values[index]);
         }
-
 
         None
     }
-
 
     // ---------------------------------------------------------
     // Update
     // ---------------------------------------------------------
 
-    pub fn update(
-        &mut self,
-        key: i64,
-        value: [u8; 32]
-    ) -> bool {
+    pub fn update(&mut self, key: i64, value: [u8; 32]) -> bool {
+        let leafIndex = self.search(key);
 
-        let leafIndex =
-            self.search(
-                key
-            );
+        let mut index = 0;
 
-
-        let mut index =
-            0;
-
-
-        while index
-            < self.nodes[leafIndex]
-                .keys
-                .len()
-            && self.nodes[leafIndex]
-                .keys[index]
-                < key
-        {
+        while index < self.nodes[leafIndex].keys.len() && self.nodes[leafIndex].keys[index] < key {
             index += 1;
         }
 
-
-        if index
-            < self.nodes[leafIndex]
-                .keys
-                .len()
-            && self.nodes[leafIndex]
-                .keys[index]
-                == key
-        {
-
-            self.nodes[leafIndex]
-                .values[index] =
-                value;
-
+        if index < self.nodes[leafIndex].keys.len() && self.nodes[leafIndex].keys[index] == key {
+            self.nodes[leafIndex].values[index] = value;
 
             return true;
         }
 
-
         false
     }
-
 
     // ---------------------------------------------------------
     // Insert
     // ---------------------------------------------------------
 
-    pub fn insert(
-        &mut self,
-        key: i64,
-        value: [u8; 32]
-    ) {
+    pub fn insert(&mut self, key: i64, value: [u8; 32]) {
+        let leafIndex = self.search(key);
 
-        let leafIndex =
-            self.search(
-                key
-            );
-
-
-        let mut index =
-            0;
-
+        let mut index = 0;
 
         // Same behavior as Python bisect_left
-        while index
-            < self.nodes[leafIndex]
-                .keys
-                .len()
-            && self.nodes[leafIndex]
-                .keys[index]
-                < key
-        {
+        while index < self.nodes[leafIndex].keys.len() && self.nodes[leafIndex].keys[index] < key {
             index += 1;
         }
 
-
         // Key already exists:
         // replace the existing SHA-256 value.
-        if index
-            < self.nodes[leafIndex]
-                .keys
-                .len()
-            && self.nodes[leafIndex]
-                .keys[index]
-                == key
-        {
-
-            self.nodes[leafIndex]
-                .values[index] =
-                value;
-
+        if index < self.nodes[leafIndex].keys.len() && self.nodes[leafIndex].keys[index] == key {
+            self.nodes[leafIndex].values[index] = value;
 
             return;
         }
 
+        self.nodes[leafIndex].keys.insert(index, key);
 
-        self.nodes[leafIndex]
-            .keys
-            .insert(
-                index,
-                key
-            );
+        self.nodes[leafIndex].values.insert(index, value);
 
-
-        self.nodes[leafIndex]
-            .values
-            .insert(
-                index,
-                value
-            );
-
-
-        if self.nodes[leafIndex]
-            .keys
-            .len()
-            > self.maxKeys()
-        {
-
-            self.splitLeaf(
-                leafIndex
-            );
+        if self.nodes[leafIndex].keys.len() > self.maxKeys() {
+            self.splitLeaf(leafIndex);
         }
     }
-
 
     // ---------------------------------------------------------
     // Leaf Split
     // ---------------------------------------------------------
 
-    pub fn splitLeaf(
-        &mut self,
-        leafIndex: usize
-    ) {
+    pub fn splitLeaf(&mut self, leafIndex: usize) {
+        let parentIndex = self.nodes[leafIndex].parent_node;
 
-        let parentIndex =
-            self.nodes[leafIndex]
-                .parent_node;
+        let (mut rightNode, promoteKey) = {
+            let leaf = &mut self.nodes[leafIndex];
 
-
-        let (
-            mut rightNode,
-            promoteKey
-        ) = {
-
-            let leaf =
-                &mut self.nodes[leafIndex];
-
-
-            VplusTree::splitNodeHelper(
-                leaf
-            )
+            VplusTree::splitNodeHelper(leaf)
         };
 
+        let rightIndex = self.nodes.len();
 
-        let rightIndex =
-            self.nodes.len();
+        rightNode.parent_node = parentIndex;
 
-
-        rightNode.parent_node =
-            parentIndex;
-
-
-        self.nodes.push(
-            rightNode
-        );
-
+        self.nodes.push(rightNode);
 
         // Connect leaf linked list.
-        self.nodes[leafIndex]
-            .next_node =
-            Some(
-                rightIndex
-            );
-
+        self.nodes[leafIndex].next_node = Some(rightIndex);
 
         if parentIndex.is_none() {
-
-            self.createNewRoot(
-                leafIndex,
-                rightIndex,
-                promoteKey
-            );
-        }
-        else {
-
-            self.insertInternal(
-                parentIndex.unwrap(),
-                promoteKey,
-                rightIndex
-            );
+            self.createNewRoot(leafIndex, rightIndex, promoteKey);
+        } else {
+            self.insertInternal(parentIndex.unwrap(), promoteKey, rightIndex);
         }
     }
-
 
     // ---------------------------------------------------------
     // Insert Internal
     // ---------------------------------------------------------
 
-    pub fn insertInternal(
-        &mut self,
-        parentIndex: usize,
-        key: i64,
-        childIndex: usize
-    ) {
-
-        let mut index =
-            0;
-
+    pub fn insertInternal(&mut self, parentIndex: usize, key: i64, childIndex: usize) {
+        let mut index = 0;
 
         // Same behavior as Python bisect_right
-        while index
-            < self.nodes[parentIndex]
-                .keys
-                .len()
-            && key
-                >= self.nodes[parentIndex]
-                    .keys[index]
+        while index < self.nodes[parentIndex].keys.len()
+            && key >= self.nodes[parentIndex].keys[index]
         {
-
             index += 1;
         }
-
 
         // -----------------------------------------------------
         // Insert separator key.
         // -----------------------------------------------------
 
-        self.nodes[parentIndex]
-            .keys
-            .insert(
-                index,
-                key
-            );
-
+        self.nodes[parentIndex].keys.insert(index, key);
 
         // -----------------------------------------------------
         // Create matching LPC/RPC slots.
@@ -1054,19 +559,11 @@ pub fn printInternalNodeRecords(
 
         self.nodes[parentIndex]
             .left_pointer_commitments
-            .insert(
-                index,
-                None
-            );
-
+            .insert(index, None);
 
         self.nodes[parentIndex]
             .right_pointer_commitments
-            .insert(
-                index,
-                None
-            );
-
+            .insert(index, None);
 
         // -----------------------------------------------------
         // Insert child pointer.
@@ -1074,520 +571,255 @@ pub fn printInternalNodeRecords(
 
         self.nodes[parentIndex]
             .children
-            .insert(
-                index + 1,
-                childIndex
-            );
+            .insert(index + 1, childIndex);
 
-
-        self.nodes[childIndex]
-            .parent_node =
-            Some(
-                parentIndex
-            );
-
+        self.nodes[childIndex].parent_node = Some(parentIndex);
 
         // Split parent if it overflows.
-        if self.nodes[parentIndex]
-            .keys
-            .len()
-            > self.maxKeys()
-        {
-
-            self.splitInternal(
-                parentIndex
-            );
+        if self.nodes[parentIndex].keys.len() > self.maxKeys() {
+            self.splitInternal(parentIndex);
         }
     }
-
 
     // ---------------------------------------------------------
     // Internal Split
     // ---------------------------------------------------------
 
-    pub fn splitInternal(
-        &mut self,
-        nodeIndex: usize
-    ) {
+    pub fn splitInternal(&mut self, nodeIndex: usize) {
+        let parentIndex = self.nodes[nodeIndex].parent_node;
 
-        let parentIndex =
-            self.nodes[nodeIndex]
-                .parent_node;
+        let (mut rightNode, promoteKey) = {
+            let node = &mut self.nodes[nodeIndex];
 
-
-        let (
-            mut rightNode,
-            promoteKey
-        ) = {
-
-            let node =
-                &mut self.nodes[nodeIndex];
-
-
-            VplusTree::splitNodeHelper(
-                node
-            )
+            VplusTree::splitNodeHelper(node)
         };
 
+        let rightIndex = self.nodes.len();
 
-        let rightIndex =
-            self.nodes.len();
+        rightNode.parent_node = parentIndex;
 
+        let rightChildren = rightNode.children.clone();
 
-        rightNode.parent_node =
-            parentIndex;
-
-
-        let rightChildren =
-            rightNode
-                .children
-                .clone();
-
-
-        self.nodes.push(
-            rightNode
-        );
-
+        self.nodes.push(rightNode);
 
         // Children moved to the right node
         // must point to their new parent.
         for childIndex in rightChildren {
-
-            self.nodes[childIndex]
-                .parent_node =
-                Some(
-                    rightIndex
-                );
+            self.nodes[childIndex].parent_node = Some(rightIndex);
         }
-
 
         if parentIndex.is_none() {
-
-            self.createNewRoot(
-                nodeIndex,
-                rightIndex,
-                promoteKey
-            );
-        }
-        else {
-
-            self.insertInternal(
-                parentIndex.unwrap(),
-                promoteKey,
-                rightIndex
-            );
+            self.createNewRoot(nodeIndex, rightIndex, promoteKey);
+        } else {
+            self.insertInternal(parentIndex.unwrap(), promoteKey, rightIndex);
         }
     }
-
 
     // ---------------------------------------------------------
     // Create New Root
     // ---------------------------------------------------------
 
-    pub fn createNewRoot(
-        &mut self,
-        leftChild: usize,
-        rightChild: usize,
-        key: i64
-    ) {
-
-        let mut newRoot =
-            Node::new(
-                self.order,
-                false
-            );
-
+    pub fn createNewRoot(&mut self, leftChild: usize, rightChild: usize, key: i64) {
+        let mut newRoot = Node::new(self.order, false);
 
         // -----------------------------------------------------
         // Root key.
         // -----------------------------------------------------
 
-        newRoot.keys.push(
-            key
-        );
-
+        newRoot.keys.push(key);
 
         // -----------------------------------------------------
         // Matching LPC/RPC slots.
         // -----------------------------------------------------
 
-        newRoot
-            .left_pointer_commitments
-            .push(
-                None
-            );
+        newRoot.left_pointer_commitments.push(None);
 
-
-        newRoot
-            .right_pointer_commitments
-            .push(
-                None
-            );
-
+        newRoot.right_pointer_commitments.push(None);
 
         // -----------------------------------------------------
         // Root children.
         // -----------------------------------------------------
 
-        newRoot.children.push(
-            leftChild
-        );
+        newRoot.children.push(leftChild);
 
+        newRoot.children.push(rightChild);
 
-        newRoot.children.push(
-            rightChild
-        );
+        let newRootIndex = self.nodes.len();
 
+        self.nodes.push(newRoot);
 
-        let newRootIndex =
-            self.nodes.len();
+        self.nodes[leftChild].parent_node = Some(newRootIndex);
 
+        self.nodes[rightChild].parent_node = Some(newRootIndex);
 
-        self.nodes.push(
-            newRoot
-        );
-
-
-        self.nodes[leftChild]
-            .parent_node =
-            Some(
-                newRootIndex
-            );
-
-
-        self.nodes[rightChild]
-            .parent_node =
-            Some(
-                newRootIndex
-            );
-
-
-        self.root =
-            newRootIndex;
+        self.root = newRootIndex;
     }
-
 
     // ---------------------------------------------------------
     // Show Tree
     // ---------------------------------------------------------
 
     pub fn show(&self) {
+        let mut currentLevel = vec![self.root];
 
-        let mut currentLevel =
-            vec![
-                self.root
-            ];
-
-
-        let mut depth =
-            0;
-
+        let mut depth = 0;
 
         while !currentLevel.is_empty() {
+            let mut nextLevel = Vec::new();
 
-            let mut nextLevel =
-                Vec::new();
-
-
-            print!(
-                "Level {}: ",
-                depth
-            );
-
+            print!("Level {}: ", depth);
 
             for nodeIndex in &currentLevel {
-
-                let node =
-                    &self.nodes[
-                        *nodeIndex
-                    ];
-
+                let node = &self.nodes[*nodeIndex];
 
                 if node.is_leaf {
+                    print!("<Leaf {:?}> ", node.keys);
+                } else {
+                    print!("<Internal {:?}> ", node.keys);
 
-                    print!(
-                        "<Leaf {:?}> ",
-                        node.keys
-                    );
-                }
-                else {
-
-                    print!(
-                        "<Internal {:?}> ",
-                        node.keys
-                    );
-
-
-                    for childIndex
-                        in &node.children
-                    {
-
-                        nextLevel.push(
-                            *childIndex
-                        );
+                    for childIndex in &node.children {
+                        nextLevel.push(*childIndex);
                     }
                 }
             }
 
-
             println!();
 
-
-            currentLevel =
-                nextLevel;
-
+            currentLevel = nextLevel;
 
             depth += 1;
         }
     }
-
 
     // ---------------------------------------------------------
     // Height
     // ---------------------------------------------------------
 
-    pub fn getHeight(
-        &self
-    ) -> usize {
+    pub fn getHeight(&self) -> usize {
+        let mut height = 0;
 
-        let mut height =
-            0;
+        let mut currentNode = self.root;
 
-
-        let mut currentNode =
-            self.root;
-
-
-        while !self.nodes[currentNode]
-            .is_leaf
-        {
-
+        while !self.nodes[currentNode].is_leaf {
             height += 1;
 
-
-            currentNode =
-                self.nodes[currentNode]
-                    .children[0];
+            currentNode = self.nodes[currentNode].children[0];
         }
-
 
         height
     }
-
 
     // ---------------------------------------------------------
     // Depth
     // ---------------------------------------------------------
 
-    pub fn getDepth(
-        &self,
-        nodeIndex: usize
-    ) -> usize {
+    pub fn getDepth(&self, nodeIndex: usize) -> usize {
+        let mut depth = 0;
 
-        let mut depth =
-            0;
+        let mut currentNode = nodeIndex;
 
-
-        let mut currentNode =
-            nodeIndex;
-
-
-        while let Some(parentIndex) =
-            self.nodes[currentNode]
-                .parent_node
-        {
-
+        while let Some(parentIndex) = self.nodes[currentNode].parent_node {
             depth += 1;
 
-
-            currentNode =
-                parentIndex;
+            currentNode = parentIndex;
         }
-
 
         depth
     }
-
 
     // ---------------------------------------------------------
     // Count Nodes
     // ---------------------------------------------------------
 
-    pub fn countNodes(
-        &self
-    ) -> usize {
+    pub fn countNodes(&self) -> usize {
+        let mut count = 0;
 
-        let mut count =
-            0;
-
-
-        let mut queue =
-            vec![
-                self.root
-            ];
-
+        let mut queue = vec![self.root];
 
         while !queue.is_empty() {
-
-            let nodeIndex =
-                queue.remove(0);
-
+            let nodeIndex = queue.remove(0);
 
             count += 1;
 
-
-            if !self.nodes[nodeIndex]
-                .is_leaf
-            {
-
-                for childIndex
-                    in &self.nodes[nodeIndex]
-                        .children
-                {
-
-                    queue.push(
-                        *childIndex
-                    );
+            if !self.nodes[nodeIndex].is_leaf {
+                for childIndex in &self.nodes[nodeIndex].children {
+                    queue.push(*childIndex);
                 }
             }
         }
 
-
         count
     }
-
 
     // ---------------------------------------------------------
     // Get All Leaves
     // ---------------------------------------------------------
 
-    pub fn getAllLeaves(
-        &self
-    ) -> Vec<usize> {
+    pub fn getAllLeaves(&self) -> Vec<usize> {
+        let mut leaves = Vec::new();
 
-        let mut leaves =
-            Vec::new();
+        let mut currentNode = self.root;
 
-
-        let mut currentNode =
-            self.root;
-
-
-        while !self.nodes[currentNode]
-            .is_leaf
-        {
-
-            currentNode =
-                self.nodes[currentNode]
-                    .children[0];
+        while !self.nodes[currentNode].is_leaf {
+            currentNode = self.nodes[currentNode].children[0];
         }
 
-
         loop {
+            leaves.push(currentNode);
 
-            leaves.push(
-                currentNode
-            );
-
-
-            match self.nodes[currentNode]
-                .next_node
-            {
-
+            match self.nodes[currentNode].next_node {
                 Some(nextNode) => {
-
-                    currentNode =
-                        nextNode;
+                    currentNode = nextNode;
                 }
 
                 None => {
-
                     break;
                 }
             }
         }
 
-
         leaves
     }
-
 
     // ---------------------------------------------------------
     // Count Keys
     // ---------------------------------------------------------
 
-    pub fn countKeys(
-        &self
-    ) -> usize {
+    pub fn countKeys(&self) -> usize {
+        let mut count = 0;
 
-        let mut count =
-            0;
-
-
-        let leaves =
-            self.getAllLeaves();
-
+        let leaves = self.getAllLeaves();
 
         for leafIndex in leaves {
-
-            count +=
-                self.nodes[leafIndex]
-                    .keys
-                    .len();
+            count += self.nodes[leafIndex].keys.len();
         }
-
 
         count
     }
-
 
     // ---------------------------------------------------------
     // Basic Tree Validation
     // ---------------------------------------------------------
 
-    pub fn validate(
-        &self
-    ) -> bool {
-
-        if self.nodes[self.root]
-            .parent_node
-            .is_some()
-        {
-
-            println!(
-                "Root should not have a parent."
-            );
-
+    pub fn validate(&self) -> bool {
+        if self.nodes[self.root].parent_node.is_some() {
+            println!("Root should not have a parent.");
 
             return false;
         }
 
-
-        let mut queue =
-            vec![
-                self.root
-            ];
-
+        let mut queue = vec![self.root];
 
         while !queue.is_empty() {
+            let nodeIndex = queue.remove(0);
 
-            let nodeIndex =
-                queue.remove(0);
-
-
-            let node =
-                &self.nodes[nodeIndex];
-
+            let node = &self.nodes[nodeIndex];
 
             // -------------------------------------------------
             // Leaf values
             // -------------------------------------------------
 
-            if node.is_leaf
-                && node.keys.len()
-                    != node.values.len()
-            {
-
+            if node.is_leaf && node.keys.len() != node.values.len() {
                 println!(
                     "Leaf {:?} has {} keys but {} values.",
                     node.keys,
@@ -1595,39 +827,25 @@ pub fn printInternalNodeRecords(
                     node.values.len()
                 );
 
-
                 return false;
             }
-
 
             // -------------------------------------------------
             // Internal nodes should not store leaf values.
             // -------------------------------------------------
 
-            if !node.is_leaf
-                && !node.values.is_empty()
-            {
-
-                println!(
-                    "Internal node {:?} unexpectedly stores values.",
-                    node.keys
-                );
-
+            if !node.is_leaf && !node.values.is_empty() {
+                println!("Internal node {:?} unexpectedly stores values.", node.keys);
 
                 return false;
             }
 
-
             if !node.is_leaf {
-
                 // -------------------------------------------------
                 // Every internal key must have one LPC slot.
                 // -------------------------------------------------
 
-                if node.left_pointer_commitments.len()
-                    != node.keys.len()
-                {
-
+                if node.left_pointer_commitments.len() != node.keys.len() {
                     println!(
                         "Internal node {:?} has {} keys but {} LPC entries.",
                         node.keys,
@@ -1635,19 +853,14 @@ pub fn printInternalNodeRecords(
                         node.left_pointer_commitments.len()
                     );
 
-
                     return false;
                 }
-
 
                 // -------------------------------------------------
                 // Every internal key must have one RPC slot.
                 // -------------------------------------------------
 
-                if node.right_pointer_commitments.len()
-                    != node.keys.len()
-                {
-
+                if node.right_pointer_commitments.len() != node.keys.len() {
                     println!(
                         "Internal node {:?} has {} keys but {} RPC entries.",
                         node.keys,
@@ -1655,161 +868,77 @@ pub fn printInternalNodeRecords(
                         node.right_pointer_commitments.len()
                     );
 
-
                     return false;
                 }
-
 
                 // -------------------------------------------------
                 // Internal node children.
                 // -------------------------------------------------
 
-                if node.children.len()
-                    != node.keys.len() + 1
-                {
-
-                    println!(
-                        "Internal node {:?} has incorrect child count.",
-                        node.keys
-                    );
-
+                if node.children.len() != node.keys.len() + 1 {
+                    println!("Internal node {:?} has incorrect child count.", node.keys);
 
                     return false;
                 }
 
-
-                for childIndex
-                    in &node.children
-                {
-
-                    if self.nodes[
-                        *childIndex
-                    ]
-                    .parent_node
-                        != Some(
-                            nodeIndex
-                        )
-                    {
-
-                        println!(
-                            "Child {:?} has wrong parent.",
-                            self.nodes[
-                                *childIndex
-                            ]
-                            .keys
-                        );
-
+                for childIndex in &node.children {
+                    if self.nodes[*childIndex].parent_node != Some(nodeIndex) {
+                        println!("Child {:?} has wrong parent.", self.nodes[*childIndex].keys);
 
                         return false;
                     }
 
-
-                    queue.push(
-                        *childIndex
-                    );
+                    queue.push(*childIndex);
                 }
-            }
-            else {
-
+            } else {
                 // Leaf nodes should not contain LPC/RPC entries.
-                if !node.left_pointer_commitments
-                    .is_empty()
-                {
-
-                    println!(
-                        "Leaf {:?} unexpectedly contains LPC entries.",
-                        node.keys
-                    );
-
+                if !node.left_pointer_commitments.is_empty() {
+                    println!("Leaf {:?} unexpectedly contains LPC entries.", node.keys);
 
                     return false;
                 }
 
-
-                if !node.right_pointer_commitments
-                    .is_empty()
-                {
-
-                    println!(
-                        "Leaf {:?} unexpectedly contains RPC entries.",
-                        node.keys
-                    );
-
+                if !node.right_pointer_commitments.is_empty() {
+                    println!("Leaf {:?} unexpectedly contains RPC entries.", node.keys);
 
                     return false;
                 }
             }
         }
 
-
         true
     }
-
 
     // ---------------------------------------------------------
     // Verify Tree
     // ---------------------------------------------------------
 
-    pub fn verifyTree(
-        &self
-    ) -> bool {
+    pub fn verifyTree(&self) -> bool {
+        let mut leafDepth: Option<usize> = None;
 
-        let mut leafDepth:
-            Option<usize> =
-            None;
+        let mut leafKeys: Vec<i64> = Vec::new();
 
-
-        let mut leafKeys:
-            Vec<i64> =
-            Vec::new();
-
-
-        let valid =
-            self.verifyNode(
-                self.root,
-                None,
-                None,
-                0,
-                &mut leafDepth,
-                &mut leafKeys
-            );
-
+        let valid = self.verifyNode(self.root, None, None, 0, &mut leafDepth, &mut leafKeys);
 
         if !valid {
-
             return false;
         }
 
-
         // Check global leaf order.
-        let mut sortedLeafKeys =
-            leafKeys.clone();
-
+        let mut sortedLeafKeys = leafKeys.clone();
 
         sortedLeafKeys.sort();
 
-
-        if leafKeys
-            != sortedLeafKeys
-        {
-
-            println!(
-                "Leaf chain is not globally sorted."
-            );
-
+        if leafKeys != sortedLeafKeys {
+            println!("Leaf chain is not globally sorted.");
 
             return false;
         }
 
-
-        println!(
-            "Tree structure is valid."
-        );
-
+        println!("Tree structure is valid.");
 
         true
     }
-
 
     // ---------------------------------------------------------
     // Verify Node
@@ -1822,150 +951,89 @@ pub fn printInternalNodeRecords(
         upperBound: Option<i64>,
         depth: usize,
         leafDepth: &mut Option<usize>,
-        leafKeys: &mut Vec<i64>
+        leafKeys: &mut Vec<i64>,
     ) -> bool {
-
-        let node =
-            &self.nodes[nodeIndex];
-
+        let node = &self.nodes[nodeIndex];
 
         // -----------------------------------------------------
         // Keys must be sorted
         // -----------------------------------------------------
 
-        let mut sortedKeys =
-            node.keys.clone();
-
+        let mut sortedKeys = node.keys.clone();
 
         sortedKeys.sort();
 
-
-        if node.keys
-            != sortedKeys
-        {
-
-            println!(
-                "Keys are not sorted in node: {:?}",
-                node.keys
-            );
-
+        if node.keys != sortedKeys {
+            println!("Keys are not sorted in node: {:?}", node.keys);
 
             return false;
         }
-
 
         // -----------------------------------------------------
         // Check key bounds
         // -----------------------------------------------------
 
         for key in &node.keys {
-
-            if let Some(lower) =
-                lowerBound
-            {
-
+            if let Some(lower) = lowerBound {
                 if *key < lower {
-
-                    println!(
-                        "Key violates lower bound: {}",
-                        key
-                    );
-
+                    println!("Key violates lower bound: {}", key);
 
                     return false;
                 }
             }
 
-
-            if let Some(upper) =
-                upperBound
-            {
-
+            if let Some(upper) = upperBound {
                 if *key > upper {
-
-                    println!(
-                        "Key violates upper bound: {}",
-                        key
-                    );
-
+                    println!("Key violates upper bound: {}", key);
 
                     return false;
                 }
             }
         }
-
 
         // -----------------------------------------------------
         // Maximum Occupancy
         // -----------------------------------------------------
 
-        if node.keys.len()
-            > self.maxKeys()
-        {
-
-            println!(
-                "Node {:?} exceeds maxKeys={}",
-                node.keys,
-                self.maxKeys()
-            );
-
+        if node.keys.len() > self.maxKeys() {
+            println!("Node {:?} exceeds maxKeys={}", node.keys, self.maxKeys());
 
             return false;
         }
-
 
         // -----------------------------------------------------
         // Minimum Occupancy
         // Root is exempt
         // -----------------------------------------------------
 
-        if nodeIndex
-            != self.root
-        {
-
-            if node.is_leaf
-                && node.keys.len()
-                    < self.minLeafKeys()
-            {
-
+        if nodeIndex != self.root {
+            if node.is_leaf && node.keys.len() < self.minLeafKeys() {
                 println!(
                     "Leaf {:?} below minLeafKeys={}",
                     node.keys,
                     self.minLeafKeys()
                 );
 
-
                 return false;
             }
 
-
-            if !node.is_leaf
-                && node.keys.len()
-                    < self.minInternalKeys()
-            {
-
+            if !node.is_leaf && node.keys.len() < self.minInternalKeys() {
                 println!(
                     "Internal {:?} below minInternalKeys={}",
                     node.keys,
                     self.minInternalKeys()
                 );
 
-
                 return false;
             }
         }
-
 
         // -----------------------------------------------------
         // Leaf Node
         // -----------------------------------------------------
 
         if node.is_leaf {
-
-            if node.keys.len()
-                != node.values.len()
-            {
-
+            if node.keys.len() != node.values.len() {
                 println!(
                     "Leaf {:?} has {} keys but {} values.",
                     node.keys,
@@ -1973,203 +1041,117 @@ pub fn printInternalNodeRecords(
                     node.values.len()
                 );
 
+                return false;
+            }
+
+            if !node.left_pointer_commitments.is_empty() {
+                println!("Leaf {:?} unexpectedly contains LPC entries.", node.keys);
 
                 return false;
             }
 
-
-            if !node.left_pointer_commitments
-                .is_empty()
-            {
-
-                println!(
-                    "Leaf {:?} unexpectedly contains LPC entries.",
-                    node.keys
-                );
-
+            if !node.right_pointer_commitments.is_empty() {
+                println!("Leaf {:?} unexpectedly contains RPC entries.", node.keys);
 
                 return false;
             }
-
-
-            if !node.right_pointer_commitments
-                .is_empty()
-            {
-
-                println!(
-                    "Leaf {:?} unexpectedly contains RPC entries.",
-                    node.keys
-                );
-
-
-                return false;
-            }
-
 
             match *leafDepth {
-
                 None => {
-
-                    *leafDepth =
-                        Some(
-                            depth
-                        );
+                    *leafDepth = Some(depth);
                 }
 
-
                 Some(expectedDepth) => {
-
-                    if expectedDepth
-                        != depth
-                    {
-
-                        println!(
-                            "Leaves are not at the same depth."
-                        );
-
+                    if expectedDepth != depth {
+                        println!("Leaves are not at the same depth.");
 
                         return false;
                     }
                 }
             }
 
-
             for key in &node.keys {
-
-                leafKeys.push(
-                    *key
-                );
+                leafKeys.push(*key);
             }
-
 
             return true;
         }
-
 
         // -----------------------------------------------------
         // Internal nodes must not contain leaf values
         // -----------------------------------------------------
 
         if !node.values.is_empty() {
-
             println!(
                 "Internal node {:?} unexpectedly contains values.",
                 node.keys
             );
 
-
             return false;
         }
-
 
         // -----------------------------------------------------
         // Internal Node LPC Count
         // -----------------------------------------------------
 
-        if node.left_pointer_commitments.len()
-            != node.keys.len()
-        {
-
-            println!(
-                "Internal node {:?} has incorrect LPC count.",
-                node.keys
-            );
-
+        if node.left_pointer_commitments.len() != node.keys.len() {
+            println!("Internal node {:?} has incorrect LPC count.", node.keys);
 
             return false;
         }
-
 
         // -----------------------------------------------------
         // Internal Node RPC Count
         // -----------------------------------------------------
 
-        if node.right_pointer_commitments.len()
-            != node.keys.len()
-        {
-
-            println!(
-                "Internal node {:?} has incorrect RPC count.",
-                node.keys
-            );
-
+        if node.right_pointer_commitments.len() != node.keys.len() {
+            println!("Internal node {:?} has incorrect RPC count.", node.keys);
 
             return false;
         }
-
 
         // -----------------------------------------------------
         // Internal Node Child Count
         // -----------------------------------------------------
 
-        if node.children.len()
-            != node.keys.len() + 1
-        {
-
-            println!(
-                "Internal node child count is incorrect."
-            );
-
+        if node.children.len() != node.keys.len() + 1 {
+            println!("Internal node child count is incorrect.");
 
             return false;
         }
-
 
         // -----------------------------------------------------
         // Verify Children
         // -----------------------------------------------------
 
         for i in 0..node.children.len() {
+            let childIndex = node.children[i];
 
-            let childIndex =
-                node.children[i];
+            let childLower = if i > 0 {
+                Some(node.keys[i - 1])
+            } else {
+                lowerBound
+            };
 
+            let childUpper = if i < node.keys.len() {
+                Some(node.keys[i])
+            } else {
+                upperBound
+            };
 
-            let childLower =
-                if i > 0 {
-
-                    Some(
-                        node.keys[
-                            i - 1
-                        ]
-                    )
-                }
-                else {
-
-                    lowerBound
-                };
-
-
-            let childUpper =
-                if i < node.keys.len() {
-
-                    Some(
-                        node.keys[i]
-                    )
-                }
-                else {
-
-                    upperBound
-                };
-
-
-            let valid =
-                self.verifyNode(
-                    childIndex,
-                    childLower,
-                    childUpper,
-                    depth + 1,
-                    leafDepth,
-                    leafKeys
-                );
-
+            let valid = self.verifyNode(
+                childIndex,
+                childLower,
+                childUpper,
+                depth + 1,
+                leafDepth,
+                leafKeys,
+            );
 
             if !valid {
-
                 return false;
             }
         }
-
 
         true
     }
