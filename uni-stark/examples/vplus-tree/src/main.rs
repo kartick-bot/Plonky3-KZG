@@ -1,5 +1,8 @@
 mod leaf_kzg;
 mod stark_witness;
+// Reuse the existing monolithic BN254 pairing STARK as a Rust module.
+#[path = "../../bn254_kzg_degree6_monolithic.rs"]
+mod bn254_pairing_stark;
 mod node;
 mod verify_eval;
 mod vplustree;
@@ -2401,156 +2404,60 @@ fn buildTree(order: usize, keys: &Vec<i64>) {
 // ---------------------------------------------------------
 
 fn main() {
-    let orders = vec![5, 6];
+    // Setup and verification must be separate operations. In particular,
+    // verification must NEVER silently regenerate the dataset and change its root.
+    let setup_mode = std::env::var("VPLUS_SETUP").as_deref() == Ok("1");
 
-    let power: u32 = 3;
+    if setup_mode {
+        let orders = vec![5, 6];
+        let power: u32 = 3;
+        let universe_powers = 16..=16u32;
 
-    let universePowers = 16..=16u32;
+        for order in orders {
+            let key_base: usize = order;
+            let key_count = key_base.pow(power);
 
-    for order in orders {
-        let keyBase: usize = order;
+            for universe_power in universe_powers.clone() {
+                let universe_max = 2_i64.pow(universe_power)
+                    .max((key_count as i64) * 2);
 
-        let keyCount = keyBase.pow(power);
+                let keys = generateRandomKeys(key_count, universe_max);
+                buildTree(order, &keys);
 
-        for universePower in universePowers.clone() {
-            let universeMax = 2_i64.pow(universePower).max((keyCount as i64) * 2);
+                for file_name in ["vplus_tree", "kzg_details"] {
+                    let run_file_name = format!(
+                        "{}_keys{}pow{}_universe2pow{}.json",
+                        file_name, key_base, power, universe_power
+                    );
 
-//             println!("==========================================");
+                    if std::path::Path::new(&run_file_name).exists() {
+                        std::fs::remove_file(&run_file_name)
+                            .expect("Could not remove existing JSON file");
+                    }
+                    std::fs::rename(format!("{}.json", file_name), &run_file_name)
+                        .expect("Could not rename JSON file");
 
-//             println!("Experiment Configuration");
-
-//             println!("==========================================");
-
-//             println!("Tree Order: {}", order);
-
-//             println!("Keys: {}^{} = {}", keyBase, power, keyCount);
-
-//             println!(
-//                 "Key Universe: 1 to 2^{} = 1 to {}",
-//                 universePower, universeMax
-//             );
-
-            let keys = generateRandomKeys(keyCount, universeMax);
-
-            buildTree(order, &keys);
-
-            // ---------------------------------------------
-            // Keep This Run's JSON Files
-            // ---------------------------------------------
-
-            for fileName in ["vplus_tree", "kzg_details"] {
-                let runFileName = format!(
-                    "{}_keys{}pow{}_universe2pow{}.json",
-                    fileName, keyBase, power, universePower
-                );
-
-                if std::path::Path::new(&runFileName).exists() {
-                    std::fs::remove_file(&runFileName)
-                        .expect("Could not remove existing JSON file");
+                    println!("Setup wrote: {}", run_file_name);
                 }
-
-                std::fs::rename(format!("{}.json", fileName), &runFileName)
-                    .expect("Could not rename JSON file");
-
-//                 println!("Saved: {}", runFileName);
             }
         }
+
+        println!("\nSETUP COMPLETE: new random trees/KZG JSON files created.");
+        println!("The trusted-root registry has NOT been modified.");
+        println!("Review and explicitly register each new root before verifying.");
+        return;
     }
 
+    // Normal mode: reuse existing JSON. Do not call buildTree() or modify
+    // either the dataset or the verifier-owned trusted-root registry.
+    println!("\nVERIFICATION MODE: using existing V+ Tree/KZG JSON files.");
 
+    let loaded = stark_witness::loadRandomMembershipFromJson(".");
+    stark_witness::runStarkProof(&loaded);
 
-
-    // =====================================================
-    // STARK WITNESS PROCESS
-    //
-    // IMPORTANT:
-    // This starts only AFTER every configured JSON file has
-    // been generated and renamed above.
-    // =====================================================
-
-    println!();
-    println!("==========================================");
-    println!("JSON CREATED");
-    println!("==========================================");
-    println!("V+ Tree and KZG JSON generation completed.");
-
-    // -----------------------------------------------------
-    // STARK reads the completed JSON files.
-    // One verified existing key is selected by the loader.
-    // -----------------------------------------------------
-
-    let loaded = main_stark_runtime::loadRandomMembershipFromJson(".");
-
-    println!();
-    println!("==========================================");
-    println!("STARK READS JSON");
-    println!("==========================================");
-    println!("KZG JSON                 : {}", loaded.source_kzg_file);
-    println!("Tree JSON                : {}", loaded.source_tree_file);
-    println!("Selected Existing Key    : {}", loaded.public_statement.key);
-
-    // -----------------------------------------------------
-    // STARK witness reconstructed from JSON.
-    // -----------------------------------------------------
-
-    let witness = &loaded.private_witness;
-
-    println!();
-    println!("==========================================");
-    println!("STARK WITNESS");
-    println!("==========================================");
-    println!("Key                      : {}", witness.key);
-    println!("Leaf Node                : {}", witness.leaf_node_index);
-    println!("Global Index             : {}", witness.global_index);
-    println!("Digest                   : {:?}", witness.digest);
-    println!("y_low                    : {:?}", witness.y_low);
-    println!("y_high                   : {:?}", witness.y_high);
-    println!("Evaluation Point         : {:?}", witness.leaf_evaluation_point);
-    println!("Evaluation Value         : {:?}", witness.leaf_evaluation_value);
-    println!("Leaf Commitment          : {:?}", witness.leaf_commitment);
-    println!("Leaf KZG Witness         : {:?}", witness.leaf_opening_witness);
-    println!("Leaf Polynomial Coeffs   : {}", witness.leaf_polynomial_coefficients.len());
-    println!("Leaf-to-Root Path Levels : {}", witness.path.len());
-
-    for (level, step) in witness.path.iter().enumerate() {
-        println!();
-        println!("Path Level {}", level + 1);
-        println!("  Node Index             : {}", step.node_index);
-        println!("  Record Position        : {}", step.record_position);
-        println!("  Mapping                : {}", step.mapping);
-        println!("  Separator Key          : {}", step.separator_key);
-        println!("  Evaluation Point       : {:?}", step.evaluation_point);
-        println!("  Evaluation Value       : {:?}", step.evaluation_value);
-        println!("  Parent Commitment      : {:?}", step.parent_commitment);
-        println!("  KZG Opening Witness    : {:?}", step.opening_witness);
-        println!("  Polynomial Coeff Count : {}", step.polynomial_coefficients.len());
+    if std::env::var("VPLUS_PAIRING_STARK").as_deref() == Ok("1") {
+        stark_witness::runRealLeafPairingStark(&loaded);
     }
-
-    // -----------------------------------------------------
-    // Exact prover / verifier data boundary.
-    // -----------------------------------------------------
-
-    main_stark_runtime::printProverVerifierBoundary(&loaded);
-
-    // -----------------------------------------------------
-    // Private trace used by the prover.
-    // -----------------------------------------------------
-
-    let privateTrace = main_stark_runtime::buildPrivateTrace(&loaded.private_values);
-
-    println!();
-    println!("==========================================");
-    println!("TRACE");
-    println!("==========================================");
-    println!("Trace Width               : 1");
-    println!("Trace Height              : {}", privateTrace.values.len());
-    println!("Private Witness Elements  : {}", loaded.private_values.len());
-    println!("Public Input Elements     : {}", loaded.public_values.len());
-
-    println!();
-    println!("==========================================");
-    println!("STARK WITNESS PROCESS COMPLETE");
-    println!("==========================================");
 }
 
 // ---------------------------------------------------------

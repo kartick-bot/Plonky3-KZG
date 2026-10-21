@@ -8,6 +8,9 @@ ark-bn254 = "0.5"
 ark-ec = "0.5"
 ark-ff = "0.5"
 ark-serialize = "0.5"
+num-bigint = "0.4"
+p3-goldilocks = { workspace = true }
+postcard = { version = "1", features = ["alloc"] }
 
 rand = "0.10.3"
 rand08 = { package = "rand", version = "0.8" }

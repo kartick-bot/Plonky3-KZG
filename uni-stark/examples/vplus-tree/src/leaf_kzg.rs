@@ -724,7 +724,7 @@ pub fn buildNodeCommitment(
 
     let commitment = commitPolynomial(&coefficients, srs);
 
-    println!("Internal Node {} Commitment: {:?}", node_index, commitment);
+    // println!("Internal Node {} Commitment: {:?}", node_index, commitment);
 
     commitment
 }
@@ -738,7 +738,7 @@ pub fn buildTreeCommitment(
 ) -> G1Affine {
     let root_commitment = buildNodeCommitment(tree, tree.root, leaf_polynomials, srs);
 
-    println!("Root Commitment: {:?}", root_commitment);
+    // println!("Root Commitment: {:?}", root_commitment);
 
     root_commitment
 }

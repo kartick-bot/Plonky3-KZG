@@ -2,15 +2,15 @@
   "order": 6,
   "height": 3,
   "number_of_keys": 216,
-  "number_of_nodes": 71,
+  "number_of_nodes": 75,
   "root_node": 38,
-  "ascii_tree": "ROOT [38] keys=[27386, 43239]\n+-- PARENT [9] keys=[8480, 14043, 19459]\n|   +-- PARENT [2] keys=[1792, 3042, 3952, 5497, 6717]\n|   |   +-- LEAF [0] keys=[388, 697, 905, 1710, 1747]\n|   |   +-- LEAF [31] keys=[1792, 1970, 2452, 2459, 2780]\n|   |   +-- LEAF [33] keys=[3042, 3168, 3240]\n|   |   +-- LEAF [69] keys=[3952, 5048, 5232]\n|   |   +-- LEAF [41] keys=[5497, 5888, 6344, 6688]\n|   |   +-- LEAF [19] keys=[6717, 7121, 7614, 8375]\n|   +-- PARENT [32] keys=[9286, 11721, 12087]\n|   |   +-- LEAF [13] keys=[8480, 8534, 8757, 8987, 9105]\n|   |   +-- LEAF [46] keys=[9286, 10095, 10944, 11682]\n|   |   +-- LEAF [20] keys=[11721, 11952, 12002]\n|   |   +-- LEAF [70] keys=[12087, 12577, 13392]\n|   +-- PARENT [57] keys=[15727, 16404, 17470, 18472]\n|   |   +-- LEAF [51] keys=[14043, 14992, 15072, 15701]\n|   |   +-- LEAF [4] keys=[15727, 15789, 15891, 16260, 16400]\n|   |   +-- LEAF [26] keys=[16404, 16875, 17231, 17434]\n|   |   +-- LEAF [56] keys=[17470, 18078, 18365]\n|   |   +-- LEAF [63] keys=[18472, 18946, 19260]\n|   +-- PARENT [18] keys=[20102, 21050, 22919, 24492, 26194]\n|       +-- LEAF [17] keys=[19459, 19812, 20095]\n|       +-- LEAF [45] keys=[20102, 20393, 20954]\n|       +-- LEAF [58] keys=[21050, 21069, 21159, 22230, 22602]\n|       +-- LEAF [12] keys=[22919, 23128, 23526, 23745, 24412]\n|       +-- LEAF [22] keys=[24492, 24511, 24514, 24599, 26086]\n|       +-- LEAF [59] keys=[26194, 26709, 27138, 27272]\n+-- PARENT [37] keys=[34652, 39293]\n|   +-- PARENT [36] keys=[27889, 30587, 31400, 32850, 33965]\n|   |   +-- LEAF [16] keys=[27386, 27470, 27763]\n|   |   +-- LEAF [61] keys=[27889, 28449, 28837, 29031, 30506]\n|   |   +-- LEAF [35] keys=[30587, 30825, 30885]\n|   |   +-- LEAF [7] keys=[31400, 31969, 31980, 32047, 32753]\n|   |   +-- LEAF [50] keys=[32850, 33104, 33818]\n|   |   +-- LEAF [30] keys=[33965, 34317, 34338, 34651]\n|   +-- PARENT [8] keys=[36844, 37949]\n|   |   +-- LEAF [3] keys=[34652, 35097, 36644, 36762]\n|   |   +-- LEAF [39] keys=[36844, 37633, 37678]\n|   |   +-- LEAF [5] keys=[37949, 38054, 38106, 38159, 39224]\n|   +-- PARENT [48] keys=[39597, 40790, 41616, 41975]\n|       +-- LEAF [47] keys=[39293, 39485, 39526, 39556]\n|       +-- LEAF [11] keys=[39597, 39605, 39608, 40124, 40262]\n|       +-- LEAF [42] keys=[40790, 41407, 41487]\n|       +-- LEAF [27] keys=[41616, 41832, 41904]\n|       +-- LEAF [66] keys=[41975, 42104, 42439]\n+-- PARENT [54] keys=[48996, 56999, 60803]\n    +-- PARENT [15] keys=[44420, 45534, 46713, 47726]\n    |   +-- LEAF [1] keys=[43239, 43522, 43635, 44310]\n    |   +-- LEAF [68] keys=[44420, 44733, 44772]\n    |   +-- LEAF [23] keys=[45534, 46028, 46130]\n    |   +-- LEAF [67] keys=[46713, 46971, 47068]\n    |   +-- LEAF [14] keys=[47726, 47812, 47925, 48091, 48962]\n    +-- PARENT [53] keys=[50725, 52651, 54132, 54859, 55498]\n    |   +-- LEAF [49] keys=[48996, 49083, 49231, 49360, 49926]\n    |   +-- LEAF [34] keys=[50725, 51171, 51376, 51964]\n    |   +-- LEAF [64] keys=[52651, 53324, 53388]\n    |   +-- LEAF [28] keys=[54132, 54538, 54572, 54649, 54804]\n    |   +-- LEAF [52] keys=[54859, 55216, 55274]\n    |   +-- LEAF [62] keys=[55498, 56407, 56748]\n    +-- PARENT [25] keys=[58096, 59050, 60302]\n    |   +-- LEAF [21] keys=[56999, 57462, 57894]\n    |   +-- LEAF [55] keys=[58096, 58236, 58530]\n    |   +-- LEAF [6] keys=[59050, 59149, 59288, 59452, 59808]\n    |   +-- LEAF [10] keys=[60302, 60370, 60541]\n    +-- PARENT [44] keys=[62316, 63300, 63859, 64412, 64877]\n        +-- LEAF [43] keys=[60803, 61211, 61770, 61915, 61992]\n        +-- LEAF [24] keys=[62316, 62414, 62564, 62636, 63184]\n        +-- LEAF [40] keys=[63300, 63758, 63820]\n        +-- LEAF [65] keys=[63859, 64073, 64130, 64240]\n        +-- LEAF [29] keys=[64412, 64556, 64826]\n        +-- LEAF [60] keys=[64877, 65028, 65042, 65382, 65431]\n",
+  "ascii_tree": "ROOT [38] keys=[13951, 31079]\n+-- PARENT [9] keys=[4095, 9662]\n|   +-- PARENT [2] keys=[1588, 2508]\n|   |   +-- LEAF [0] keys=[8, 857, 1190, 1246, 1277]\n|   |   +-- LEAF [40] keys=[1588, 1870, 2185, 2237, 2443]\n|   |   +-- LEAF [21] keys=[2508, 3155, 3879, 4075]\n|   +-- PARENT [51] keys=[6003, 6643, 7256]\n|   |   +-- LEAF [50] keys=[4095, 5597, 5767]\n|   |   +-- LEAF [17] keys=[6003, 6591, 6632]\n|   |   +-- LEAF [41] keys=[6643, 6904, 6948, 6978]\n|   |   +-- LEAF [64] keys=[7256, 8755, 9092, 9186]\n|   +-- PARENT [63] keys=[10707, 12110, 12683]\n|       +-- LEAF [52] keys=[9662, 9897, 10158]\n|       +-- LEAF [62] keys=[10707, 11051, 11672]\n|       +-- LEAF [7] keys=[12110, 12344, 12476, 12610]\n|       +-- LEAF [55] keys=[12683, 13259, 13498, 13942]\n+-- PARENT [72] keys=[16929, 21236, 25373]\n|   +-- PARENT [18] keys=[15524, 16326]\n|   |   +-- LEAF [11] keys=[13951, 14242, 14990]\n|   |   +-- LEAF [49] keys=[15524, 15700, 15716, 15794]\n|   |   +-- LEAF [30] keys=[16326, 16700, 16718]\n|   +-- PARENT [71] keys=[18229, 18969, 19961]\n|   |   +-- LEAF [16] keys=[16929, 17491, 18171]\n|   |   +-- LEAF [70] keys=[18229, 18282, 18886]\n|   |   +-- LEAF [43] keys=[18969, 19096, 19662, 19954]\n|   |   +-- LEAF [54] keys=[19961, 20225, 20790]\n|   +-- PARENT [32] keys=[22587, 22754, 24224, 24692]\n|   |   +-- LEAF [31] keys=[21236, 21751, 21956]\n|   |   +-- LEAF [73] keys=[22587, 22639, 22721]\n|   |   +-- LEAF [6] keys=[22754, 23605, 23709]\n|   |   +-- LEAF [74] keys=[24224, 24480, 24637]\n|   |   +-- LEAF [42] keys=[24692, 24698, 25039]\n|   +-- PARENT [48] keys=[26660, 28110, 28427, 28983, 29876]\n|       +-- LEAF [27] keys=[25373, 25389, 26088, 26267]\n|       +-- LEAF [56] keys=[26660, 27054, 27082, 27212, 27685]\n|       +-- LEAF [33] keys=[28110, 28225, 28364]\n|       +-- LEAF [47] keys=[28427, 28618, 28727, 28801]\n|       +-- LEAF [13] keys=[28983, 29011, 29372]\n|       +-- LEAF [59] keys=[29876, 30366, 30700]\n+-- PARENT [37] keys=[34488, 41130, 44787, 54244, 58555]\n    +-- PARENT [8] keys=[32417, 33396, 33593]\n    |   +-- LEAF [5] keys=[31079, 31220, 31620, 31700, 31910]\n    |   +-- LEAF [22] keys=[32417, 32424, 33185, 33216, 33362]\n    |   +-- LEAF [68] keys=[33396, 33447, 33507]\n    |   +-- LEAF [35] keys=[33593, 33807, 34029, 34252]\n    +-- PARENT [36] keys=[35621, 37152, 38256, 39394, 40412]\n    |   +-- LEAF [29] keys=[34488, 34748, 34940, 35170, 35335]\n    |   +-- LEAF [10] keys=[35621, 35836, 35952, 36362, 37126]\n    |   +-- LEAF [60] keys=[37152, 37314, 37607, 37671]\n    |   +-- LEAF [12] keys=[38256, 38319, 38893, 39301, 39389]\n    |   +-- LEAF [23] keys=[39394, 39902, 39992]\n    |   +-- LEAF [69] keys=[40412, 40479, 40481, 40607]\n    +-- PARENT [15] keys=[43094, 43951]\n    |   +-- LEAF [1] keys=[41130, 41336, 42929]\n    |   +-- LEAF [44] keys=[43094, 43175, 43507]\n    |   +-- LEAF [26] keys=[43951, 44193, 44361, 44501, 44635]\n    +-- PARENT [58] keys=[45642, 46188, 49795, 53744]\n    |   +-- LEAF [14] keys=[44787, 44883, 45106, 45486]\n    |   +-- LEAF [65] keys=[45642, 45763, 45910, 46130]\n    |   +-- LEAF [39] keys=[46188, 47159, 47849, 49179, 49241]\n    |   +-- LEAF [57] keys=[49795, 49824, 50542, 52159, 52257]\n    |   +-- LEAF [3] keys=[53744, 53798, 53902]\n    +-- PARENT [25] keys=[55131, 55493, 56273, 57032]\n    |   +-- LEAF [19] keys=[54244, 54457, 54943, 55099]\n    |   +-- LEAF [53] keys=[55131, 55185, 55373]\n    |   +-- LEAF [34] keys=[55493, 56053, 56066]\n    |   +-- LEAF [61] keys=[56273, 56592, 56609, 56627]\n    |   +-- LEAF [4] keys=[57032, 57283, 57601, 58419, 58455]\n    +-- PARENT [46] keys=[58897, 59955, 61561, 62945, 64596]\n        +-- LEAF [28] keys=[58555, 58824, 58832]\n        +-- LEAF [67] keys=[58897, 58951, 59299, 59712]\n        +-- LEAF [20] keys=[59955, 60857, 61175, 61344]\n        +-- LEAF [66] keys=[61561, 62083, 62264]\n        +-- LEAF [24] keys=[62945, 63084, 63678]\n        +-- LEAF [45] keys=[64596, 64823, 65125]\n",
   "nodes": [
     {
       "node_index": 0,
       "node_type": "leaf",
       "parent_node": 2,
-      "keys": [388, 697, 905, 1710, 1747],
+      "keys": [8, 857, 1190, 1246, 1277],
       "children": [],
       "is_leaf": true
     },
@@ -18,7 +18,7 @@
       "node_index": 1,
       "node_type": "leaf",
       "parent_node": 15,
-      "keys": [43239, 43522, 43635, 44310],
+      "keys": [41130, 41336, 42929],
       "children": [],
       "is_leaf": true
     },
@@ -26,23 +26,23 @@
       "node_index": 2,
       "node_type": "parent",
       "parent_node": 9,
-      "keys": [1792, 3042, 3952, 5497, 6717],
-      "children": [0, 31, 33, 69, 41, 19],
+      "keys": [1588, 2508],
+      "children": [0, 40, 21],
       "is_leaf": false
     },
     {
       "node_index": 3,
       "node_type": "leaf",
-      "parent_node": 8,
-      "keys": [34652, 35097, 36644, 36762],
+      "parent_node": 58,
+      "keys": [53744, 53798, 53902],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 4,
       "node_type": "leaf",
-      "parent_node": 57,
-      "keys": [15727, 15789, 15891, 16260, 16400],
+      "parent_node": 25,
+      "keys": [57032, 57283, 57601, 58419, 58455],
       "children": [],
       "is_leaf": true
     },
@@ -50,23 +50,23 @@
       "node_index": 5,
       "node_type": "leaf",
       "parent_node": 8,
-      "keys": [37949, 38054, 38106, 38159, 39224],
+      "keys": [31079, 31220, 31620, 31700, 31910],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 6,
       "node_type": "leaf",
-      "parent_node": 25,
-      "keys": [59050, 59149, 59288, 59452, 59808],
+      "parent_node": 32,
+      "keys": [22754, 23605, 23709],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 7,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [31400, 31969, 31980, 32047, 32753],
+      "parent_node": 63,
+      "keys": [12110, 12344, 12476, 12610],
       "children": [],
       "is_leaf": true
     },
@@ -74,151 +74,151 @@
       "node_index": 8,
       "node_type": "parent",
       "parent_node": 37,
-      "keys": [36844, 37949],
-      "children": [3, 39, 5],
+      "keys": [32417, 33396, 33593],
+      "children": [5, 22, 68, 35],
       "is_leaf": false
     },
     {
       "node_index": 9,
       "node_type": "parent",
       "parent_node": 38,
-      "keys": [8480, 14043, 19459],
-      "children": [2, 32, 57, 18],
+      "keys": [4095, 9662],
+      "children": [2, 51, 63],
       "is_leaf": false
     },
     {
       "node_index": 10,
       "node_type": "leaf",
-      "parent_node": 25,
-      "keys": [60302, 60370, 60541],
+      "parent_node": 36,
+      "keys": [35621, 35836, 35952, 36362, 37126],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 11,
       "node_type": "leaf",
-      "parent_node": 48,
-      "keys": [39597, 39605, 39608, 40124, 40262],
+      "parent_node": 18,
+      "keys": [13951, 14242, 14990],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 12,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [22919, 23128, 23526, 23745, 24412],
+      "parent_node": 36,
+      "keys": [38256, 38319, 38893, 39301, 39389],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 13,
       "node_type": "leaf",
-      "parent_node": 32,
-      "keys": [8480, 8534, 8757, 8987, 9105],
+      "parent_node": 48,
+      "keys": [28983, 29011, 29372],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 14,
       "node_type": "leaf",
-      "parent_node": 15,
-      "keys": [47726, 47812, 47925, 48091, 48962],
+      "parent_node": 58,
+      "keys": [44787, 44883, 45106, 45486],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 15,
       "node_type": "parent",
-      "parent_node": 54,
-      "keys": [44420, 45534, 46713, 47726],
-      "children": [1, 68, 23, 67, 14],
+      "parent_node": 37,
+      "keys": [43094, 43951],
+      "children": [1, 44, 26],
       "is_leaf": false
     },
     {
       "node_index": 16,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [27386, 27470, 27763],
+      "parent_node": 71,
+      "keys": [16929, 17491, 18171],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 17,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [19459, 19812, 20095],
+      "parent_node": 51,
+      "keys": [6003, 6591, 6632],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 18,
       "node_type": "parent",
-      "parent_node": 9,
-      "keys": [20102, 21050, 22919, 24492, 26194],
-      "children": [17, 45, 58, 12, 22, 59],
+      "parent_node": 72,
+      "keys": [15524, 16326],
+      "children": [11, 49, 30],
       "is_leaf": false
     },
     {
       "node_index": 19,
       "node_type": "leaf",
-      "parent_node": 2,
-      "keys": [6717, 7121, 7614, 8375],
+      "parent_node": 25,
+      "keys": [54244, 54457, 54943, 55099],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 20,
       "node_type": "leaf",
-      "parent_node": 32,
-      "keys": [11721, 11952, 12002],
+      "parent_node": 46,
+      "keys": [59955, 60857, 61175, 61344],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 21,
       "node_type": "leaf",
-      "parent_node": 25,
-      "keys": [56999, 57462, 57894],
+      "parent_node": 2,
+      "keys": [2508, 3155, 3879, 4075],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 22,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [24492, 24511, 24514, 24599, 26086],
+      "parent_node": 8,
+      "keys": [32417, 32424, 33185, 33216, 33362],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 23,
       "node_type": "leaf",
-      "parent_node": 15,
-      "keys": [45534, 46028, 46130],
+      "parent_node": 36,
+      "keys": [39394, 39902, 39992],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 24,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [62316, 62414, 62564, 62636, 63184],
+      "parent_node": 46,
+      "keys": [62945, 63084, 63678],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 25,
       "node_type": "parent",
-      "parent_node": 54,
-      "keys": [58096, 59050, 60302],
-      "children": [21, 55, 6, 10],
+      "parent_node": 37,
+      "keys": [55131, 55493, 56273, 57032],
+      "children": [19, 53, 34, 61, 4],
       "is_leaf": false
     },
     {
       "node_index": 26,
       "node_type": "leaf",
-      "parent_node": 57,
-      "keys": [16404, 16875, 17231, 17434],
+      "parent_node": 15,
+      "keys": [43951, 44193, 44361, 44501, 44635],
       "children": [],
       "is_leaf": true
     },
@@ -226,71 +226,71 @@
       "node_index": 27,
       "node_type": "leaf",
       "parent_node": 48,
-      "keys": [41616, 41832, 41904],
+      "keys": [25373, 25389, 26088, 26267],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 28,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [54132, 54538, 54572, 54649, 54804],
+      "parent_node": 46,
+      "keys": [58555, 58824, 58832],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 29,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [64412, 64556, 64826],
+      "parent_node": 36,
+      "keys": [34488, 34748, 34940, 35170, 35335],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 30,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [33965, 34317, 34338, 34651],
+      "parent_node": 18,
+      "keys": [16326, 16700, 16718],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 31,
       "node_type": "leaf",
-      "parent_node": 2,
-      "keys": [1792, 1970, 2452, 2459, 2780],
+      "parent_node": 32,
+      "keys": [21236, 21751, 21956],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 32,
       "node_type": "parent",
-      "parent_node": 9,
-      "keys": [9286, 11721, 12087],
-      "children": [13, 46, 20, 70],
+      "parent_node": 72,
+      "keys": [22587, 22754, 24224, 24692],
+      "children": [31, 73, 6, 74, 42],
       "is_leaf": false
     },
     {
       "node_index": 33,
       "node_type": "leaf",
-      "parent_node": 2,
-      "keys": [3042, 3168, 3240],
+      "parent_node": 48,
+      "keys": [28110, 28225, 28364],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 34,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [50725, 51171, 51376, 51964],
+      "parent_node": 25,
+      "keys": [55493, 56053, 56066],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 35,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [30587, 30825, 30885],
+      "parent_node": 8,
+      "keys": [33593, 33807, 34029, 34252],
       "children": [],
       "is_leaf": true
     },
@@ -298,279 +298,311 @@
       "node_index": 36,
       "node_type": "parent",
       "parent_node": 37,
-      "keys": [27889, 30587, 31400, 32850, 33965],
-      "children": [16, 61, 35, 7, 50, 30],
+      "keys": [35621, 37152, 38256, 39394, 40412],
+      "children": [29, 10, 60, 12, 23, 69],
       "is_leaf": false
     },
     {
       "node_index": 37,
       "node_type": "parent",
       "parent_node": 38,
-      "keys": [34652, 39293],
-      "children": [36, 8, 48],
+      "keys": [34488, 41130, 44787, 54244, 58555],
+      "children": [8, 36, 15, 58, 25, 46],
       "is_leaf": false
     },
     {
       "node_index": 38,
       "node_type": "root",
       "parent_node": null,
-      "keys": [27386, 43239],
-      "children": [9, 37, 54],
+      "keys": [13951, 31079],
+      "children": [9, 72, 37],
       "is_leaf": false
     },
     {
       "node_index": 39,
       "node_type": "leaf",
-      "parent_node": 8,
-      "keys": [36844, 37633, 37678],
+      "parent_node": 58,
+      "keys": [46188, 47159, 47849, 49179, 49241],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 40,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [63300, 63758, 63820],
+      "parent_node": 2,
+      "keys": [1588, 1870, 2185, 2237, 2443],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 41,
       "node_type": "leaf",
-      "parent_node": 2,
-      "keys": [5497, 5888, 6344, 6688],
+      "parent_node": 51,
+      "keys": [6643, 6904, 6948, 6978],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 42,
       "node_type": "leaf",
-      "parent_node": 48,
-      "keys": [40790, 41407, 41487],
+      "parent_node": 32,
+      "keys": [24692, 24698, 25039],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 43,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [60803, 61211, 61770, 61915, 61992],
+      "parent_node": 71,
+      "keys": [18969, 19096, 19662, 19954],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 44,
-      "node_type": "parent",
-      "parent_node": 54,
-      "keys": [62316, 63300, 63859, 64412, 64877],
-      "children": [43, 24, 40, 65, 29, 60],
-      "is_leaf": false
+      "node_type": "leaf",
+      "parent_node": 15,
+      "keys": [43094, 43175, 43507],
+      "children": [],
+      "is_leaf": true
     },
     {
       "node_index": 45,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [20102, 20393, 20954],
+      "parent_node": 46,
+      "keys": [64596, 64823, 65125],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 46,
-      "node_type": "leaf",
-      "parent_node": 32,
-      "keys": [9286, 10095, 10944, 11682],
-      "children": [],
-      "is_leaf": true
+      "node_type": "parent",
+      "parent_node": 37,
+      "keys": [58897, 59955, 61561, 62945, 64596],
+      "children": [28, 67, 20, 66, 24, 45],
+      "is_leaf": false
     },
     {
       "node_index": 47,
       "node_type": "leaf",
       "parent_node": 48,
-      "keys": [39293, 39485, 39526, 39556],
+      "keys": [28427, 28618, 28727, 28801],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 48,
       "node_type": "parent",
-      "parent_node": 37,
-      "keys": [39597, 40790, 41616, 41975],
-      "children": [47, 11, 42, 27, 66],
+      "parent_node": 72,
+      "keys": [26660, 28110, 28427, 28983, 29876],
+      "children": [27, 56, 33, 47, 13, 59],
       "is_leaf": false
     },
     {
       "node_index": 49,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [48996, 49083, 49231, 49360, 49926],
+      "parent_node": 18,
+      "keys": [15524, 15700, 15716, 15794],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 50,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [32850, 33104, 33818],
+      "parent_node": 51,
+      "keys": [4095, 5597, 5767],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 51,
-      "node_type": "leaf",
-      "parent_node": 57,
-      "keys": [14043, 14992, 15072, 15701],
-      "children": [],
-      "is_leaf": true
+      "node_type": "parent",
+      "parent_node": 9,
+      "keys": [6003, 6643, 7256],
+      "children": [50, 17, 41, 64],
+      "is_leaf": false
     },
     {
       "node_index": 52,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [54859, 55216, 55274],
+      "parent_node": 63,
+      "keys": [9662, 9897, 10158],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 53,
-      "node_type": "parent",
-      "parent_node": 54,
-      "keys": [50725, 52651, 54132, 54859, 55498],
-      "children": [49, 34, 64, 28, 52, 62],
-      "is_leaf": false
+      "node_type": "leaf",
+      "parent_node": 25,
+      "keys": [55131, 55185, 55373],
+      "children": [],
+      "is_leaf": true
     },
     {
       "node_index": 54,
-      "node_type": "parent",
-      "parent_node": 38,
-      "keys": [48996, 56999, 60803],
-      "children": [15, 53, 25, 44],
-      "is_leaf": false
+      "node_type": "leaf",
+      "parent_node": 71,
+      "keys": [19961, 20225, 20790],
+      "children": [],
+      "is_leaf": true
     },
     {
       "node_index": 55,
       "node_type": "leaf",
-      "parent_node": 25,
-      "keys": [58096, 58236, 58530],
+      "parent_node": 63,
+      "keys": [12683, 13259, 13498, 13942],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 56,
       "node_type": "leaf",
-      "parent_node": 57,
-      "keys": [17470, 18078, 18365],
+      "parent_node": 48,
+      "keys": [26660, 27054, 27082, 27212, 27685],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 57,
-      "node_type": "parent",
-      "parent_node": 9,
-      "keys": [15727, 16404, 17470, 18472],
-      "children": [51, 4, 26, 56, 63],
-      "is_leaf": false
-    },
-    {
-      "node_index": 58,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [21050, 21069, 21159, 22230, 22602],
+      "parent_node": 58,
+      "keys": [49795, 49824, 50542, 52159, 52257],
       "children": [],
       "is_leaf": true
     },
     {
+      "node_index": 58,
+      "node_type": "parent",
+      "parent_node": 37,
+      "keys": [45642, 46188, 49795, 53744],
+      "children": [14, 65, 39, 57, 3],
+      "is_leaf": false
+    },
+    {
       "node_index": 59,
       "node_type": "leaf",
-      "parent_node": 18,
-      "keys": [26194, 26709, 27138, 27272],
+      "parent_node": 48,
+      "keys": [29876, 30366, 30700],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 60,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [64877, 65028, 65042, 65382, 65431],
+      "parent_node": 36,
+      "keys": [37152, 37314, 37607, 37671],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 61,
       "node_type": "leaf",
-      "parent_node": 36,
-      "keys": [27889, 28449, 28837, 29031, 30506],
+      "parent_node": 25,
+      "keys": [56273, 56592, 56609, 56627],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 62,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [55498, 56407, 56748],
+      "parent_node": 63,
+      "keys": [10707, 11051, 11672],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 63,
-      "node_type": "leaf",
-      "parent_node": 57,
-      "keys": [18472, 18946, 19260],
-      "children": [],
-      "is_leaf": true
+      "node_type": "parent",
+      "parent_node": 9,
+      "keys": [10707, 12110, 12683],
+      "children": [52, 62, 7, 55],
+      "is_leaf": false
     },
     {
       "node_index": 64,
       "node_type": "leaf",
-      "parent_node": 53,
-      "keys": [52651, 53324, 53388],
+      "parent_node": 51,
+      "keys": [7256, 8755, 9092, 9186],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 65,
       "node_type": "leaf",
-      "parent_node": 44,
-      "keys": [63859, 64073, 64130, 64240],
+      "parent_node": 58,
+      "keys": [45642, 45763, 45910, 46130],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 66,
       "node_type": "leaf",
-      "parent_node": 48,
-      "keys": [41975, 42104, 42439],
+      "parent_node": 46,
+      "keys": [61561, 62083, 62264],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 67,
       "node_type": "leaf",
-      "parent_node": 15,
-      "keys": [46713, 46971, 47068],
+      "parent_node": 46,
+      "keys": [58897, 58951, 59299, 59712],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 68,
       "node_type": "leaf",
-      "parent_node": 15,
-      "keys": [44420, 44733, 44772],
+      "parent_node": 8,
+      "keys": [33396, 33447, 33507],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 69,
       "node_type": "leaf",
-      "parent_node": 2,
-      "keys": [3952, 5048, 5232],
+      "parent_node": 36,
+      "keys": [40412, 40479, 40481, 40607],
       "children": [],
       "is_leaf": true
     },
     {
       "node_index": 70,
       "node_type": "leaf",
+      "parent_node": 71,
+      "keys": [18229, 18282, 18886],
+      "children": [],
+      "is_leaf": true
+    },
+    {
+      "node_index": 71,
+      "node_type": "parent",
+      "parent_node": 72,
+      "keys": [18229, 18969, 19961],
+      "children": [16, 70, 43, 54],
+      "is_leaf": false
+    },
+    {
+      "node_index": 72,
+      "node_type": "parent",
+      "parent_node": 38,
+      "keys": [16929, 21236, 25373],
+      "children": [18, 71, 32, 48],
+      "is_leaf": false
+    },
+    {
+      "node_index": 73,
+      "node_type": "leaf",
       "parent_node": 32,
-      "keys": [12087, 12577, 13392],
+      "keys": [22587, 22639, 22721],
+      "children": [],
+      "is_leaf": true
+    },
+    {
+      "node_index": 74,
+      "node_type": "leaf",
+      "parent_node": 32,
+      "keys": [24224, 24480, 24637],
       "children": [],
       "is_leaf": true
     }

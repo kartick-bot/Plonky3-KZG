@@ -1907,81 +1907,21 @@ fn eval_poly(coeffs: &[ark_bn254::Fr], x: ark_bn254::Fr) -> ark_bn254::Fr {
     acc
 }
 
-fn main() {
-    println!("==============================================");
-    println!(" Plonky3 MONOLITHIC DEGREE-6 KZG STARK");
-    println!(" One proof, two BN254 pairings, AIR equality");
-    println!("==============================================");
-    println!();
-
-    // --------------------------------------------------------
-    // Degree-6 KZG instance
-    // --------------------------------------------------------
-    let coeffs = [
-        ark_bn254::Fr::from(1u64),
-        ark_bn254::Fr::from(2u64),
-        ark_bn254::Fr::from(3u64),
-        ark_bn254::Fr::from(4u64),
-        ark_bn254::Fr::from(5u64),
-        ark_bn254::Fr::from(6u64),
-        ark_bn254::Fr::from(7u64),
-    ];
-
-    let quotient_coeffs = [
-        ark_bn254::Fr::from(26367u64),
-        ark_bn254::Fr::from(5273u64),
-        ark_bn254::Fr::from(1054u64),
-        ark_bn254::Fr::from(210u64),
-        ark_bn254::Fr::from(41u64),
-        ark_bn254::Fr::from(7u64),
-    ];
-
-    let tau = ark_bn254::Fr::from(11u64);
-    let z = ark_bn254::Fr::from(5u64);
-    let y = eval_poly(&coeffs, z);
-
-    assert_eq!(y, ark_bn254::Fr::from(131836u64));
-
-    let f_tau = eval_poly(&coeffs, tau);
-    let q_tau = eval_poly(&quotient_coeffs, tau);
-
-    assert_eq!(
-        f_tau - y,
-        (tau - z) * q_tau,
-        "polynomial opening identity failed"
-    );
-
-    let g1 = G1Affine::generator();
-    let g2 = G2Affine::generator();
-
-    let commitment = g1.mul_bigint(f_tau.into_bigint()).into_affine();
-
-    let proof_point = g1.mul_bigint(q_tau.into_bigint()).into_affine();
-
-    let p_left = (commitment.into_group() - g1.mul_bigint(y.into_bigint())).into_affine();
-
-    let q_left = g2;
-
-    let p_right = proof_point;
-
-    let tau_minus_z = tau - z;
-    assert_eq!(tau_minus_z, ark_bn254::Fr::from(6u64));
-
-    let q_right = g2.mul_bigint(tau_minus_z.into_bigint()).into_affine();
-
+/// Generate and verify one existing monolithic STARK for two pairing inputs.
+///
+/// The verifier independently derives AIR line constants from the claimed
+/// pairing points. This binds the proof to those points under trusted verifier
+/// preprocessing, but does not prove point derivation or line preparation
+/// inside the AIR. This is NOT a complete V+ Tree membership proof.
+pub fn prove_kzg_pairing(
+    p_left: G1Affine,
+    q_left: G2Affine,
+    p_right: G1Affine,
+    q_right: G2Affine,
+) {
     let native_left = Bn254::pairing(p_left, q_left).0;
     let native_right = Bn254::pairing(p_right, q_right).0;
-
-    assert_eq!(native_left, native_right);
-
-    println!("Polynomial degree       : 6");
-    println!("tau                     : 11");
-    println!("z                       : 5");
-    println!("y = f(z)                : 131836");
-    println!("tau-z                   : 6");
-    println!("Polynomial identity     : PASS");
-    println!("Native KZG relation     : PASS");
-    println!();
+    assert_eq!(native_left, native_right, "native pairing inputs do not match");
 
     // --------------------------------------------------------
     // One monolithic trace.
@@ -2074,18 +2014,46 @@ fn main() {
 
     let verify_start = Instant::now();
 
-    verify(&config, &air, &proof, &[]).expect("monolithic verification failed");
+    // SECURITY: The verifier reconstructs the AIR from its own trusted
+    // pairing inputs. Never accept Miller-line constants supplied by prover.
+    // This is deterministic verifier-side precomputation, not an in-AIR
+    // proof of G2 preparation / elliptic-curve point arithmetic.
+    let (_, verifier_left, _) = build_miller_program(p_left, q_left);
+    let (_, verifier_right, _) = build_miller_program(p_right, q_right);
+    let verifier_air = MonolithicKzgAir {
+        miller_left: verifier_left,
+        miller_right: verifier_right,
+        final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+    };
+    verify(&config, &verifier_air, &proof, &[])
+        .expect("public-input-derived monolithic verification failed");
 
     let verification_time = verify_start.elapsed();
+
+    // Negative test: the same proof MUST fail for a different claimed G1
+    // input, because the verifier will derive different Miller-line values.
+    let tampered_left = (p_left.into_group() + G1Affine::generator()).into_affine();
+    let (_, tampered_left_lines, _) = build_miller_program(tampered_left, q_left);
+    let (_, original_right_lines, _) = build_miller_program(p_right, q_right);
+    let tampered_air = MonolithicKzgAir {
+        miller_left: tampered_left_lines,
+        miller_right: original_right_lines,
+        final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+    };
+    assert!(
+        verify(&config, &tampered_air, &proof, &[]).is_err(),
+        "SECURITY ERROR: proof accepted a changed public pairing input"
+    );
+    println!("Negative test: modified verifier pairing input rejected: PASS");
 
     println!("==============================================");
     println!(" MONOLITHIC KZG RESULT");
     println!("==============================================");
     println!();
 
-    println!("Relation proved inside AIR:");
-    println!("e(C - y*G1, G2) = e(pi, (tau-z)*G2)");
-    println!("e(C - 131836*G1, G2) = e(pi, 6*G2)");
+    println!("AIR relation: equality of two terminal BN254 pairing outputs");
+    println!("Verifier deterministically derives Miller lines from supplied public pairing points.");
+    println!("G1/G2 preparation and KZG point derivation remain outside the AIR.");
     println!();
 
     println!("Proof count             : 1");
@@ -2101,16 +2069,92 @@ fn main() {
     println!("Proving key (PK)        : N/A -- transparent STARK/FRI");
     println!("Verification key (VK)   : N/A -- transparent STARK/FRI");
     println!("STARK trusted setup     : none");
-    println!("KZG setup               : retains KZG SRS (tau = 11 in this test)");
+    println!("KZG setup               : supplied by caller (KZG SRS remains necessary)");
     println!();
 
-    println!("RAM measurement:");
-    println!("Use the release binary with macOS /usr/bin/time -l.");
-    println!("The 'maximum resident set size' line is peak RSS in bytes.");
+    println!("RAM measurement: not performed here; on Linux run /usr/bin/time -v");
     println!();
 
-    println!("SUCCESS:");
-    println!("One Plonky3 STARK proved the complete degree-6 KZG");
-    println!("pairing equation, including equality of the two");
-    println!("terminal Fq12 pairing outputs inside the AIR.");
+    println!("SUCCESS: pairing-trace STARK proof verified.");
+    println!("Verifier-derived pairing-input binding test passed.");
+    println!("V+ Tree path/hash authentication is separate work.");
+}
+
+fn main() {
+    println!("==============================================");
+    println!(" Plonky3 MONOLITHIC DEGREE-6 KZG STARK");
+    println!(" One proof, two BN254 pairings, AIR equality");
+    println!("==============================================");
+    println!();
+
+    // --------------------------------------------------------
+    // Degree-6 KZG instance
+    // --------------------------------------------------------
+    let coeffs = [
+        ark_bn254::Fr::from(1u64),
+        ark_bn254::Fr::from(2u64),
+        ark_bn254::Fr::from(3u64),
+        ark_bn254::Fr::from(4u64),
+        ark_bn254::Fr::from(5u64),
+        ark_bn254::Fr::from(6u64),
+        ark_bn254::Fr::from(7u64),
+    ];
+
+    let quotient_coeffs = [
+        ark_bn254::Fr::from(26367u64),
+        ark_bn254::Fr::from(5273u64),
+        ark_bn254::Fr::from(1054u64),
+        ark_bn254::Fr::from(210u64),
+        ark_bn254::Fr::from(41u64),
+        ark_bn254::Fr::from(7u64),
+    ];
+
+    let tau = ark_bn254::Fr::from(11u64);
+    let z = ark_bn254::Fr::from(5u64);
+    let y = eval_poly(&coeffs, z);
+
+    assert_eq!(y, ark_bn254::Fr::from(131836u64));
+
+    let f_tau = eval_poly(&coeffs, tau);
+    let q_tau = eval_poly(&quotient_coeffs, tau);
+
+    assert_eq!(
+        f_tau - y,
+        (tau - z) * q_tau,
+        "polynomial opening identity failed"
+    );
+
+    let g1 = G1Affine::generator();
+    let g2 = G2Affine::generator();
+
+    let commitment = g1.mul_bigint(f_tau.into_bigint()).into_affine();
+
+    let proof_point = g1.mul_bigint(q_tau.into_bigint()).into_affine();
+
+    let p_left = (commitment.into_group() - g1.mul_bigint(y.into_bigint())).into_affine();
+
+    let q_left = g2;
+
+    let p_right = proof_point;
+
+    let tau_minus_z = tau - z;
+    assert_eq!(tau_minus_z, ark_bn254::Fr::from(6u64));
+
+    let q_right = g2.mul_bigint(tau_minus_z.into_bigint()).into_affine();
+
+    let native_left = Bn254::pairing(p_left, q_left).0;
+    let native_right = Bn254::pairing(p_right, q_right).0;
+
+    assert_eq!(native_left, native_right);
+
+    println!("Polynomial degree       : 6");
+    println!("tau                     : 11");
+    println!("z                       : 5");
+    println!("y = f(z)                : 131836");
+    println!("tau-z                   : 6");
+    println!("Polynomial identity     : PASS");
+    println!("Native KZG relation     : PASS");
+    println!();
+
+    prove_kzg_pairing(p_left, q_left, p_right, q_right);
 }
