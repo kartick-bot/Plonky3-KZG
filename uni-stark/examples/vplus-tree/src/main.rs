@@ -6,7 +6,7 @@ mod bn254_pairing_stark;
 mod node;
 mod verify_eval;
 mod vplustree;
-mod vplus_sha256_record;
+
 use verify_eval::verifyEval;
 use vplustree::VplusTree;
 
@@ -2455,8 +2455,8 @@ fn main() {
     let loaded = stark_witness::loadRandomMembershipFromJson(".");
     stark_witness::runCombinedLeafPathStark(&loaded);
 
-    println!("\nCOMBINED LEAF-PAIRING/PATH STARK COMPLETE for key {}", loaded.public_statement.key);
-    println!("Parent KZG pairings and SHA-256 remain native verifier checks.");
+    println!("\nCOMBINED FOUR-KZG/PATH STARK COMPLETE for key {}", loaded.public_statement.key);
+    println!("SHA-256 and KZG point derivation remain native verifier computations.");
 }
 
 // ---------------------------------------------------------

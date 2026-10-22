@@ -3261,20 +3261,48 @@ pub fn runCombinedLeafPathStark(loaded: &LoadedMembership) {
         }).collect(),
     };
 
-    let p_left = (
-        G1Projective::from(public.leaf_commitment)
-        - G1Projective::from(srs.g1_powers[0]) * public.evaluation_value
-    ).into_affine();
-    let q_left = srs.g2;
-    let p_right = public.leaf_opening_witness;
-    let q_right = (
-        G2Projective::from(srs.tau_g2)
-        - G2Projective::from(srs.g2) * public.evaluation_point
-    ).into_affine();
-
-    crate::bn254_pairing_stark::prove_leaf_pairing_and_path(
-        p_left, q_left, p_right, q_right, binding,
-    );
-    println!("ONE GOLDILOCKS PROOF: leaf pairing arithmetic + public path linkage VERIFIED");
-    println!("CAUTION: parent KZG and SHA-256 are still native verifier checks");
+    // Build the public path's four precise KZG evaluation statements.
+    // Parent witnesses remain in the prover witness, but the verifier
+    // derives the committed C/i/y values from the public statement.
+    assert_eq!(loaded.private_witness.path.len(), public.path.len());
+    assert_eq!(public.path.len(), 3, "This server experiment expects a depth-3 path");
+    let mut inputs: Vec<(G1Affine, ark_bn254::G2Affine)> = Vec::with_capacity(8);
+    let mut add_opening = |commitment: G1Affine,
+                           i: Fr,
+                           y: Fr,
+                           witness: G1Affine| {
+        let p_left = (
+            G1Projective::from(commitment)
+            - G1Projective::from(srs.g1_powers[0]) * y
+        ).into_affine();
+        let q_right = (
+            G2Projective::from(srs.tau_g2)
+            - G2Projective::from(srs.g2) * i
+        ).into_affine();
+        inputs.push((p_left, srs.g2));
+        inputs.push((witness, q_right));
+    };
+    add_opening(public.leaf_commitment,
+                public.evaluation_point,
+                public.evaluation_value,
+                public.leaf_opening_witness);
+    for (level, (pub_step, priv_step)) in public.path.iter()
+        .zip(loaded.private_witness.path.iter()).enumerate() {
+        assert_eq!(pub_step.parent_commitment, priv_step.parent_commitment,
+            "parent commitment mismatch at level {}",level);
+        assert_eq!(pub_step.evaluation_point,priv_step.evaluation_point,
+            "parent evaluation point mismatch at level {}",level);
+        assert_eq!(pub_step.evaluation_value,priv_step.evaluation_value,
+            "parent evaluation value mismatch at level {}",level);
+        add_opening(pub_step.parent_commitment,
+                    pub_step.evaluation_point,
+                    pub_step.evaluation_value,
+                    priv_step.opening_witness);
+    }
+    assert_eq!(inputs.len(), 8);
+    let inputs: [(G1Affine, ark_bn254::G2Affine);8] = inputs.try_into()
+        .expect("Expected exactly eight pairing instances");
+    crate::bn254_pairing_stark::prove_four_openings_and_path(inputs,binding);
+    println!("ONE GOLDILOCKS PROOF: all four KZG pairings + public path linkage VERIFIED");
+    println!("CAUTION: SHA-256 and elliptic-curve point derivation remain native verifier checks");
 }

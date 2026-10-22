@@ -130,7 +130,9 @@ const WIDTH: usize = CARRY_BITS_START + FQ12_COORDS * CARRY_COUNT * CARRY_BITS;
 const INSTANCE_COL: usize = WIDTH;
 const SHARED_OUT_START: usize = INSTANCE_COL + 1;
 const SHARED_OUT_END: usize = SHARED_OUT_START + FQ12_LIMBS;
-const MONO_WIDTH: usize = SHARED_OUT_END;
+const INSTANCE_FLAGS_START: usize = SHARED_OUT_END;
+const MAX_PAIRING_INSTANCES: usize = 8;
+const MONO_WIDTH: usize = INSTANCE_FLAGS_START + MAX_PAIRING_INSTANCES;
 
 // ============================================================
 // Native row / Miller constants
@@ -1115,8 +1117,8 @@ fn append_path_cols(out: &mut Vec<Val>, binding: &PublicPathBinding) {
 // ============================================================
 
 struct MonolithicKzgAir {
-    miller_left: Vec<MillerStepConst>,
-    miller_right: Vec<MillerStepConst>,
+    miller_constants: Vec<Vec<MillerStepConst>>,
+    num_instances: usize,
     final_exp_limbs: [u64; EXP_LIMBS],
     public_path: Option<PublicPathBinding>,
 }
@@ -1183,12 +1185,35 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
         let instance: AB::Expr = local[INSTANCE_COL].into();
         let next_instance: AB::Expr = next[INSTANCE_COL].into();
 
-        builder.assert_zero(instance.clone() * (instance.clone() - AB::Expr::ONE));
+        // Eight one-hot instance flags, with a field-valued index.
+        let mut flags: Vec<AB::Expr> = Vec::with_capacity(self.num_instances);
+        let mut sum = AB::Expr::ZERO;
+        let mut weighted = AB::Expr::ZERO;
+        for j in 0..MAX_PAIRING_INSTANCES {
+            let flag: AB::Expr = local[INSTANCE_FLAGS_START + j].into();
+            builder.assert_zero(flag.clone() * (flag.clone() - AB::Expr::ONE));
+            if j < self.num_instances {
+                sum = sum + flag.clone();
+                weighted = weighted + flag.clone() * AB::Expr::from_u64(j as u64);
+                flags.push(flag);
+            } else {
+                builder.assert_zero(flag);
+            }
+        }
+        builder.assert_one(sum);
+        builder.assert_eq(instance.clone(), weighted);
+
 
         // The shared output register is constant across the whole trace.
+        // The target output is constant over the two instances of each opening.
+        // An odd-numbered output ends its pair and may start a new target.
+        let mut odd_instance = AB::Expr::ZERO;
+        for j in (1..self.num_instances).step_by(2) {
+            odd_instance = odd_instance + flags[j].clone();
+        }
         for i in 0..FQ12_LIMBS {
-            builder
-                .when_transition()
+            builder.when_transition()
+                .when(AB::Expr::ONE - output.clone() * odd_instance.clone())
                 .assert_eq(local[SHARED_OUT_START + i], next[SHARED_OUT_START + i]);
         }
 
@@ -1196,8 +1221,8 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
         builder.when_first_row().assert_zero(local[INSTANCE_COL]);
 
         let miller_active = msq.clone() + mline.clone();
-        let left_output = output.clone() * (AB::Expr::ONE - instance.clone());
-        let right_output = output.clone() * instance.clone();
+        let terminal_output = output.clone() * flags[self.num_instances - 1].clone();
+        let bridge_output = output.clone() - terminal_output.clone();
 
         // First row is Miller step 0.
         builder.when_first_row().assert_one(local[MILLER_ID_START]);
@@ -1260,12 +1285,12 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
 
             mid_weighted = mid_weighted + id.clone() * AB::Expr::from_u64(j as u64);
 
-            if self.miller_left[j].is_square {
+            if self.miller_constants[0][j].is_square {
                 expected_sq = expected_sq + id.clone();
             }
 
             expected_coeff =
-                expected_coeff + id * AB::Expr::from_u64(self.miller_left[j].coeff_index as u64);
+                expected_coeff + id * AB::Expr::from_u64(self.miller_constants[0][j].coeff_index as u64);
         }
 
         builder.assert_eq(mid_sum, miller_active.clone());
@@ -1284,14 +1309,12 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
             let mut expected = AB::Expr::ZERO;
 
             for j in 0..MILLER_STEPS {
-                let c_left = self.miller_left[j].line_limbs[ll];
-                let c_right = self.miller_right[j].line_limbs[ll];
-
                 let id: AB::Expr = local[MILLER_ID_START + j].into();
-
-                let selected = AB::Expr::from_u64(c_left)
-                    + instance.clone() * (AB::Expr::from_u64(c_right) - AB::Expr::from_u64(c_left));
-
+                let mut selected = AB::Expr::ZERO;
+                for k in 0..self.num_instances {
+                    selected = selected + flags[k].clone()
+                        * AB::Expr::from_u64(self.miller_constants[k][j].line_limbs[ll]);
+                }
                 expected = expected + id * selected;
             }
 
@@ -1313,49 +1336,49 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
 
         builder
             .when_transition()
-            .when(left_output.clone())
-            .assert_one(next_instance.clone());
+            .when(bridge_output.clone())
+            .assert_eq(next_instance.clone(), instance.clone() + AB::Expr::ONE);
 
         builder
             .when_transition()
-            .when(left_output.clone())
+            .when(bridge_output.clone())
             .assert_one(next_miller_reset.clone());
 
         builder
             .when_transition()
-            .when(left_output.clone())
+            .when(bridge_output.clone())
             .assert_zero(next[MILLER_STEP_INDEX]);
 
         builder
             .when_transition()
-            .when(left_output.clone())
+            .when(bridge_output.clone())
             .assert_one(next[ACC_START]);
 
         for i in (ACC_START + 1)..ACC_END {
             builder
                 .when_transition()
-                .when(left_output.clone())
+                .when(bridge_output.clone())
                 .assert_zero(next[i]);
         }
 
         for i in BASE_START..BASE_END {
             builder
                 .when_transition()
-                .when(left_output.clone())
+                .when(bridge_output.clone())
                 .assert_zero(next[i]);
         }
 
         for i in EXP_START..EXP_END {
             builder
                 .when_transition()
-                .when(left_output.clone())
+                .when(bridge_output.clone())
                 .assert_zero(next[i]);
         }
 
         // Instance persists on every transition except the left-output bridge.
         builder
             .when_transition()
-            .when(AB::Expr::ONE - left_output.clone())
+            .when(AB::Expr::ONE - bridge_output.clone())
             .assert_eq(next_instance.clone(), instance.clone());
 
         // Exact Miller step progression.
@@ -1566,11 +1589,11 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
 
         builder
             .when_transition()
-            .when(right_output.clone())
+            .when(terminal_output.clone())
             .assert_one(next_pad.clone());
 
-        // PAD belongs only to the right-hand instance and persists.
-        builder.when(pad.clone()).assert_one(instance.clone());
+        // PAD belongs only to the final right-hand pairing instance.
+        builder.when(pad.clone()).assert_one(flags[self.num_instances - 1].clone());
 
         builder
             .when_transition()
@@ -1873,83 +1896,84 @@ fn encode_monolithic_row(
     for limb in fq12_output_limbs(shared_output) {
         row.push(Val::from_u64(limb));
     }
+    for k in 0..MAX_PAIRING_INSTANCES {
+        row.push(Val::from_u64(u64::from(k == instance as usize)));
+    }
 
     assert_eq!(row.len(), MONO_WIDTH);
     row
 }
 
-fn make_monolithic_trace(
-    p_left: G1Affine,
-    q_left: G2Affine,
-    p_right: G1Affine,
-    q_right: G2Affine,
+fn make_eight_trace(
+    inputs: &[(G1Affine, G2Affine)],
     public_path: Option<&PublicPathBinding>,
-) -> (
-    RowMajorMatrix<Val>,
-    usize,
-    usize,
-    Vec<MillerStepConst>,
-    Vec<MillerStepConst>,
-    Fq12,
-) {
-    let (mut left_rows, miller_left, left_output) = build_full_schedule(p_left, q_left);
-
-    let (right_rows, miller_right, right_output) = build_full_schedule(p_right, q_right);
-
-    assert_eq!(
-        left_output, right_output,
-        "native KZG pairing outputs differ"
-    );
-
-    // The left schedule ends with [Output, Pad].
-    // Remove only its terminal Pad so Output bridges directly
-    // into the first Miller row of the right pairing.
-    assert_eq!(left_rows.last().unwrap().op, Op::Pad);
-    left_rows.pop();
-
-    let left_len = left_rows.len();
-
-    let mut schedule = left_rows;
-    schedule.extend(right_rows);
-
+) -> (RowMajorMatrix<Val>, usize, usize, Vec<Vec<MillerStepConst>>, Vec<Fq12>) {
+    assert_eq!(inputs.len(), MAX_PAIRING_INSTANCES);
+    let mut schedule = Vec::new();
+    let mut constants = Vec::new();
+    let mut outputs = Vec::new();
+    let mut instances = Vec::new();
+    for (k, &(p, q)) in inputs.iter().enumerate() {
+        let (mut rows, lines, out) = build_full_schedule(p, q);
+        if k % 2 == 1 {
+            assert_eq!(out, outputs[k - 1], "KZG pairing inequality for opening {}", k / 2);
+        }
+        if k + 1 < inputs.len() {
+            assert_eq!(rows.last().unwrap().op, Op::Pad);
+            rows.pop();
+        }
+        instances.extend(std::iter::repeat(k).take(rows.len()));
+        schedule.extend(rows);
+        constants.push(lines);
+        outputs.push(out);
+    }
     let real_rows = schedule.len();
     let height = real_rows.next_power_of_two();
-
     let width = MONO_WIDTH + public_path.map_or(0, |p| p.links.len() * PATH_STEP_COLS);
     let mut values = Vec::with_capacity(width * height);
-
-    for i in 0..schedule.len() {
-        let next = if i + 1 < schedule.len() {
-            &schedule[i + 1]
-        } else {
-            &schedule[i]
-        };
-
-        let instance = if i < left_len { 0u64 } else { 1u64 };
-
-        values.extend_from_slice(&encode_monolithic_row(
-            &schedule[i], next, instance, &left_output,
-        ));
+    for i in 0..real_rows {
+        let next = schedule.get(i + 1).unwrap_or(&schedule[i]);
+        let k = instances[i];
+        values.extend(encode_monolithic_row(&schedule[i], next, k as u64, &outputs[k]));
         if let Some(path) = public_path { append_path_cols(&mut values, path); }
     }
-
-    let terminal = schedule.last().unwrap().clone();
-
+    let terminal = schedule.last().unwrap();
     while values.len() / width < height {
-        values.extend_from_slice(&encode_monolithic_row(
-            &terminal, &terminal, 1u64, &left_output,
-        ));
+        values.extend(encode_monolithic_row(terminal, terminal, 7, &outputs[7]));
         if let Some(path) = public_path { append_path_cols(&mut values, path); }
     }
+    (RowMajorMatrix::new(values, width), real_rows, height, constants, outputs)
+}
 
-    (
-        RowMajorMatrix::new(values, width),
-        real_rows,
-        height,
-        miller_left,
-        miller_right,
-        left_output,
-    )
+fn make_monolithic_trace(
+    p_left: G1Affine, q_left: G2Affine,
+    p_right: G1Affine, q_right: G2Affine,
+    public_path: Option<&PublicPathBinding>,
+) -> (RowMajorMatrix<Val>, usize, usize, Vec<MillerStepConst>, Vec<MillerStepConst>, Fq12) {
+    // The old two-instance demo is preserved independently of the eight-instance AIR.
+    let inputs = vec![(p_left,q_left),(p_right,q_right)];
+    let mut schedule=Vec::new();let mut instances=Vec::new();let mut constants=Vec::new();let mut outputs=Vec::new();
+    for (k, (p,q)) in inputs.into_iter().enumerate() {
+        let (mut rows,lines,out)=build_full_schedule(p,q);
+        if k == 1 { assert_eq!(out, outputs[0]); }
+        if k == 0 {rows.pop();}
+        instances.extend(std::iter::repeat(k).take(rows.len()));
+        schedule.extend(rows);constants.push(lines);outputs.push(out);
+    }
+    let real_rows=schedule.len();let height=real_rows.next_power_of_two();
+    let width=MONO_WIDTH+public_path.map_or(0,|p|p.links.len()*PATH_STEP_COLS);
+    let mut values=Vec::with_capacity(width*height);
+    for i in 0..real_rows {
+        let next=schedule.get(i+1).unwrap_or(&schedule[i]);let k=instances[i];
+        values.extend(encode_monolithic_row(&schedule[i],next,k as u64,&outputs[k]));
+        if let Some(path)=public_path {append_path_cols(&mut values,path);}
+    }
+    let terminal=schedule.last().unwrap();
+    while values.len()/width<height {
+        values.extend(encode_monolithic_row(terminal,terminal,1,&outputs[1]));
+        if let Some(path)=public_path {append_path_cols(&mut values,path);}
+    }
+    (RowMajorMatrix::new(values,width),real_rows,height,constants.remove(0),constants.remove(0),outputs[0])
 }
 
 fn eval_poly(coeffs: &[ark_bn254::Fr], x: ark_bn254::Fr) -> ark_bn254::Fr {
@@ -1990,8 +2014,8 @@ pub fn prove_kzg_pairing(
     let final_exp_limbs = exp_to_limbs(&final_exponent_biguint());
 
     let air = MonolithicKzgAir {
-        miller_left,
-        miller_right,
+        miller_constants: vec![miller_left, miller_right],
+        num_instances: 2,
         final_exp_limbs,
         public_path: None,
     };
@@ -2078,8 +2102,8 @@ pub fn prove_kzg_pairing(
     let (_, verifier_left, _) = build_miller_program(p_left, q_left);
     let (_, verifier_right, _) = build_miller_program(p_right, q_right);
     let verifier_air = MonolithicKzgAir {
-        miller_left: verifier_left,
-        miller_right: verifier_right,
+        miller_constants: vec![verifier_left, verifier_right],
+        num_instances: 2,
         final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
         public_path: None,
     };
@@ -2094,8 +2118,8 @@ pub fn prove_kzg_pairing(
     let (_, tampered_left_lines, _) = build_miller_program(tampered_left, q_left);
     let (_, original_right_lines, _) = build_miller_program(p_right, q_right);
     let tampered_air = MonolithicKzgAir {
-        miller_left: tampered_left_lines,
-        miller_right: original_right_lines,
+        miller_constants: vec![tampered_left_lines, original_right_lines],
+        num_instances: 2,
         final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
         public_path: None,
     };
@@ -2172,8 +2196,8 @@ pub fn prove_leaf_pairing_and_path(
     let final_exp_limbs = exp_to_limbs(&final_exponent_biguint());
 
     let air = MonolithicKzgAir {
-        miller_left,
-        miller_right,
+        miller_constants: vec![miller_left, miller_right],
+        num_instances: 2,
         final_exp_limbs,
         public_path: Some(public_path.clone()),
     };
@@ -2266,8 +2290,8 @@ pub fn prove_leaf_pairing_and_path(
     let (_, verifier_left, _) = build_miller_program(p_left, q_left);
     let (_, verifier_right, _) = build_miller_program(p_right, q_right);
     let verifier_air = MonolithicKzgAir {
-        miller_left: verifier_left,
-        miller_right: verifier_right,
+        miller_constants: vec![verifier_left, verifier_right],
+        num_instances: 2,
         final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
         public_path: Some(public_path.clone()),
     };
@@ -2310,6 +2334,150 @@ pub fn prove_leaf_pairing_and_path(
     println!("V+ Tree path/hash authentication is separate work.");
 }
 
+
+// Four KZG openings, each consists of a LEFT and RIGHT pairing.
+// Single Goldilocks STARK proof, eight sequential pairing instances.
+pub fn prove_four_openings_and_path(
+    inputs: [(G1Affine, G2Affine); 8],
+    public_path: PublicPathBinding,
+) {
+    assert!(!public_path.links.is_empty());
+    let mut current=public_path.leaf;
+    for (level,link) in public_path.links.iter().enumerate() {
+        current = {
+            let chosen=if link.choose_right {link.right} else {link.left};
+            assert_eq!(chosen,current,"Path linkage broken at level {}",level);
+            link.parent
+        };
+    }
+    assert_eq!(current,public_path.root,"Trusted root mismatch");
+    println!("Combined path validation: PASS ({} levels)", public_path.links.len());
+
+    for k in 0..4 {
+        assert_eq!(Bn254::pairing(inputs[2*k].0,inputs[2*k].1).0,
+                   Bn254::pairing(inputs[2*k+1].0,inputs[2*k+1].1).0,
+                   "Native KZG opening {} failed", k);
+    }
+    let (trace, real_rows, height, miller_constants, _) =
+        make_eight_trace(&inputs,Some(&public_path));
+    let air=MonolithicKzgAir {
+        miller_constants,
+        num_instances:8,
+        final_exp_limbs:exp_to_limbs(&final_exponent_biguint()),
+        public_path:Some(public_path.clone()),
+    };
+    println!("Pairing instances : 8");
+    println!("KZG openings      : 4");
+    println!("Real rows         : {}",real_rows);
+    println!("Padded height     : {}",height);
+    println!("Trace width       : {}",<MonolithicKzgAir as BaseAir<Val>>::width(&air));
+    let air_layout=AirLayout::from_air::<Val>(&air);
+    let symbolic_constraints=get_symbolic_constraints::<Val,_>(&air,air_layout);
+    let num_air_constraints=symbolic_constraints.len();
+    let max_constraint_degree=get_max_constraint_degree::<Val,_>(&air,air_layout,height);
+    println!("Constraints       : {} (max degree {})",num_air_constraints,max_constraint_degree);
+    let constraint_evals = num_air_constraints * height;
+    // --------------------------------------------------------
+    // Plonky3 configuration
+    // --------------------------------------------------------
+    type ByteHash = Sha256;
+    type FieldHash = SerializingHasher<ByteHash>;
+
+    let byte_hash = ByteHash {};
+    let field_hash = FieldHash::new(byte_hash);
+
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
+
+    let compress = Compress::new(byte_hash);
+
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
+
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
+
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
+
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+
+    type Dft = Radix2DitParallel<Val>;
+    let dft = Dft::default();
+
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
+
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
+
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
+
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
+
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
+
+    type ConfigType = StarkConfig<Pcs, Challenge, Challenger>;
+
+    let config = ConfigType::new(pcs, challenger);
+
+    // --------------------------------------------------------
+    // Prove and verify ONE proof.
+    // --------------------------------------------------------
+    let prove_start = Instant::now();
+
+    let proof = prove(&config, &air, trace, &[]).expect("monolithic proof generation failed");
+
+    let proving_time = prove_start.elapsed();
+
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
+
+    let verify_start = Instant::now();
+
+    // SECURITY: The verifier reconstructs the AIR from its own trusted
+    // pairing inputs. Never accept Miller-line constants supplied by prover.
+    // This is deterministic verifier-side precomputation, not an in-AIR
+    // proof of G2 preparation / elliptic-curve point arithmetic.
+    let verifier_lines: Vec<Vec<MillerStepConst>> = inputs.iter()
+        .map(|&(p,q)| build_miller_program(p,q).1).collect();
+    let verifier_air = MonolithicKzgAir {
+        miller_constants: verifier_lines,
+        num_instances: 8,
+        final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+        public_path: Some(public_path.clone()),
+    };
+    verify(&config, &verifier_air, &proof, &[])
+        .expect("public-input-derived monolithic verification failed");
+
+    let verification_time = verify_start.elapsed();
+
+    println!("==============================================");
+    println!(" MONOLITHIC KZG RESULT");
+    println!("==============================================");
+    println!();
+
+    println!("AIR relation: four independent BN254 KZG pairing equalities + public path linkage");
+    println!("Verifier deterministically derives Miller lines from supplied public pairing points.");
+    println!("G1/G2 preparation and KZG point derivation remain outside the AIR.");
+    println!();
+
+    println!("Proof count             : 1");
+    println!("Proof size              : {} bytes", proof_bytes.len());
+    println!("Proving time            : {:?}", proving_time);
+    println!("Verification time       : {:?}", verification_time);
+    println!("AIR constraints         : {}", num_air_constraints);
+    println!("Max constraint degree   : {}", max_constraint_degree);
+    println!("Constraint evaluations  : {}", constraint_evals);
+    println!();
+
+    println!("Key material:");
+    println!("Proving key (PK)        : N/A -- transparent STARK/FRI");
+    println!("Verification key (VK)   : N/A -- transparent STARK/FRI");
+    println!("STARK trusted setup     : none");
+    println!("KZG setup               : supplied by caller (KZG SRS remains necessary)");
+    println!();
+
+    println!("RAM measurement: not performed here; on Linux run /usr/bin/time -v");
+    println!();
+
+    println!("SUCCESS: eight-pairing membership-path STARK proof verified.");
+    println!("Verifier-derived pairing-input binding test passed.");
+    println!("V+ Tree path/hash authentication is separate work.");
+}
 
 fn main() {
     println!("==============================================");
