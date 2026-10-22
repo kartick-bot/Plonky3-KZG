@@ -1,0 +1,2758 @@
+   Compiling vplus-tree v0.1.0 (/home/cryspr/Desktop/Plonky3-KZG/uni-stark/examples/vplus-tree)
+warning: unused import: `ark_ff::PrimeField`
+  --> uni-stark/examples/vplus-tree/src/stark_witness.rs:13:5
+   |
+13 | use ark_ff::PrimeField;
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `CanonicalDeserialize`
+  --> uni-stark/examples/vplus-tree/src/stark_witness.rs:14:41
+   |
+14 | use ark_serialize::{CanonicalSerialize, CanonicalDeserialize};
+   |                                         ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Duration`
+  --> uni-stark/examples/vplus-tree/src/stark_witness.rs:33:17
+   |
+33 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+warning: unused import: `printAndVerifyLeafPolynomials`
+  --> uni-stark/examples/vplus-tree/src/main.rs:19:5
+   |
+19 |     printAndVerifyLeafPolynomials,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ark_ff::PrimeField`
+  --> uni-stark/examples/vplus-tree/src/main.rs:41:9
+   |
+41 |     use ark_ff::PrimeField;
+   |         ^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `e`
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2372:19
+     |
+2372 |         .map_err(|e| "Invalid trusted root y coordinate".to_string())?;
+     |                   ^ help: if this is intentional, prefix it with an underscore: `_e`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `e`
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2370:19
+     |
+2370 |         .map_err(|e| "Invalid trusted root x coordinate".to_string())?;
+     |                   ^ help: if this is intentional, prefix it with an underscore: `_e`
+
+warning: unused variable: `byte`
+    --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:1106:13
+     |
+1106 |         for byte in step.left.iter().chain(step.right.iter()).chain(step.parent.iter()) {
+     |             ^^^^ help: if this is intentional, prefix it with an underscore: `_byte`
+
+warning: unused variable: `level`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1545:10
+     |
+1545 |     for (level, step) in path.iter().enumerate() {
+     |          ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
+
+warning: unused variable: `retrievedLeft`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1557:13
+     |
+1557 |         let retrievedLeft = tree.retrieveLeft(step.nodeIndex, step.index);
+     |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_retrievedLeft`
+
+warning: unused variable: `retrievedRight`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1559:13
+     |
+1559 |         let retrievedRight = tree.retrieveRight(step.nodeIndex, step.index);
+     |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_retrievedRight`
+
+warning: unused variable: `nodeIndex`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1566:19
+     |
+1566 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_nodeIndex`
+
+warning: unused variable: `keys`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1566:36
+     |
+1566 |             (Some(nodeIndex), Some(keys)) => {
+     |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_keys`
+
+warning: unused variable: `nodeIndex`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1581:19
+     |
+1581 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_nodeIndex`
+
+warning: unused variable: `keys`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1581:36
+     |
+1581 |             (Some(nodeIndex), Some(keys)) => {
+     |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_keys`
+
+warning: unused variable: `index`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1618:14
+     |
+1618 |         Some(index) => {
+     |              ^^^^^ help: if this is intentional, prefix it with an underscore: `_index`
+
+warning: unused variable: `level`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1641:10
+     |
+1641 |     for (level, step) in proofPath.iter().enumerate() {
+     |          ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
+
+warning: unused variable: `nodeIndex`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1649:19
+     |
+1649 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_nodeIndex`
+
+warning: unused variable: `keys`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1649:36
+     |
+1649 |             (Some(nodeIndex), Some(keys)) => {
+     |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_keys`
+
+warning: unused variable: `nodeIndex`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1664:19
+     |
+1664 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_nodeIndex`
+
+warning: unused variable: `keys`
+    --> uni-stark/examples/vplus-tree/src/main.rs:1664:36
+     |
+1664 |             (Some(nodeIndex), Some(keys)) => {
+     |                                    ^^^^ help: if this is intentional, prefix it with an underscore: `_keys`
+
+warning: unused variable: `leafCommitment`
+    --> uni-stark/examples/vplus-tree/src/main.rs:2296:9
+     |
+2296 |     let leafCommitment = polynomials
+     |         ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_leafCommitment`
+
+warning: unused variable: `witnessIndex`
+    --> uni-stark/examples/vplus-tree/src/main.rs:2319:13
+     |
+2319 |         let witnessIndex = level + 1;
+     |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_witnessIndex`
+
+warning: unused variable: `recordPosition`
+    --> uni-stark/examples/vplus-tree/src/main.rs:2321:13
+     |
+2321 |         let recordPosition = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_recordPosition`
+
+warning: unused variable: `mappingSide`
+    --> uni-stark/examples/vplus-tree/src/main.rs:2327:13
+     |
+2327 |         let mappingSide = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_mappingSide`
+
+warning: function `printSearchPath` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1528:4
+     |
+1528 | fn printSearchPath(tree: &VplusTree, searchKey: i64) {
+     |    ^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `printAndVerifyLeafPolynomials` is never used
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:536:8
+    |
+536 | pub fn printAndVerifyLeafPolynomials(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `g1`, `g2`, and `tau_g2` are never read
+  --> uni-stark/examples/vplus-tree/src/stark_witness.rs:57:9
+   |
+52 | pub struct VplusKzgWitness {
+   |            --------------- fields in this struct
+...
+57 |     pub g1: G1Affine,
+   |         ^^
+58 |     pub g2: G2Affine,
+   |         ^^
+59 |     pub tau_g2: G2Affine,
+   |         ^^^^^^
+   |
+   = note: `VplusKzgWitness` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: fields `source_tree_file`, `public_values`, and `private_values` are never read
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:188:9
+    |
+186 | pub struct LoadedMembership {
+    |            ---------------- fields in this struct
+187 |     pub source_kzg_file: String,
+188 |     pub source_tree_file: String,
+    |         ^^^^^^^^^^^^^^^^
+...
+192 |     pub public_values: Vec<Goldilocks>,
+    |         ^^^^^^^^^^^^^
+193 |     pub private_values: Vec<Goldilocks>,
+    |         ^^^^^^^^^^^^^^
+    |
+    = note: `LoadedMembership` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: function `canonical32` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1071:4
+     |
+1071 | fn canonical32<T: CanonicalSerialize>(value: &T) -> [Goldilocks; 32] {
+     |    ^^^^^^^^^^^
+
+warning: constant `TRACE_ACTIVE` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1469:7
+     |
+1469 | const TRACE_ACTIVE: usize = 0;
+     |       ^^^^^^^^^^^^
+
+warning: constant `TRACE_LEVEL` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1470:7
+     |
+1470 | const TRACE_LEVEL: usize = 1;
+     |       ^^^^^^^^^^^
+
+warning: constant `TRACE_MAPPING` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1471:7
+     |
+1471 | const TRACE_MAPPING: usize = 2;
+     |       ^^^^^^^^^^^^^
+
+warning: constant `TRACE_CURRENT_COMMITMENT` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1473:7
+     |
+1473 | const TRACE_CURRENT_COMMITMENT: usize = 3;
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_LEFT_COMMITMENT` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1474:7
+     |
+1474 | const TRACE_LEFT_COMMITMENT: usize =
+     |       ^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_RIGHT_COMMITMENT` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1476:7
+     |
+1476 | const TRACE_RIGHT_COMMITMENT: usize =
+     |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_PARENT_COMMITMENT` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1478:7
+     |
+1478 | const TRACE_PARENT_COMMITMENT: usize =
+     |       ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_PATH_EVALUATION_POINT` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1480:7
+     |
+1480 | const TRACE_PATH_EVALUATION_POINT: usize =
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_PATH_EVALUATION_VALUE` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1482:7
+     |
+1482 | const TRACE_PATH_EVALUATION_VALUE: usize =
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_RECORD_DIGEST` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1489:7
+     |
+1489 | const TRACE_RECORD_DIGEST: usize = TRACE_PATH_EVALUATION_VALUE + 32;
+     |       ^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_RECORD_CARRY` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1490:7
+     |
+1490 | const TRACE_RECORD_CARRY: usize = TRACE_RECORD_DIGEST + 32;
+     |       ^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_HASH_PADDED_MESSAGE` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1491:7
+     |
+1491 | const TRACE_HASH_PADDED_MESSAGE: usize = TRACE_RECORD_CARRY + 16;
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TRACE_PUBLIC_VALUES_START` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1492:7
+     |
+1492 | const TRACE_PUBLIC_VALUES_START: usize = TRACE_HASH_PADDED_MESSAGE + 128;
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusPublicLayout` is never constructed
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1502:8
+     |
+1502 | struct VplusPublicLayout {
+     |        ^^^^^^^^^^^^^^^^^
+
+warning: function `buildPublicLayout` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1516:4
+     |
+1516 | fn buildPublicLayout(
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: function `publicPathStepStart` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1600:4
+     |
+1600 | fn publicPathStepStart(
+     |    ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusMembershipAir` is never constructed
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1677:12
+     |
+1677 | pub struct VplusMembershipAir {
+     |            ^^^^^^^^^^^^^^^^^^
+
+warning: associated function `fromLoadedMembership` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1686:8
+     |
+1685 | impl VplusMembershipAir {
+     | ----------------------- associated function in this implementation
+1686 |     fn fromLoadedMembership(
+     |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `buildPrivateTrace` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2388:8
+     |
+2388 | pub fn buildPrivateTrace(
+     |        ^^^^^^^^^^^^^^^^^
+
+warning: function `printStatementRelation` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2621:4
+     |
+2621 | fn printStatementRelation(
+     |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `runStarkProof` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2714:8
+     |
+2714 | pub fn runStarkProof(
+     |        ^^^^^^^^^^^^^
+
+warning: function `printProverVerifierBoundary` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:3049:8
+     |
+3049 | pub fn printProverVerifierBoundary(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `runRealLeafPairingStark` is never used
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:3133:8
+     |
+3133 | pub fn runRealLeafPairingStark(loaded: &LoadedMembership) {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `scalar_modulus_biguint` is never used
+   --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:300:4
+    |
+300 | fn scalar_modulus_biguint() -> BigUint {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `make_trace` is never used
+   --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:980:4
+    |
+980 | fn make_trace(
+    |    ^^^^^^^^^^
+
+warning: function `state_limb` is never used
+    --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:1054:4
+     |
+1054 | fn state_limb<AB: AirBuilder>(
+     |    ^^^^^^^^^^
+
+warning: function `eval_poly` is never used
+    --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:1956:4
+     |
+1956 | fn eval_poly(coeffs: &[ark_bn254::Fr], x: ark_bn254::Fr) -> ark_bn254::Fr {
+     |    ^^^^^^^^^
+
+warning: function `prove_kzg_pairing` is never used
+    --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:1973:8
+     |
+1973 | pub fn prove_kzg_pairing(
+     |        ^^^^^^^^^^^^^^^^^
+
+warning: function `main` is never used
+    --> uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:2304:4
+     |
+2304 | fn main() {
+     |    ^^^^
+
+warning: fields `leftChildIndex`, `leftChildKeys`, `chosenChildKeys`, `rightChildIndex`, and `rightChildKeys` are never read
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:17:9
+   |
+ 8 | pub struct SearchPathStep {
+   |            -------------- fields in this struct
+...
+17 |     pub leftChildIndex: Option<usize>,
+   |         ^^^^^^^^^^^^^^
+18 |     pub leftChildKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^^^^^^
+...
+22 |     pub chosenChildKeys: Vec<i64>,
+   |         ^^^^^^^^^^^^^^^
+...
+25 |     pub rightChildIndex: Option<usize>,
+   |         ^^^^^^^^^^^^^^^
+26 |     pub rightChildKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `SearchPathStep` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `ProofPathStep` is never constructed
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:34:12
+   |
+34 | pub struct ProofPathStep {
+   |            ^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:122:12
+    |
+ 75 | impl VplusTree {
+    | -------------- methods in this implementation
+...
+122 |     pub fn isUnderflow(&self, nodeIndex: usize) -> bool {
+    |            ^^^^^^^^^^^
+...
+238 |     pub fn printInternalNodeRecords(&self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+378 |     pub fn buildProofPath(&self, key: i64) -> (usize, Vec<ProofPathStep>) {
+    |            ^^^^^^^^^^^^^^
+...
+408 |     pub fn retrieveLeft(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |            ^^^^^^^^^^^^
+...
+420 |     pub fn retrieveRight(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |            ^^^^^^^^^^^^^
+...
+434 |     pub fn get(&self, key: i64) -> Option<[u8; 32]> {
+    |            ^^^
+...
+456 |     pub fn update(&mut self, key: i64, value: [u8; 32]) -> bool {
+    |            ^^^^^^
+...
+662 |     pub fn show(&self) {
+    |            ^^^^
+...
+716 |     pub fn getDepth(&self, nodeIndex: usize) -> usize {
+    |            ^^^^^^^^
+...
+804 |     pub fn validate(&self) -> bool {
+    |            ^^^^^^^^
+
+warning: constant `VPLUS_INTERNAL_DOMAIN` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:17:11
+   |
+17 | pub const VPLUS_INTERNAL_DOMAIN: &[u8; 19] = b"VPLUS_INTERNAL_NODE";
+   |           ^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `VPLUS_RECORD_MESSAGE_SIZE` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:18:11
+   |
+18 | pub const VPLUS_RECORD_MESSAGE_SIZE: usize = 19 + 8 + 32 + 32;
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `SHA256_PADDED_SIZE` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:19:11
+   |
+19 | pub const SHA256_PADDED_SIZE: usize = 128;
+   |           ^^^^^^^^^^^^^^^^^^
+
+warning: constant `SHA256_IV` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:21:11
+   |
+21 | pub const SHA256_IV: [u32; 8] = [
+   |           ^^^^^^^^^
+
+warning: struct `InternalRecordHashInput` is never constructed
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:27:12
+   |
+27 | pub struct InternalRecordHashInput {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `make_internal_record_hash_input` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:34:8
+   |
+34 | pub fn make_internal_record_hash_input(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `SHA256_K` is never used
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:80:7
+   |
+80 | const SHA256_K: [u32; 64] = [
+   |       ^^^^^^^^
+
+warning: struct `Sha256Round` is never constructed
+  --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:95:12
+   |
+95 | pub struct Sha256Round {
+   |            ^^^^^^^^^^^
+
+warning: struct `Sha256CompressionWitness` is never constructed
+   --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:106:12
+    |
+106 | pub struct Sha256CompressionWitness {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `make_sha256_compression_witness` is never used
+   --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:113:8
+    |
+113 | pub fn make_sha256_compression_witness(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `check_against_existing_tree` is never used
+   --> uni-stark/examples/vplus-tree/src/vplus_sha256_record.rs:158:8
+    |
+158 | pub fn check_against_existing_tree(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusKzgWitness` is never constructed
+  --> uni-stark/examples/vplus-tree/src/main.rs:69:16
+   |
+69 |     pub struct VplusKzgWitness {
+   |                ^^^^^^^^^^^^^^^
+
+warning: struct `VplusPublicPathStep` is never constructed
+  --> uni-stark/examples/vplus-tree/src/main.rs:92:16
+   |
+92 |     pub struct VplusPublicPathStep {
+   |                ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusPublicStatement` is never constructed
+   --> uni-stark/examples/vplus-tree/src/main.rs:122:16
+    |
+122 |     pub struct VplusPublicStatement {
+    |                ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusPublicParameters` is never constructed
+   --> uni-stark/examples/vplus-tree/src/main.rs:140:16
+    |
+140 |     pub struct VplusPublicParameters {
+    |                ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusPrivatePathStep` is never constructed
+   --> uni-stark/examples/vplus-tree/src/main.rs:152:16
+    |
+152 |     pub struct VplusPrivatePathStep {
+    |                ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `VplusPrivateWitness` is never constructed
+   --> uni-stark/examples/vplus-tree/src/main.rs:174:16
+    |
+174 |     pub struct VplusPrivateWitness {
+    |                ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `LoadedMembership` is never constructed
+   --> uni-stark/examples/vplus-tree/src/main.rs:196:16
+    |
+196 |     pub struct LoadedMembership {
+    |                ^^^^^^^^^^^^^^^^
+
+warning: function `extractDecimalNumbers` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:211:8
+    |
+211 |     fn extractDecimalNumbers(text: &str) -> Vec<String> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `parseG1` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:236:8
+    |
+236 |     fn parseG1(text: &str) -> G1Affine {
+    |        ^^^^^^^
+
+warning: function `parseG2` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:260:8
+    |
+260 |     fn parseG2(text: &str) -> G2Affine {
+    |        ^^^^^^^
+
+warning: function `parseFr` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:293:8
+    |
+293 |     fn parseFr(text: &str) -> Fr {
+    |        ^^^^^^^
+
+warning: function `parsePolynomialCoefficients` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:303:8
+    |
+303 |     fn parsePolynomialCoefficients(node: &Value) -> Vec<Fr> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `findTreeNode` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:351:8
+    |
+351 |     fn findTreeNode<'a>(
+    |        ^^^^^^^^^^^^
+
+warning: function `findKzgNode` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:374:8
+    |
+374 |     fn findKzgNode<'a>(
+    |        ^^^^^^^^^^^
+
+warning: function `parseSrs` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:421:8
+    |
+421 |     fn parseSrs(kzg_json: &Value) -> KzgSrs {
+    |        ^^^^^^^^
+
+warning: function `generateValue` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:467:8
+    |
+467 |     fn generateValue(key: i64) -> [u8; 32] {
+    |        ^^^^^^^^^^^^^
+
+warning: function `chooseRandomKzgFile` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:482:8
+    |
+482 |     fn chooseRandomKzgFile(folder: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `matchingTreeFile` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:522:8
+    |
+522 |     fn matchingTreeFile(kzg_file: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^^^^^
+
+warning: function `chooseRandomLeafOpening` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:543:8
+    |
+543 |     fn chooseRandomLeafOpening<'a>(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `loadRandomMembershipFromJson` is never used
+   --> uni-stark/examples/vplus-tree/src/main.rs:589:12
+    |
+589 |     pub fn loadRandomMembershipFromJson(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `pushByte` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1065:8
+     |
+1065 |     fn pushByte(
+     |        ^^^^^^^^
+
+warning: function `pushBytes` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1081:8
+     |
+1081 |     fn pushBytes(
+     |        ^^^^^^^^^
+
+warning: function `pushUsize` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1098:8
+     |
+1098 |     fn pushUsize(
+     |        ^^^^^^^^^
+
+warning: function `pushI64` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1113:8
+     |
+1113 |     fn pushI64(
+     |        ^^^^^^^
+
+warning: function `pushCanonical` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1128:8
+     |
+1128 |     fn pushCanonical<T>(
+     |        ^^^^^^^^^^^^^
+
+warning: function `encodePublicStatement` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1170:12
+     |
+1170 |     pub fn encodePublicStatement(
+     |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `encodePrivateWitness` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1269:12
+     |
+1269 |     pub fn encodePrivateWitness(
+     |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `buildPrivateTrace` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1417:12
+     |
+1417 |     pub fn buildPrivateTrace(
+     |            ^^^^^^^^^^^^^^^^^
+
+warning: function `printProverVerifierBoundary` is never used
+    --> uni-stark/examples/vplus-tree/src/main.rs:1441:12
+     |
+1441 |     pub fn printProverVerifierBoundary(
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generateRandomKeys` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1486:4
+     |
+1486 | fn generateRandomKeys(keyCount: usize, universeMax: i64) -> Vec<i64> {
+     |    ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `generate_random_keys`
+     |
+     = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `keyCount` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1486:23
+     |
+1486 | fn generateRandomKeys(keyCount: usize, universeMax: i64) -> Vec<i64> {
+     |                       ^^^^^^^^ help: convert the identifier to snake case: `key_count`
+
+warning: variable `universeMax` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1486:40
+     |
+1486 | fn generateRandomKeys(keyCount: usize, universeMax: i64) -> Vec<i64> {
+     |                                        ^^^^^^^^^^^ help: convert the identifier to snake case: `universe_max`
+
+warning: function `generateHashValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1504:4
+     |
+1504 | fn generateHashValue(key: i64) -> [u8; 32] {
+     |    ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `generate_hash_value`
+
+warning: function `hashToHex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1520:4
+     |
+1520 | fn hashToHex(hash: &[u8; 32]) -> String {
+     |    ^^^^^^^^^ help: convert the identifier to snake case: `hash_to_hex`
+
+warning: function `printSearchPath` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1528:4
+     |
+1528 | fn printSearchPath(tree: &VplusTree, searchKey: i64) {
+     |    ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_search_path`
+
+warning: variable `searchKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1528:38
+     |
+1528 | fn printSearchPath(tree: &VplusTree, searchKey: i64) {
+     |                                      ^^^^^^^^^ help: convert the identifier to snake case: `search_key`
+
+warning: variable `leafIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1537:10
+     |
+1537 |     let (leafIndex, path) = tree.searchPath(searchKey);
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `proofPath` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1539:13
+     |
+1539 |     let (_, proofPath) = tree.buildProofPath(searchKey);
+     |             ^^^^^^^^^ help: convert the identifier to snake case: `proof_path`
+
+warning: variable `retrievedLeft` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1557:13
+     |
+1557 |         let retrievedLeft = tree.retrieveLeft(step.nodeIndex, step.index);
+     |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `retrieved_left`
+
+warning: variable `retrievedRight` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1559:13
+     |
+1559 |         let retrievedRight = tree.retrieveRight(step.nodeIndex, step.index);
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `retrieved_right`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1566:19
+     |
+1566 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1581:19
+     |
+1581 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `keyPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1607:13
+     |
+1607 |     let mut keyPosition = None;
+     |             ^^^^^^^^^^^ help: convert the identifier to snake case: `key_position`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1649:19
+     |
+1649 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1664:19
+     |
+1664 |             (Some(nodeIndex), Some(keys)) => {
+     |                   ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: function `verifyMembershipPath` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1771:4
+     |
+1771 | fn verifyMembershipPath(
+     |    ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `verify_membership_path`
+
+warning: variable `rootCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1777:5
+     |
+1777 |     rootCommitment: &ark_bn254::G1Affine,
+     |     ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `root_commitment`
+
+warning: variable `leafIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1782:10
+     |
+1782 |     let (leafIndex, path) = tree.searchPath(key);
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `leafEvaluation` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1791:9
+     |
+1791 |     let leafEvaluation = evaluations
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_evaluation`
+
+warning: variable `globalIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1796:9
+     |
+1796 |     let globalIndex = leafEvaluation.global_index;
+     |         ^^^^^^^^^^^ help: convert the identifier to snake case: `global_index`
+
+warning: variable `leafPolynomial` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1798:9
+     |
+1798 |     let leafPolynomial = polynomials
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_polynomial`
+
+warning: variable `leafEvaluationPoint` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1803:9
+     |
+1803 |     let leafEvaluationPoint = ark_bn254::Fr::from(globalIndex as u64);
+     |         ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_evaluation_point`
+
+warning: variable `leafEvaluationValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1805:9
+     |
+1805 |     let leafEvaluationValue =
+     |         ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_evaluation_value`
+
+warning: variable `leafVerification` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1808:9
+     |
+1808 |     let leafVerification = verifyEval(
+     |         ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_verification`
+
+warning: variable `verifiedChildCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1880:13
+     |
+1880 |     let mut verifiedChildCommitment = leafPolynomial.commitment;
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `verified_child_commitment`
+
+warning: variable `witnessIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1883:13
+     |
+1883 |         let witnessIndex = level + 1;
+     |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `witness_index`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1885:13
+     |
+1885 |         let nodeIndex = step.nodeIndex;
+     |             ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `recordPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1889:14
+     |
+1889 |         let (recordPosition, chosenSide) = if step.index < node.keys.len() {
+     |              ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_position`
+
+warning: variable `chosenSide` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1889:30
+     |
+1889 |         let (recordPosition, chosenSide) = if step.index < node.keys.len() {
+     |                              ^^^^^^^^^^ help: convert the identifier to snake case: `chosen_side`
+
+warning: variable `leftChildIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1895:13
+     |
+1895 |         let leftChildIndex = node.children[recordPosition];
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_child_index`
+
+warning: variable `rightChildIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1897:13
+     |
+1897 |         let rightChildIndex = node.children[recordPosition + 1];
+     |             ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_child_index`
+
+warning: variable `leftCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1899:13
+     |
+1899 |         let leftCommitment = buildNodeCommitment(tree, leftChildIndex, polynomials, srs);
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_commitment`
+
+warning: variable `rightCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1901:13
+     |
+1901 |         let rightCommitment = buildNodeCommitment(tree, rightChildIndex, polynomials, srs);
+     |             ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_commitment`
+
+warning: variable `authenticatedChildCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1903:13
+     |
+1903 |         let authenticatedChildCommitment = if step.index < node.keys.len() {
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `authenticated_child_commitment`
+
+warning: variable `internalEvaluationValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1927:13
+     |
+1927 |         let internalEvaluationValue =
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `internal_evaluation_value`
+
+warning: variable `internalEvaluationPoint` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1930:13
+     |
+1930 |         let internalEvaluationPoint = ark_bn254::Fr::from(recordPosition as u64);
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `internal_evaluation_point`
+
+warning: variable `nodeCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1932:13
+     |
+1932 |         let nodeCommitment = buildNodeCommitment(tree, nodeIndex, polynomials, srs);
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `node_commitment`
+
+warning: function `buildTree` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2028:4
+     |
+2028 | fn buildTree(order: usize, keys: &Vec<i64>) {
+     |    ^^^^^^^^^ help: convert the identifier to snake case: `build_tree`
+
+warning: variable `rootCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2133:9
+     |
+2133 |     let rootCommitment = buildTreeCommitment(&tree, &polynomials, &srs);
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `root_commitment`
+
+warning: variable `smallestKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2142:9
+     |
+2142 |     let smallestKey = *keys.iter().min().expect("Key list is empty");
+     |         ^^^^^^^^^^^ help: convert the identifier to snake case: `smallest_key`
+
+warning: variable `searchKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2144:9
+     |
+2144 |     let searchKey = keys
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `search_key`
+
+warning: variable `requestedProof` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2154:9
+     |
+2154 |     let requestedProof = verifyMembershipPath(
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `requested_proof`
+
+warning: variable `leafIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2164:9
+     |
+2164 |     let leafIndex = requestedProof.leaf_index;
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `requestedGlobalIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2166:9
+     |
+2166 |     let requestedGlobalIndex = requestedProof.global_index;
+     |         ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `requested_global_index`
+
+warning: variable `predecessorGlobalIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2183:9
+     |
+2183 |     let predecessorGlobalIndex = requestedGlobalIndex - 1;
+     |         ^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_global_index`
+
+warning: variable `predecessorEvaluation` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2185:9
+     |
+2185 |     let predecessorEvaluation = evaluations
+     |         ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_evaluation`
+
+warning: variable `predecessorKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2190:9
+     |
+2190 |     let predecessorKey = predecessorEvaluation.key;
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_key`
+
+warning: variable `predecessorProof` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2192:9
+     |
+2192 |     let predecessorProof = verifyMembershipPath(
+     |         ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_proof`
+
+warning: variable `expectedWitnessCount` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2259:9
+     |
+2259 |     let expectedWitnessCount = path.len() + 1;
+     |         ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `expected_witness_count`
+
+warning: variable `leafCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2296:9
+     |
+2296 |     let leafCommitment = polynomials
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_commitment`
+
+warning: variable `witnessIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2319:13
+     |
+2319 |         let witnessIndex = level + 1;
+     |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `witness_index`
+
+warning: variable `recordPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2321:13
+     |
+2321 |         let recordPosition = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_position`
+
+warning: variable `mappingSide` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2327:13
+     |
+2327 |         let mappingSide = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^ help: convert the identifier to snake case: `mapping_side`
+
+warning: function `writeJsonFiles` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2466:4
+     |
+2466 | fn writeJsonFiles(
+     |    ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `write_json_files`
+
+warning: variable `searchKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2471:5
+     |
+2471 |     searchKey: i64,
+     |     ^^^^^^^^^ help: convert the identifier to snake case: `search_key`
+
+warning: variable `rootCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2473:5
+     |
+2473 |     rootCommitment: &ark_bn254::G1Affine,
+     |     ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `root_commitment`
+
+warning: variable `predecessorProof` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2475:5
+     |
+2475 |     predecessorProof: &MembershipVerification,
+     |     ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_proof`
+
+warning: variable `predecessorKey` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2476:5
+     |
+2476 |     predecessorKey: i64,
+     |     ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_key`
+
+warning: variable `searchGlobalIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2477:5
+     |
+2477 |     searchGlobalIndex: usize,
+     |     ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `search_global_index`
+
+warning: variable `jsonString` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2482:9
+     |
+2482 |     let jsonString = |value: String| {
+     |         ^^^^^^^^^^ help: convert the identifier to snake case: `json_string`
+
+warning: variable `writePublicPointers` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2495:9
+     |
+2495 |     let writePublicPointers = |file: &mut std::fs::File, pointers: &PublicPointers| {
+     |         ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `write_public_pointers`
+
+warning: variable `writeVerifyEval` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2538:9
+     |
+2538 |     let writeVerifyEval = |file: &mut std::fs::File, opening: &VerifyEvalRecord| {
+     |         ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `write_verify_eval`
+
+warning: variable `writeLeafRecord` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2574:9
+     |
+2574 |     let writeLeafRecord = |file: &mut std::fs::File, record: &LeafRecord| {
+     |         ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `write_leaf_record`
+
+warning: variable `originalRoot` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2613:9
+     |
+2613 |     let originalRoot = tree.root;
+     |         ^^^^^^^^^^^^ help: convert the identifier to snake case: `original_root`
+
+warning: variable `nodeCommitments` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2615:13
+     |
+2615 |     let mut nodeCommitments: Vec<Option<ark_bn254::G1Affine>> = vec![None; tree.nodes.len()];
+     |             ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `node_commitments`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2617:9
+     |
+2617 |     for nodeIndex in 0..tree.nodes.len() {
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `leafIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2637:10
+     |
+2637 |     let (leafIndex, path) = tree.searchPath(searchKey);
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `expectedWitnessCount` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2639:9
+     |
+2639 |     let expectedWitnessCount = path.len() + 1;
+     |         ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `expected_witness_count`
+
+warning: variable `internalOpenings` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2673:13
+     |
+2673 |     let mut internalOpenings: Vec<Vec<(ark_bn254::Fr, ark_bn254::G1Affine, bool)>> =
+     |             ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `internal_openings`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2676:9
+     |
+2676 |     for nodeIndex in 0..tree.nodes.len() {
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `nodeCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2683:13
+     |
+2683 |         let nodeCommitment = nodeCommitments[nodeIndex].expect("Internal commitment missing");
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `node_commitment`
+
+warning: variable `recordPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2724:13
+     |
+2724 |         let recordPosition = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_position`
+
+warning: variable `treeFile` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2742:13
+     |
+2742 |     let mut treeFile =
+     |             ^^^^^^^^ help: convert the identifier to snake case: `tree_file`
+
+warning: variable `asciiTree` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2745:13
+     |
+2745 |     let mut asciiTree = String::new();
+     |             ^^^^^^^^^ help: convert the identifier to snake case: `ascii_tree`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2749:21
+     |
+2749 |     while let Some((nodeIndex, prefix, isLast, isRoot)) = stack.pop() {
+     |                     ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `isLast` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2749:40
+     |
+2749 |     while let Some((nodeIndex, prefix, isLast, isRoot)) = stack.pop() {
+     |                                        ^^^^^^ help: convert the identifier to snake case: `is_last`
+
+warning: variable `isRoot` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2749:48
+     |
+2749 |     while let Some((nodeIndex, prefix, isLast, isRoot)) = stack.pop() {
+     |                                                ^^^^^^ help: convert the identifier to snake case: `is_root`
+
+warning: variable `nodeType` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2757:17
+     |
+2757 |             let nodeType = if node.is_leaf { "LEAF" } else { "PARENT" };
+     |                 ^^^^^^^^ help: convert the identifier to snake case: `node_type`
+
+warning: variable `childPrefix` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2766:17
+     |
+2766 |             let childPrefix = if isRoot {
+     |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `child_prefix`
+
+warning: variable `asciiTree` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2783:9
+     |
+2783 |     let asciiTree = jsonString(asciiTree);
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `ascii_tree`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2801:10
+     |
+2801 |     for (nodeIndex, node) in tree.nodes.iter().enumerate() {
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `nodeType` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2802:13
+     |
+2802 |         let nodeType = if nodeIndex == tree.root {
+     |             ^^^^^^^^ help: convert the identifier to snake case: `node_type`
+
+warning: variable `parentIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2817:18
+     |
+2817 |             Some(parentIndex) => {
+     |                  ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `kzgFile` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2847:13
+     |
+2847 |     let mut kzgFile =
+     |             ^^^^^^^ help: convert the identifier to snake case: `kzg_file`
+
+warning: variable `baseFieldModulus` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2850:9
+     |
+2850 |     let baseFieldModulus = <ark_bn254::Fq as ark_ff::PrimeField>::MODULUS.to_string();
+     |         ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `base_field_modulus`
+
+warning: variable `scalarFieldModulus` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2852:9
+     |
+2852 |     let scalarFieldModulus = <ark_bn254::Fr as ark_ff::PrimeField>::MODULUS.to_string();
+     |         ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `scalar_field_modulus`
+
+warning: variable `leftChild` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2988:13
+     |
+2988 |         let leftChild = root.children[i];
+     |             ^^^^^^^^^ help: convert the identifier to snake case: `left_child`
+
+warning: variable `rightChild` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2990:13
+     |
+2990 |         let rightChild = root.children[i + 1];
+     |             ^^^^^^^^^^ help: convert the identifier to snake case: `right_child`
+
+warning: variable `leftCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2992:13
+     |
+2992 |         let leftCommitment = nodeCommitments[leftChild]
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_commitment`
+
+warning: variable `rightCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:2996:13
+     |
+2996 |         let rightCommitment = nodeCommitments[rightChild]
+     |             ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_commitment`
+
+warning: variable `evaluationValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3024:14
+     |
+3024 |         let (evaluationValue, recordWitness, recordVerification) = internalOpenings[tree.root][i];
+     |              ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `evaluation_value`
+
+warning: variable `recordWitness` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3024:31
+     |
+3024 |         let (evaluationValue, recordWitness, recordVerification) = internalOpenings[tree.root][i];
+     |                               ^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_witness`
+
+warning: variable `recordVerification` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3024:46
+     |
+3024 |         let (evaluationValue, recordWitness, recordVerification) = internalOpenings[tree.root][i];
+     |                                              ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_verification`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3065:19
+     |
+3065 |         .filter(|(nodeIndex, node)| *nodeIndex != tree.root && !node.is_leaf)
+     |                   ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `parentCount` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3061:9
+     |
+3061 |     let parentCount = tree
+     |         ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_count`
+
+warning: variable `parentWritten` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3068:13
+     |
+3068 |     let mut parentWritten = 0usize;
+     |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `parent_written`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3070:10
+     |
+3070 |     for (nodeIndex, node) in tree.nodes.iter().enumerate() {
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `witnessIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3079:17
+     |
+3079 |         let mut witnessIndex: Option<usize> = None;
+     |                 ^^^^^^^^^^^^ help: convert the identifier to snake case: `witness_index`
+
+warning: variable `openingPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3081:17
+     |
+3081 |         let mut openingPosition: Option<usize> = None;
+     |                 ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `opening_position`
+
+warning: variable `mappingSide` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3083:17
+     |
+3083 |         let mut mappingSide: Option<&str> = None;
+     |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `mapping_side`
+
+warning: variable `chosenChild` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3085:17
+     |
+3085 |         let mut chosenChild: Option<usize> = None;
+     |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child`
+
+warning: variable `parentIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3112:18
+     |
+3112 |             Some(parentIndex) => {
+     |                  ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `leftChild` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3167:17
+     |
+3167 |             let leftChild = node.children[i];
+     |                 ^^^^^^^^^ help: convert the identifier to snake case: `left_child`
+
+warning: variable `rightChild` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3169:17
+     |
+3169 |             let rightChild = node.children[i + 1];
+     |                 ^^^^^^^^^^ help: convert the identifier to snake case: `right_child`
+
+warning: variable `leftCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3171:17
+     |
+3171 |             let leftCommitment = nodeCommitments[leftChild]
+     |                 ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_commitment`
+
+warning: variable `rightCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3175:17
+     |
+3175 |             let rightCommitment = nodeCommitments[rightChild]
+     |                 ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_commitment`
+
+warning: variable `evaluationValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3203:18
+     |
+3203 |             let (evaluationValue, recordWitness, recordVerification) =
+     |                  ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `evaluation_value`
+
+warning: variable `recordWitness` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3203:35
+     |
+3203 |             let (evaluationValue, recordWitness, recordVerification) =
+     |                                   ^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_witness`
+
+warning: variable `recordVerification` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3203:50
+     |
+3203 |             let (evaluationValue, recordWitness, recordVerification) =
+     |                                                  ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_verification`
+
+warning: variable `leafCount` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3255:9
+     |
+3255 |     let leafCount = tree.nodes.iter().filter(|node| node.is_leaf).count();
+     |         ^^^^^^^^^ help: convert the identifier to snake case: `leaf_count`
+
+warning: variable `leafWritten` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3257:13
+     |
+3257 |     let mut leafWritten = 0usize;
+     |             ^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_written`
+
+warning: variable `nodeIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3259:10
+     |
+3259 |     for (nodeIndex, node) in tree.nodes.iter().enumerate() {
+     |          ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `parentIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3274:18
+     |
+3274 |             Some(parentIndex) => {
+     |                  ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `evaluationPoint` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3359:17
+     |
+3359 |             let evaluationPoint = ark_bn254::Fr::from(evaluation.global_index as u64);
+     |                 ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `evaluation_point`
+
+warning: variable `evaluationValue` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3361:17
+     |
+3361 |             let evaluationValue =
+     |                 ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `evaluation_value`
+
+warning: variable `leafWitness` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3364:17
+     |
+3364 |             let leafWitness =
+     |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_witness`
+
+warning: variable `leafOpeningVerification` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3367:17
+     |
+3367 |             let leafOpeningVerification = verifyEval(
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_opening_verification`
+
+warning: variable `leafCommitment` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3527:9
+     |
+3527 |     let leafCommitment = nodeCommitments[leafIndex]
+     |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_commitment`
+
+warning: variable `witnessIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3570:13
+     |
+3570 |         let witnessIndex = level + 1;
+     |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `witness_index`
+
+warning: variable `recordPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3572:13
+     |
+3572 |         let recordPosition = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_position`
+
+warning: variable `nodeType` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3584:13
+     |
+3584 |         let nodeType = if step.nodeIndex == tree.root {
+     |             ^^^^^^^^ help: convert the identifier to snake case: `node_type`
+
+warning: variable `predecessorOpenings` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3652:9
+     |
+3652 |     let predecessorOpenings = &predecessorProof.openings;
+     |         ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_openings`
+
+warning: variable `predecessorPath` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3654:9
+     |
+3654 |     let predecessorPath = &predecessorProof.path;
+     |         ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `predecessor_path`
+
+warning: variable `witnessIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3729:13
+     |
+3729 |         let witnessIndex = level + 1;
+     |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `witness_index`
+
+warning: variable `recordPosition` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3733:13
+     |
+3733 |         let recordPosition = if step.index < step.nodeKeys.len() {
+     |             ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `record_position`
+
+warning: variable `nodeType` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:3739:13
+     |
+3739 |         let nodeType = if step.nodeIndex == tree.root {
+     |             ^^^^^^^^ help: convert the identifier to snake case: `node_type`
+
+warning: function `generateTreeSrs` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:84:8
+   |
+84 | pub fn generateTreeSrs(max_degree: usize) -> KzgSrs {
+   |        ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `generate_tree_srs`
+
+warning: function `hashKeyValue` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:144:8
+    |
+144 | pub fn hashKeyValue(key: i64, value: &[u8; 32]) -> [u8; 32] {
+    |        ^^^^^^^^^^^^ help: convert the identifier to snake case: `hash_key_value`
+
+warning: function `digestToFieldLimbs` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:170:8
+    |
+170 | pub fn digestToFieldLimbs(digest: &[u8; 32]) -> (Fr, Fr) {
+    |        ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `digest_to_field_limbs`
+
+warning: function `buildLeafEvaluations` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:190:8
+    |
+190 | pub fn buildLeafEvaluations(tree: &VplusTree) -> Vec<LeafEvaluation> {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_leaf_evaluations`
+
+warning: function `groupEvaluationsByLeaf` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:260:8
+    |
+260 | pub fn groupEvaluationsByLeaf(evaluations: &[LeafEvaluation]) -> Vec<LeafPolynomialData> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `group_evaluations_by_leaf`
+
+warning: function `polynomialAdd` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:296:4
+    |
+296 | fn polynomialAdd(a: &[Fr], b: &[Fr]) -> Vec<Fr> {
+    |    ^^^^^^^^^^^^^ help: convert the identifier to snake case: `polynomial_add`
+
+warning: function `polynomialScale` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:316:4
+    |
+316 | fn polynomialScale(polynomial: &[Fr], scalar: Fr) -> Vec<Fr> {
+    |    ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `polynomial_scale`
+
+warning: function `polynomialMultiplyLinear` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:327:4
+    |
+327 | fn polynomialMultiplyLinear(polynomial: &[Fr], root: Fr) -> Vec<Fr> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `polynomial_multiply_linear`
+
+warning: function `lagrangeInterpolate` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:357:8
+    |
+357 | pub fn lagrangeInterpolate(points: &[(Fr, Fr)]) -> Vec<Fr> {
+    |        ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `lagrange_interpolate`
+
+warning: function `commitPolynomial` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:446:8
+    |
+446 | pub fn commitPolynomial(coefficients: &[Fr], srs: &KzgSrs) -> G1Affine {
+    |        ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `commit_polynomial`
+
+warning: function `buildLeafPolynomials` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:465:8
+    |
+465 | pub fn buildLeafPolynomials(grouped: &[LeafPolynomialData], srs: &KzgSrs) -> Vec<LeafPolynomial> {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_leaf_polynomials`
+
+warning: function `evaluatePolynomial` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:519:8
+    |
+519 | pub fn evaluatePolynomial(coefficients: &[Fr], x: Fr) -> Fr {
+    |        ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `evaluate_polynomial`
+
+warning: function `printAndVerifyLeafPolynomials` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:536:8
+    |
+536 | pub fn printAndVerifyLeafPolynomials(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_and_verify_leaf_polynomials`
+
+warning: variable `globalIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:585:17
+    |
+585 |             let globalIndex = evaluation.global_index;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `global_index`
+
+warning: function `commitmentToBytes` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:605:4
+    |
+605 | fn commitmentToBytes(commitment: &G1Affine) -> Vec<u8> {
+    |    ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `commitment_to_bytes`
+
+warning: function `hashInternalRecord` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:617:4
+    |
+617 | fn hashInternalRecord(key: i64, leftCommitment: &G1Affine, rightCommitment: &G1Affine) -> [u8; 32] {
+    |    ^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `hash_internal_record`
+
+warning: variable `leftCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:617:33
+    |
+617 | fn hashInternalRecord(key: i64, leftCommitment: &G1Affine, rightCommitment: &G1Affine) -> [u8; 32] {
+    |                                 ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_commitment`
+
+warning: variable `rightCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:617:60
+    |
+617 | fn hashInternalRecord(key: i64, leftCommitment: &G1Affine, rightCommitment: &G1Affine) -> [u8; 32] {
+    |                                                            ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_commitment`
+
+warning: function `internalRecordEvaluation` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:656:8
+    |
+656 | pub fn internalRecordEvaluation(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `internal_record_evaluation`
+
+warning: variable `leftCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:658:5
+    |
+658 |     leftCommitment: &G1Affine,
+    |     ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_commitment`
+
+warning: variable `rightCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:659:5
+    |
+659 |     rightCommitment: &G1Affine,
+    |     ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_commitment`
+
+warning: function `buildNodeCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:668:8
+    |
+668 | pub fn buildNodeCommitment(
+    |        ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_node_commitment`
+
+warning: function `buildTreeCommitment` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:734:8
+    |
+734 | pub fn buildTreeCommitment(
+    |        ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_tree_commitment`
+
+warning: function `computeKzgWitness` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:750:8
+    |
+750 | pub fn computeKzgWitness(coefficients: &[Fr], i: Fr, srs: &KzgSrs) -> G1Affine {
+    |        ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `compute_kzg_witness`
+
+warning: function `computeKzgWitnessRecursive` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:877:8
+    |
+877 | pub fn computeKzgWitnessRecursive(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `compute_kzg_witness_recursive`
+
+warning: variable `searchKey` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:880:5
+    |
+880 |     searchKey: i64,
+    |     ^^^^^^^^^ help: convert the identifier to snake case: `search_key`
+
+warning: variable `globalIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:923:17
+    |
+923 |         let mut globalIndex = 0usize;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `global_index`
+
+warning: variable `leafNodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:925:13
+    |
+925 |         for leafNodeIndex in tree.getAllLeaves() {
+    |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `leaf_node_index`
+
+warning: variable `childPosition` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/leaf_kzg.rs:946:13
+    |
+946 |     let mut childPosition = 0usize;
+    |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `child_position`
+
+warning: function `extractDecimalNumbers` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:201:4
+    |
+201 | fn extractDecimalNumbers(text: &str) -> Vec<String> {
+    |    ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `extract_decimal_numbers`
+
+warning: function `parseG1` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:226:4
+    |
+226 | fn parseG1(text: &str) -> G1Affine {
+    |    ^^^^^^^ help: convert the identifier to snake case: `parse_g1`
+
+warning: function `parseG2` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:250:4
+    |
+250 | fn parseG2(text: &str) -> G2Affine {
+    |    ^^^^^^^ help: convert the identifier to snake case: `parse_g2`
+
+warning: function `parseFr` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:283:4
+    |
+283 | fn parseFr(text: &str) -> Fr {
+    |    ^^^^^^^ help: convert the identifier to snake case: `parse_fr`
+
+warning: function `parsePolynomialCoefficients` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:293:4
+    |
+293 | fn parsePolynomialCoefficients(node: &Value) -> Vec<Fr> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `parse_polynomial_coefficients`
+
+warning: function `findTreeNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:341:4
+    |
+341 | fn findTreeNode<'a>(
+    |    ^^^^^^^^^^^^ help: convert the identifier to snake case: `find_tree_node`
+
+warning: function `findKzgNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:364:4
+    |
+364 | fn findKzgNode<'a>(
+    |    ^^^^^^^^^^^ help: convert the identifier to snake case: `find_kzg_node`
+
+warning: function `parseSrs` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:411:4
+    |
+411 | fn parseSrs(kzg_json: &Value) -> KzgSrs {
+    |    ^^^^^^^^ help: convert the identifier to snake case: `parse_srs`
+
+warning: function `generateValue` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:457:4
+    |
+457 | fn generateValue(key: i64) -> [u8; 32] {
+    |    ^^^^^^^^^^^^^ help: convert the identifier to snake case: `generate_value`
+
+warning: function `chooseRandomKzgFile` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:472:4
+    |
+472 | fn chooseRandomKzgFile(folder: &Path) -> PathBuf {
+    |    ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `choose_random_kzg_file`
+
+warning: function `matchingTreeFile` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:512:4
+    |
+512 | fn matchingTreeFile(kzg_file: &Path) -> PathBuf {
+    |    ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `matching_tree_file`
+
+warning: function `chooseRandomLeafOpening` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:533:4
+    |
+533 | fn chooseRandomLeafOpening<'a>(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `choose_random_leaf_opening`
+
+warning: function `loadRandomMembershipFromJson` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/stark_witness.rs:579:8
+    |
+579 | pub fn loadRandomMembershipFromJson(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `load_random_membership_from_json`
+
+warning: function `pushByte` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1085:4
+     |
+1085 | fn pushByte(
+     |    ^^^^^^^^ help: convert the identifier to snake case: `push_byte`
+
+warning: function `pushBytes` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1101:4
+     |
+1101 | fn pushBytes(
+     |    ^^^^^^^^^ help: convert the identifier to snake case: `push_bytes`
+
+warning: function `pushUsize` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1118:4
+     |
+1118 | fn pushUsize(
+     |    ^^^^^^^^^ help: convert the identifier to snake case: `push_usize`
+
+warning: function `pushI64` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1133:4
+     |
+1133 | fn pushI64(
+     |    ^^^^^^^ help: convert the identifier to snake case: `push_i64`
+
+warning: function `pushCanonical` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1148:4
+     |
+1148 | fn pushCanonical<T>(
+     |    ^^^^^^^^^^^^^ help: convert the identifier to snake case: `push_canonical`
+
+warning: function `encodePublicStatement` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1193:8
+     |
+1193 | pub fn encodePublicStatement(
+     |        ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `encode_public_statement`
+
+warning: function `encodePrivateWitness` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1309:8
+     |
+1309 | pub fn encodePrivateWitness(
+     |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `encode_private_witness`
+
+warning: function `buildPublicLayout` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1516:4
+     |
+1516 | fn buildPublicLayout(
+     |    ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_public_layout`
+
+warning: function `publicPathStepStart` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1600:4
+     |
+1600 | fn publicPathStepStart(
+     |    ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `public_path_step_start`
+
+warning: function `encodePublicSrs` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1615:4
+     |
+1615 | fn encodePublicSrs(
+     |    ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `encode_public_srs`
+
+warning: method `fromLoadedMembership` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:1686:8
+     |
+1686 |     fn fromLoadedMembership(
+     |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `from_loaded_membership`
+
+warning: function `verifyPublicPathAgainstTrustedRoot` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2195:4
+     |
+2195 | fn verifyPublicPathAgainstTrustedRoot(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `verify_public_path_against_trusted_root`
+
+warning: function `verifyPublicLeafKzg` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2234:4
+     |
+2234 | fn verifyPublicLeafKzg(
+     |    ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `verify_public_leaf_kzg`
+
+warning: function `verifyAllPathKzgAgainstPublicStatement` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2283:4
+     |
+2283 | fn verifyAllPathKzgAgainstPublicStatement(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `verify_all_path_kzg_against_public_statement`
+
+warning: function `trustedRootFromRegistry` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2349:4
+     |
+2349 | fn trustedRootFromRegistry(source_kzg_file: &str) -> Result<G1Affine, String> {
+     |    ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `trusted_root_from_registry`
+
+warning: function `buildPrivateTrace` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2388:8
+     |
+2388 | pub fn buildPrivateTrace(
+     |        ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_private_trace`
+
+warning: variable `privateTrace` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2570:9
+     |
+2570 |     let privateTrace =
+     |         ^^^^^^^^^^^^ help: convert the identifier to snake case: `private_trace`
+
+warning: function `printStatementRelation` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2621:4
+     |
+2621 | fn printStatementRelation(
+     |    ^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_statement_relation`
+
+warning: function `runStarkProof` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2714:8
+     |
+2714 | pub fn runStarkProof(
+     |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `run_stark_proof`
+
+warning: variable `privateTrace` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:2792:9
+     |
+2792 |     let privateTrace =
+     |         ^^^^^^^^^^^^ help: convert the identifier to snake case: `private_trace`
+
+warning: function `printProverVerifierBoundary` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:3049:8
+     |
+3049 | pub fn printProverVerifierBoundary(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_prover_verifier_boundary`
+
+warning: function `runCombinedLeafPathStark` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/stark_witness.rs:3226:8
+     |
+3226 | pub fn runCombinedLeafPathStark(loaded: &LoadedMembership) {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `run_combined_leaf_path_stark`
+
+warning: method `retrieveChildren` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/node.rs:75:12
+   |
+75 |     pub fn retrieveChildren(&self, promoteIndex: usize) -> (Vec<usize>, Vec<usize>) {
+   |            ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `retrieve_children`
+
+warning: variable `promoteIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/node.rs:75:36
+   |
+75 |     pub fn retrieveChildren(&self, promoteIndex: usize) -> (Vec<usize>, Vec<usize>) {
+   |                                    ^^^^^^^^^^^^ help: convert the identifier to snake case: `promote_index`
+
+warning: variable `splitAt` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/node.rs:78:13
+   |
+78 |         let splitAt = promoteIndex + 1;
+   |             ^^^^^^^ help: convert the identifier to snake case: `split_at`
+
+warning: variable `leftChildren` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/node.rs:81:13
+   |
+81 |         let leftChildren = self.children[..splitAt].to_vec();
+   |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `left_children`
+
+warning: variable `rightChildren` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/node.rs:84:13
+   |
+84 |         let rightChildren = self.children[splitAt..].to_vec();
+   |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_children`
+
+warning: function `verifyEval` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/verify_eval.rs:24:8
+   |
+24 | pub fn verifyEval(commitment: &G1Affine, i: Fr, y: Fr, witness: &G1Affine, srs: &KzgSrs) -> bool {
+   |        ^^^^^^^^^^ help: convert the identifier to snake case: `verify_eval`
+
+warning: structure field `nodeIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:10:9
+   |
+10 |     pub nodeIndex: usize,
+   |         ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: structure field `nodeKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:11:9
+   |
+11 |     pub nodeKeys: Vec<i64>,
+   |         ^^^^^^^^ help: convert the identifier to snake case: `node_keys`
+
+warning: structure field `leftChildIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:17:9
+   |
+17 |     pub leftChildIndex: Option<usize>,
+   |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_child_index`
+
+warning: structure field `leftChildKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:18:9
+   |
+18 |     pub leftChildKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_child_keys`
+
+warning: structure field `chosenChildIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:21:9
+   |
+21 |     pub chosenChildIndex: usize,
+   |         ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child_index`
+
+warning: structure field `chosenChildKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:22:9
+   |
+22 |     pub chosenChildKeys: Vec<i64>,
+   |         ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child_keys`
+
+warning: structure field `rightChildIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:25:9
+   |
+25 |     pub rightChildIndex: Option<usize>,
+   |         ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_child_index`
+
+warning: structure field `rightChildKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:26:9
+   |
+26 |     pub rightChildKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_child_keys`
+
+warning: structure field `parentIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:36:9
+   |
+36 |     pub parentIndex: usize,
+   |         ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: structure field `chosenChildIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:39:9
+   |
+39 |     pub chosenChildIndex: usize,
+   |         ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child_index`
+
+warning: structure field `leftIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:42:9
+   |
+42 |     pub leftIndex: Option<usize>,
+   |         ^^^^^^^^^ help: convert the identifier to snake case: `left_index`
+
+warning: structure field `rightIndex` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:45:9
+   |
+45 |     pub rightIndex: Option<usize>,
+   |         ^^^^^^^^^^ help: convert the identifier to snake case: `right_index`
+
+warning: structure field `leftKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:48:9
+   |
+48 |     pub leftKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^ help: convert the identifier to snake case: `left_keys`
+
+warning: structure field `chosenKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:51:9
+   |
+51 |     pub chosenKeys: Vec<i64>,
+   |         ^^^^^^^^^^ help: convert the identifier to snake case: `chosen_keys`
+
+warning: structure field `rightKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:54:9
+   |
+54 |     pub rightKeys: Option<Vec<i64>>,
+   |         ^^^^^^^^^ help: convert the identifier to snake case: `right_keys`
+
+warning: variable `rootNode` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:85:13
+   |
+85 |         let rootNode = Node::new(order, true);
+   |             ^^^^^^^^ help: convert the identifier to snake case: `root_node`
+
+warning: method `maxKeys` should have a snake case name
+  --> uni-stark/examples/vplus-tree/src/vplustree.rs:98:12
+   |
+98 |     pub fn maxKeys(&self) -> usize {
+   |            ^^^^^^^ help: convert the identifier to snake case: `max_keys`
+
+warning: method `minInternalKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:106:12
+    |
+106 |     pub fn minInternalKeys(&self) -> usize {
+    |            ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `min_internal_keys`
+
+warning: method `minLeafKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:114:12
+    |
+114 |     pub fn minLeafKeys(&self) -> usize {
+    |            ^^^^^^^^^^^ help: convert the identifier to snake case: `min_leaf_keys`
+
+warning: method `isUnderflow` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:122:12
+    |
+122 |     pub fn isUnderflow(&self, nodeIndex: usize) -> bool {
+    |            ^^^^^^^^^^^ help: convert the identifier to snake case: `is_underflow`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:122:31
+    |
+122 |     pub fn isUnderflow(&self, nodeIndex: usize) -> bool {
+    |                               ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: method `splitNodeHelper` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:138:12
+    |
+138 |     pub fn splitNodeHelper(node: &mut Node) -> (Node, i64) {
+    |            ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `split_node_helper`
+
+warning: variable `midIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:146:17
+    |
+146 |             let midIndex = order / 2;
+    |                 ^^^^^^^^ help: convert the identifier to snake case: `mid_index`
+
+warning: variable `rightNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:148:21
+    |
+148 |             let mut rightNode = Node::new(order, true);
+    |                     ^^^^^^^^^ help: convert the identifier to snake case: `right_node`
+
+warning: variable `promoteKey` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:166:17
+    |
+166 |             let promoteKey = rightNode.keys[0];
+    |                 ^^^^^^^^^^ help: convert the identifier to snake case: `promote_key`
+
+warning: variable `midIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:175:13
+    |
+175 |         let midIndex = (order - 1) / 2;
+    |             ^^^^^^^^ help: convert the identifier to snake case: `mid_index`
+
+warning: variable `promoteKey` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:178:13
+    |
+178 |         let promoteKey = node.keys[midIndex];
+    |             ^^^^^^^^^^ help: convert the identifier to snake case: `promote_key`
+
+warning: variable `leftChildren` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:181:14
+    |
+181 |         let (leftChildren, rightChildren) = node.retrieveChildren(midIndex);
+    |              ^^^^^^^^^^^^ help: convert the identifier to snake case: `left_children`
+
+warning: variable `rightChildren` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:181:28
+    |
+181 |         let (leftChildren, rightChildren) = node.retrieveChildren(midIndex);
+    |                            ^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_children`
+
+warning: variable `leftLeftPointerCommitments` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:188:13
+    |
+188 |         let leftLeftPointerCommitments = node.left_pointer_commitments[..midIndex].to_vec();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_left_pointer_commitments`
+
+warning: variable `leftRightPointerCommitments` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:190:13
+    |
+190 |         let leftRightPointerCommitments = node.right_pointer_commitments[..midIndex].to_vec();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_right_pointer_commitments`
+
+warning: variable `rightLeftPointerCommitments` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:199:13
+    |
+199 |         let rightLeftPointerCommitments = node.left_pointer_commitments[midIndex + 1..].to_vec();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_left_pointer_commitments`
+
+warning: variable `rightRightPointerCommitments` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:201:13
+    |
+201 |         let rightRightPointerCommitments = node.right_pointer_commitments[midIndex + 1..].to_vec();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_right_pointer_commitments`
+
+warning: variable `rightNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:207:17
+    |
+207 |         let mut rightNode = Node::new(order, false);
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `right_node`
+
+warning: method `printInternalNodeRecords` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:238:12
+    |
+238 |     pub fn printInternalNodeRecords(&self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_internal_node_records`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:246:14
+    |
+246 |         for (nodeIndex, node) in self.nodes.iter().enumerate() {
+    |              ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `currentNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:272:17
+    |
+272 |         let mut currentNode = self.root;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `current_node`
+
+warning: method `searchPath` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:294:12
+    |
+294 |     pub fn searchPath(&self, key: i64) -> (usize, Vec<SearchPathStep>) {
+    |            ^^^^^^^^^^ help: convert the identifier to snake case: `search_path`
+
+warning: variable `currentNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:297:17
+    |
+297 |         let mut currentNode = self.root;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `current_node`
+
+warning: variable `chosenChild` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:312:17
+    |
+312 |             let chosenChild = self.nodes[currentNode].children[index];
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child`
+
+warning: variable `leftChildIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:318:17
+    |
+318 |             let leftChildIndex = if index > 0 {
+    |                 ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_child_index`
+
+warning: variable `leftIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:325:22
+    |
+325 |                 Some(leftIndex) => Some(self.nodes[leftIndex].keys.clone()),
+    |                      ^^^^^^^^^ help: convert the identifier to snake case: `left_index`
+
+warning: variable `leftChildKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:324:17
+    |
+324 |             let leftChildKeys = match leftChildIndex {
+    |                 ^^^^^^^^^^^^^ help: convert the identifier to snake case: `left_child_keys`
+
+warning: variable `rightChildIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:334:17
+    |
+334 |             let rightChildIndex = if index + 1 < self.nodes[currentNode].children.len() {
+    |                 ^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_child_index`
+
+warning: variable `rightIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:341:22
+    |
+341 |                 Some(rightIndex) => Some(self.nodes[rightIndex].keys.clone()),
+    |                      ^^^^^^^^^^ help: convert the identifier to snake case: `right_index`
+
+warning: variable `rightChildKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:340:17
+    |
+340 |             let rightChildKeys = match rightChildIndex {
+    |                 ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_child_keys`
+
+warning: method `buildProofPath` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:378:12
+    |
+378 |     pub fn buildProofPath(&self, key: i64) -> (usize, Vec<ProofPathStep>) {
+    |            ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_proof_path`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:379:14
+    |
+379 |         let (leafIndex, searchPath) = self.searchPath(key);
+    |              ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `searchPath` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:379:25
+    |
+379 |         let (leafIndex, searchPath) = self.searchPath(key);
+    |                         ^^^^^^^^^^ help: convert the identifier to snake case: `search_path`
+
+warning: variable `proofPath` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:381:17
+    |
+381 |         let mut proofPath = Vec::new();
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `proof_path`
+
+warning: method `retrieveLeft` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:408:12
+    |
+408 |     pub fn retrieveLeft(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |            ^^^^^^^^^^^^ help: convert the identifier to snake case: `retrieve_left`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:408:32
+    |
+408 |     pub fn retrieveLeft(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |                                ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `chosenChildPosition` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:408:52
+    |
+408 |     pub fn retrieveLeft(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |                                                    ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child_position`
+
+warning: method `retrieveRight` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:420:12
+    |
+420 |     pub fn retrieveRight(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |            ^^^^^^^^^^^^^ help: convert the identifier to snake case: `retrieve_right`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:420:33
+    |
+420 |     pub fn retrieveRight(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |                                 ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `chosenChildPosition` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:420:53
+    |
+420 |     pub fn retrieveRight(&self, parentIndex: usize, chosenChildPosition: usize) -> Option<usize> {
+    |                                                     ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `chosen_child_position`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:435:13
+    |
+435 |         let leafIndex = self.search(key);
+    |             ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:457:13
+    |
+457 |         let leafIndex = self.search(key);
+    |             ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:479:13
+    |
+479 |         let leafIndex = self.search(key);
+    |             ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: method `splitLeaf` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:509:12
+    |
+509 |     pub fn splitLeaf(&mut self, leafIndex: usize) {
+    |            ^^^^^^^^^ help: convert the identifier to snake case: `split_leaf`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:509:33
+    |
+509 |     pub fn splitLeaf(&mut self, leafIndex: usize) {
+    |                                 ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:510:13
+    |
+510 |         let parentIndex = self.nodes[leafIndex].parent_node;
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `rightNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:512:18
+    |
+512 |         let (mut rightNode, promoteKey) = {
+    |                  ^^^^^^^^^ help: convert the identifier to snake case: `right_node`
+
+warning: variable `promoteKey` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:512:29
+    |
+512 |         let (mut rightNode, promoteKey) = {
+    |                             ^^^^^^^^^^ help: convert the identifier to snake case: `promote_key`
+
+warning: variable `rightIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:518:13
+    |
+518 |         let rightIndex = self.nodes.len();
+    |             ^^^^^^^^^^ help: convert the identifier to snake case: `right_index`
+
+warning: method `insertInternal` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:538:12
+    |
+538 |     pub fn insertInternal(&mut self, parentIndex: usize, key: i64, childIndex: usize) {
+    |            ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `insert_internal`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:538:38
+    |
+538 |     pub fn insertInternal(&mut self, parentIndex: usize, key: i64, childIndex: usize) {
+    |                                      ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `childIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:538:68
+    |
+538 |     pub fn insertInternal(&mut self, parentIndex: usize, key: i64, childIndex: usize) {
+    |                                                                    ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: method `splitInternal` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:588:12
+    |
+588 |     pub fn splitInternal(&mut self, nodeIndex: usize) {
+    |            ^^^^^^^^^^^^^ help: convert the identifier to snake case: `split_internal`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:588:37
+    |
+588 |     pub fn splitInternal(&mut self, nodeIndex: usize) {
+    |                                     ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:589:13
+    |
+589 |         let parentIndex = self.nodes[nodeIndex].parent_node;
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: variable `rightNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:591:18
+    |
+591 |         let (mut rightNode, promoteKey) = {
+    |                  ^^^^^^^^^ help: convert the identifier to snake case: `right_node`
+
+warning: variable `promoteKey` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:591:29
+    |
+591 |         let (mut rightNode, promoteKey) = {
+    |                             ^^^^^^^^^^ help: convert the identifier to snake case: `promote_key`
+
+warning: variable `rightIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:597:13
+    |
+597 |         let rightIndex = self.nodes.len();
+    |             ^^^^^^^^^^ help: convert the identifier to snake case: `right_index`
+
+warning: variable `rightChildren` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:601:13
+    |
+601 |         let rightChildren = rightNode.children.clone();
+    |             ^^^^^^^^^^^^^ help: convert the identifier to snake case: `right_children`
+
+warning: variable `childIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:607:13
+    |
+607 |         for childIndex in rightChildren {
+    |             ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: method `createNewRoot` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:622:12
+    |
+622 |     pub fn createNewRoot(&mut self, leftChild: usize, rightChild: usize, key: i64) {
+    |            ^^^^^^^^^^^^^ help: convert the identifier to snake case: `create_new_root`
+
+warning: variable `leftChild` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:622:37
+    |
+622 |     pub fn createNewRoot(&mut self, leftChild: usize, rightChild: usize, key: i64) {
+    |                                     ^^^^^^^^^ help: convert the identifier to snake case: `left_child`
+
+warning: variable `rightChild` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:622:55
+    |
+622 |     pub fn createNewRoot(&mut self, leftChild: usize, rightChild: usize, key: i64) {
+    |                                                       ^^^^^^^^^^ help: convert the identifier to snake case: `right_child`
+
+warning: variable `newRoot` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:623:17
+    |
+623 |         let mut newRoot = Node::new(self.order, false);
+    |                 ^^^^^^^ help: convert the identifier to snake case: `new_root`
+
+warning: variable `newRootIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:647:13
+    |
+647 |         let newRootIndex = self.nodes.len();
+    |             ^^^^^^^^^^^^ help: convert the identifier to snake case: `new_root_index`
+
+warning: variable `currentLevel` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:663:17
+    |
+663 |         let mut currentLevel = vec![self.root];
+    |                 ^^^^^^^^^^^^ help: convert the identifier to snake case: `current_level`
+
+warning: variable `nextLevel` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:668:21
+    |
+668 |             let mut nextLevel = Vec::new();
+    |                     ^^^^^^^^^ help: convert the identifier to snake case: `next_level`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:672:17
+    |
+672 |             for nodeIndex in &currentLevel {
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `childIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:680:25
+    |
+680 |                     for childIndex in &node.children {
+    |                         ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: method `getHeight` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:698:12
+    |
+698 |     pub fn getHeight(&self) -> usize {
+    |            ^^^^^^^^^ help: convert the identifier to snake case: `get_height`
+
+warning: variable `currentNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:701:17
+    |
+701 |         let mut currentNode = self.root;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `current_node`
+
+warning: method `getDepth` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:716:12
+    |
+716 |     pub fn getDepth(&self, nodeIndex: usize) -> usize {
+    |            ^^^^^^^^ help: convert the identifier to snake case: `get_depth`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:716:28
+    |
+716 |     pub fn getDepth(&self, nodeIndex: usize) -> usize {
+    |                            ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `currentNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:719:17
+    |
+719 |         let mut currentNode = nodeIndex;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `current_node`
+
+warning: variable `parentIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:721:24
+    |
+721 |         while let Some(parentIndex) = self.nodes[currentNode].parent_node {
+    |                        ^^^^^^^^^^^ help: convert the identifier to snake case: `parent_index`
+
+warning: method `countNodes` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:734:12
+    |
+734 |     pub fn countNodes(&self) -> usize {
+    |            ^^^^^^^^^^ help: convert the identifier to snake case: `count_nodes`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:740:17
+    |
+740 |             let nodeIndex = queue.remove(0);
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `childIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:745:21
+    |
+745 |                 for childIndex in &self.nodes[nodeIndex].children {
+    |                     ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: method `getAllLeaves` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:758:12
+    |
+758 |     pub fn getAllLeaves(&self) -> Vec<usize> {
+    |            ^^^^^^^^^^^^ help: convert the identifier to snake case: `get_all_leaves`
+
+warning: variable `currentNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:761:17
+    |
+761 |         let mut currentNode = self.root;
+    |                 ^^^^^^^^^^^ help: convert the identifier to snake case: `current_node`
+
+warning: variable `nextNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:771:22
+    |
+771 |                 Some(nextNode) => {
+    |                      ^^^^^^^^ help: convert the identifier to snake case: `next_node`
+
+warning: method `countKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:788:12
+    |
+788 |     pub fn countKeys(&self) -> usize {
+    |            ^^^^^^^^^ help: convert the identifier to snake case: `count_keys`
+
+warning: variable `leafIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:793:13
+    |
+793 |         for leafIndex in leaves {
+    |             ^^^^^^^^^ help: convert the identifier to snake case: `leaf_index`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:814:17
+    |
+814 |             let nodeIndex = queue.remove(0);
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `childIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:884:21
+    |
+884 |                 for childIndex in &node.children {
+    |                     ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: method `verifyTree` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:916:12
+    |
+916 |     pub fn verifyTree(&self) -> bool {
+    |            ^^^^^^^^^^ help: convert the identifier to snake case: `verify_tree`
+
+warning: variable `leafDepth` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:917:17
+    |
+917 |         let mut leafDepth: Option<usize> = None;
+    |                 ^^^^^^^^^ help: convert the identifier to snake case: `leaf_depth`
+
+warning: variable `leafKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:919:17
+    |
+919 |         let mut leafKeys: Vec<i64> = Vec::new();
+    |                 ^^^^^^^^ help: convert the identifier to snake case: `leaf_keys`
+
+warning: variable `sortedLeafKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:928:17
+    |
+928 |         let mut sortedLeafKeys = leafKeys.clone();
+    |                 ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `sorted_leaf_keys`
+
+warning: method `verifyNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:947:8
+    |
+947 |     fn verifyNode(
+    |        ^^^^^^^^^^ help: convert the identifier to snake case: `verify_node`
+
+warning: variable `nodeIndex` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:949:9
+    |
+949 |         nodeIndex: usize,
+    |         ^^^^^^^^^ help: convert the identifier to snake case: `node_index`
+
+warning: variable `lowerBound` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:950:9
+    |
+950 |         lowerBound: Option<i64>,
+    |         ^^^^^^^^^^ help: convert the identifier to snake case: `lower_bound`
+
+warning: variable `upperBound` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:951:9
+    |
+951 |         upperBound: Option<i64>,
+    |         ^^^^^^^^^^ help: convert the identifier to snake case: `upper_bound`
+
+warning: variable `leafDepth` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:953:9
+    |
+953 |         leafDepth: &mut Option<usize>,
+    |         ^^^^^^^^^ help: convert the identifier to snake case: `leaf_depth`
+
+warning: variable `leafKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:954:9
+    |
+954 |         leafKeys: &mut Vec<i64>,
+    |         ^^^^^^^^ help: convert the identifier to snake case: `leaf_keys`
+
+warning: variable `sortedKeys` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/vplustree.rs:962:17
+    |
+962 |         let mut sortedKeys = node.keys.clone();
+    |                 ^^^^^^^^^^ help: convert the identifier to snake case: `sorted_keys`
+
+warning: variable `expectedDepth` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/vplustree.rs:1064:22
+     |
+1064 |                 Some(expectedDepth) => {
+     |                      ^^^^^^^^^^^^^ help: convert the identifier to snake case: `expected_depth`
+
+warning: variable `childIndex` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/vplustree.rs:1128:17
+     |
+1128 |             let childIndex = node.children[i];
+     |                 ^^^^^^^^^^ help: convert the identifier to snake case: `child_index`
+
+warning: variable `childLower` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/vplustree.rs:1130:17
+     |
+1130 |             let childLower = if i > 0 {
+     |                 ^^^^^^^^^^ help: convert the identifier to snake case: `child_lower`
+
+warning: variable `childUpper` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/vplustree.rs:1136:17
+     |
+1136 |             let childUpper = if i < node.keys.len() {
+     |                 ^^^^^^^^^^ help: convert the identifier to snake case: `child_upper`
+
+warning: function `extractDecimalNumbers` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:211:8
+    |
+211 |     fn extractDecimalNumbers(text: &str) -> Vec<String> {
+    |        ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `extract_decimal_numbers`
+
+warning: function `parseG1` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:236:8
+    |
+236 |     fn parseG1(text: &str) -> G1Affine {
+    |        ^^^^^^^ help: convert the identifier to snake case: `parse_g1`
+
+warning: function `parseG2` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:260:8
+    |
+260 |     fn parseG2(text: &str) -> G2Affine {
+    |        ^^^^^^^ help: convert the identifier to snake case: `parse_g2`
+
+warning: function `parseFr` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:293:8
+    |
+293 |     fn parseFr(text: &str) -> Fr {
+    |        ^^^^^^^ help: convert the identifier to snake case: `parse_fr`
+
+warning: function `parsePolynomialCoefficients` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:303:8
+    |
+303 |     fn parsePolynomialCoefficients(node: &Value) -> Vec<Fr> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `parse_polynomial_coefficients`
+
+warning: function `findTreeNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:351:8
+    |
+351 |     fn findTreeNode<'a>(
+    |        ^^^^^^^^^^^^ help: convert the identifier to snake case: `find_tree_node`
+
+warning: function `findKzgNode` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:374:8
+    |
+374 |     fn findKzgNode<'a>(
+    |        ^^^^^^^^^^^ help: convert the identifier to snake case: `find_kzg_node`
+
+warning: function `parseSrs` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:421:8
+    |
+421 |     fn parseSrs(kzg_json: &Value) -> KzgSrs {
+    |        ^^^^^^^^ help: convert the identifier to snake case: `parse_srs`
+
+warning: function `generateValue` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:467:8
+    |
+467 |     fn generateValue(key: i64) -> [u8; 32] {
+    |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `generate_value`
+
+warning: function `chooseRandomKzgFile` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:482:8
+    |
+482 |     fn chooseRandomKzgFile(folder: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `choose_random_kzg_file`
+
+warning: function `matchingTreeFile` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:522:8
+    |
+522 |     fn matchingTreeFile(kzg_file: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `matching_tree_file`
+
+warning: function `chooseRandomLeafOpening` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:543:8
+    |
+543 |     fn chooseRandomLeafOpening<'a>(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `choose_random_leaf_opening`
+
+warning: function `loadRandomMembershipFromJson` should have a snake case name
+   --> uni-stark/examples/vplus-tree/src/main.rs:589:12
+    |
+589 |     pub fn loadRandomMembershipFromJson(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `load_random_membership_from_json`
+
+warning: function `pushByte` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1065:8
+     |
+1065 |     fn pushByte(
+     |        ^^^^^^^^ help: convert the identifier to snake case: `push_byte`
+
+warning: function `pushBytes` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1081:8
+     |
+1081 |     fn pushBytes(
+     |        ^^^^^^^^^ help: convert the identifier to snake case: `push_bytes`
+
+warning: function `pushUsize` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1098:8
+     |
+1098 |     fn pushUsize(
+     |        ^^^^^^^^^ help: convert the identifier to snake case: `push_usize`
+
+warning: function `pushI64` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1113:8
+     |
+1113 |     fn pushI64(
+     |        ^^^^^^^ help: convert the identifier to snake case: `push_i64`
+
+warning: function `pushCanonical` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1128:8
+     |
+1128 |     fn pushCanonical<T>(
+     |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `push_canonical`
+
+warning: function `encodePublicStatement` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1170:12
+     |
+1170 |     pub fn encodePublicStatement(
+     |            ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `encode_public_statement`
+
+warning: function `encodePrivateWitness` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1269:12
+     |
+1269 |     pub fn encodePrivateWitness(
+     |            ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `encode_private_witness`
+
+warning: function `buildPrivateTrace` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1417:12
+     |
+1417 |     pub fn buildPrivateTrace(
+     |            ^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `build_private_trace`
+
+warning: function `printProverVerifierBoundary` should have a snake case name
+    --> uni-stark/examples/vplus-tree/src/main.rs:1441:12
+     |
+1441 |     pub fn printProverVerifierBoundary(
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `print_prover_verifier_boundary`
+
+warning: `vplus-tree` (bin "vplus-tree") generated 437 warnings (run `cargo fix --bin "vplus-tree" -p vplus-tree` to apply 25 suggestions)
+    Finished `release` profile [optimized] target(s) in 5.14s
+     Running `target/release/vplus-tree`
+
+VERIFICATION MODE: using existing V+ Tree/KZG JSON files.
+
+==========================================
+Load V+ Tree Membership From JSON
+==========================================
+KZG JSON  : ./kzg_details_keys6pow3_universe2pow16.json
+Tree JSON : ./vplus_tree_keys6pow3_universe2pow16.json
+
+Selected Existing Key : 44395
+Leaf Node             : 53
+Global Index          : 138
+Leaf KZG Verification : PASS
+Parent Node 70 KZG Verification : PASS
+Parent Node 40 KZG Verification : PASS
+Parent Node 41 KZG Verification : PASS
+
+Trusted Root Verification : PASS
+Complete Membership        : PASS
+
+==========================================
+STARK Input Separation
+==========================================
+Verifier Public Key       : 44395
+Verifier Public Root      : (17070423393893058199761628477579404504547782350528543336615914850263771591191, 8101974182409875403529519647217417316580603833593022117690985772863738470326)
+Verifier Evaluation Point : 138
+Verifier Evaluation Value : 168118774036899182052518809729618816785
+Verifier Leaf Coefficients: 4
+Verifier Selected Witness : (1822161650207241730268108521755343543234534217866958258778149215813170905884, 21167221632919318356410681376537555986620659195281241335899719650176124661838)
+Verifier Query Path Steps : 3
+Verifier Public SRS       : YES
+Verifier Leaf Coefficients: YES
+Verifier Internal Coeffs  : NO
+Verifier y_low / y_high   : NO
+Verifier Internal Witnesses: NO
+Verifier Private Trace    : NO
+Public Goldilocks Elements  : 1179
+Private Goldilocks Elements : 1347
+Verifier trusted registry : /home/cryspr/Desktop/Plonky3-KZG/uni-stark/examples/vplus-tree/trusted/roots.json
+Verifier trusted dataset  : kzg_details_keys6pow3_universe2pow16.json
+Native KZG checks bound to public path: 4
+==============================================
+ Monolithic trace / AIR metrics
+==============================================
+
+Pairings in proof       : 2
+Real rows               : 12225
+Padded height           : 16384
+Trace width             : 32335
+Trace cells             : 529776640
+Trace cells             : 529776640
+Max constraint degree   : 4
+Constraint evaluations  : 635453440
+
+
+thread 'main' (98062) panicked at uni-stark/examples/vplus-tree/src/../../bn254_kzg_degree6_monolithic.rs:2265:10:
+public-input-derived monolithic verification failed: OodEvaluationMismatch { index: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

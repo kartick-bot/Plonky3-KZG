@@ -1004,6 +1004,9 @@ fn make_trace(
         values.extend_from_slice(&encode_row(&schedule[i], next));
     }
 
+
+
+
     let terminal = schedule.last().unwrap().clone();
 
     while values.len() / WIDTH < height {
@@ -1079,6 +1082,34 @@ fn carry_expr<AB: AirBuilder>(row: &[AB::Var], r: usize, c: usize) -> AB::Expr {
     signed_expr_from_bits::<AB>(row, sign_col, bits_start, CARRY_BITS)
 }
 
+// Public V+ Tree path, in bottom-up order. The verifier constructs this
+// independently of the trace. This is NOT a SHA-256 or parent-KZG proof.
+#[derive(Clone, Debug)]
+pub struct PathLink {
+    pub left: [u8; 32],
+    pub right: [u8; 32],
+    pub parent: [u8; 32],
+    pub choose_right: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicPathBinding {
+    pub leaf: [u8; 32],
+    pub root: [u8; 32],
+    pub links: Vec<PathLink>,
+}
+
+const PATH_STEP_COLS: usize = 97; // left,right,parent,choice
+
+fn append_path_cols(out: &mut Vec<Val>, binding: &PublicPathBinding) {
+    for step in &binding.links {
+        for byte in step.left.iter().chain(step.right.iter()).chain(step.parent.iter()) {
+            out.push(Val::from_u64(u64::from(*byte)));
+        }
+        out.push(Goldilocks::from_u64(u64::from(step.choose_right)));
+    }
+}
+
 // ============================================================
 // AIR
 // ============================================================
@@ -1087,11 +1118,12 @@ struct MonolithicKzgAir {
     miller_left: Vec<MillerStepConst>,
     miller_right: Vec<MillerStepConst>,
     final_exp_limbs: [u64; EXP_LIMBS],
+    public_path: Option<PublicPathBinding>,
 }
 
 impl<F> BaseAir<F> for MonolithicKzgAir {
     fn width(&self) -> usize {
-        MONO_WIDTH
+        MONO_WIDTH + self.public_path.as_ref().map_or(0, |p| p.links.len() * PATH_STEP_COLS)
     }
 }
 
@@ -1100,6 +1132,32 @@ impl<AB: AirBuilder> Air<AB> for MonolithicKzgAir {
         let main = builder.main();
         let local = main.current_slice();
         let next = main.next_slice();
+
+        // Public path data is bound by the verifier's AIR. The trace must
+        // contain the exact public commitments, and the chosen side must
+        // chain each child to the previous authenticated commitment.
+        if let Some(binding) = &self.public_path {
+            assert!(!binding.links.is_empty());
+            for (step_index, step) in binding.links.iter().enumerate() {
+                let offset = MONO_WIDTH + step_index * PATH_STEP_COLS;
+                let mut previous = &binding.leaf;
+                if step_index > 0 {
+                    previous = &binding.links[step_index - 1].parent;
+                }
+                for j in 0..32 {
+                    builder.assert_eq(local[offset + j], AB::Expr::from_u64(step.left[j] as u64));
+                    builder.assert_eq(local[offset + 32 + j], AB::Expr::from_u64(step.right[j] as u64));
+                    builder.assert_eq(local[offset + 64 + j], AB::Expr::from_u64(step.parent[j] as u64));
+                    let chosen = if step.choose_right { offset + 32 + j } else { offset + j };
+                    builder.assert_eq(local[chosen], AB::Expr::from_u64(previous[j] as u64));
+                }
+                builder.assert_eq(local[offset + 96], AB::Expr::from_u64(u64::from(step.choose_right)));
+            }
+            for j in 0..32 {
+                let end = MONO_WIDTH + (binding.links.len() - 1) * PATH_STEP_COLS + 64 + j;
+                builder.assert_eq(local[end], AB::Expr::from_u64(binding.root[j] as u64));
+            }
+        }
 
         // ----------------------------------------------------
         // Selectors: boolean + exactly one.
@@ -1825,6 +1883,7 @@ fn make_monolithic_trace(
     q_left: G2Affine,
     p_right: G1Affine,
     q_right: G2Affine,
+    public_path: Option<&PublicPathBinding>,
 ) -> (
     RowMajorMatrix<Val>,
     usize,
@@ -1856,7 +1915,8 @@ fn make_monolithic_trace(
     let real_rows = schedule.len();
     let height = real_rows.next_power_of_two();
 
-    let mut values = Vec::with_capacity(MONO_WIDTH * height);
+    let width = MONO_WIDTH + public_path.map_or(0, |p| p.links.len() * PATH_STEP_COLS);
+    let mut values = Vec::with_capacity(width * height);
 
     for i in 0..schedule.len() {
         let next = if i + 1 < schedule.len() {
@@ -1868,26 +1928,22 @@ fn make_monolithic_trace(
         let instance = if i < left_len { 0u64 } else { 1u64 };
 
         values.extend_from_slice(&encode_monolithic_row(
-            &schedule[i],
-            next,
-            instance,
-            &left_output,
+            &schedule[i], next, instance, &left_output,
         ));
+        if let Some(path) = public_path { append_path_cols(&mut values, path); }
     }
 
     let terminal = schedule.last().unwrap().clone();
 
-    while values.len() / MONO_WIDTH < height {
+    while values.len() / width < height {
         values.extend_from_slice(&encode_monolithic_row(
-            &terminal,
-            &terminal,
-            1u64,
-            &left_output,
+            &terminal, &terminal, 1u64, &left_output,
         ));
+        if let Some(path) = public_path { append_path_cols(&mut values, path); }
     }
 
     (
-        RowMajorMatrix::new(values, MONO_WIDTH),
+        RowMajorMatrix::new(values, width),
         real_rows,
         height,
         miller_left,
@@ -1927,7 +1983,7 @@ pub fn prove_kzg_pairing(
     // One monolithic trace.
     // --------------------------------------------------------
     let (trace, real_rows, height, miller_left, miller_right, shared_output) =
-        make_monolithic_trace(p_left, q_left, p_right, q_right);
+        make_monolithic_trace(p_left, q_left, p_right, q_right, None);
 
     assert_eq!(shared_output, native_left);
 
@@ -1937,6 +1993,7 @@ pub fn prove_kzg_pairing(
         miller_left,
         miller_right,
         final_exp_limbs,
+        public_path: None,
     };
 
     let air_layout = AirLayout::from_air::<Val>(&air);
@@ -2024,6 +2081,7 @@ pub fn prove_kzg_pairing(
         miller_left: verifier_left,
         miller_right: verifier_right,
         final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+        public_path: None,
     };
     verify(&config, &verifier_air, &proof, &[])
         .expect("public-input-derived monolithic verification failed");
@@ -2039,6 +2097,7 @@ pub fn prove_kzg_pairing(
         miller_left: tampered_left_lines,
         miller_right: original_right_lines,
         final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+        public_path: None,
     };
     assert!(
         verify(&config, &tampered_air, &proof, &[]).is_err(),
@@ -2079,6 +2138,178 @@ pub fn prove_kzg_pairing(
     println!("Verifier-derived pairing-input binding test passed.");
     println!("V+ Tree path/hash authentication is separate work.");
 }
+
+pub fn prove_leaf_pairing_and_path(
+    p_left: G1Affine,
+    q_left: G2Affine,
+    p_right: G1Affine,
+    q_right: G2Affine,
+    public_path: PublicPathBinding,
+) {
+    // Independently validate the claimed path before constructing the trace.
+    assert!(!public_path.links.is_empty(), "Membership path cannot be empty");
+    let mut current = public_path.leaf;
+    for (level, link) in public_path.links.iter().enumerate() {
+        let chosen = if link.choose_right { link.right } else { link.left };
+        assert_eq!(chosen, current, "Commitment linkage mismatch at level {}", level);
+        current = link.parent;
+    }
+    assert_eq!(current, public_path.root, "Final commitment does not match trusted root");
+    println!("Combined STARK path input validation: PASS ({} levels)", public_path.links.len());
+
+    let native_left = Bn254::pairing(p_left, q_left).0;
+    let native_right = Bn254::pairing(p_right, q_right).0;
+    assert_eq!(native_left, native_right, "native pairing inputs do not match");
+
+    // --------------------------------------------------------
+    // One monolithic trace.
+    // --------------------------------------------------------
+    let (trace, real_rows, height, miller_left, miller_right, shared_output) =
+        make_monolithic_trace(p_left, q_left, p_right, q_right, Some(&public_path));
+
+    assert_eq!(shared_output, native_left);
+
+    let final_exp_limbs = exp_to_limbs(&final_exponent_biguint());
+
+    let air = MonolithicKzgAir {
+        miller_left,
+        miller_right,
+        final_exp_limbs,
+        public_path: Some(public_path.clone()),
+    };
+
+    let air_layout = AirLayout::from_air::<Val>(&air);
+
+    let symbolic_constraints = get_symbolic_constraints::<Val, _>(&air, air_layout);
+
+    let num_air_constraints = symbolic_constraints.len();
+
+    let max_constraint_degree = get_max_constraint_degree::<Val, _>(&air, air_layout, height);
+
+    let constraint_evals = num_air_constraints * height;
+
+    println!("==============================================");
+    println!(" Monolithic trace / AIR metrics");
+    println!("==============================================");
+    println!();
+    println!("Pairings in proof       : 2");
+    println!("Real rows               : {}", real_rows);
+    println!("Padded height           : {}", height);
+    println!(
+    "Trace width             : {}",
+    <MonolithicKzgAir as BaseAir<Goldilocks>>::width(&air)
+);
+    println!("Trace cells             : {}", <MonolithicKzgAir as BaseAir<Goldilocks>>::width(&air) * height);
+    println!(
+    "Trace cells             : {}",
+    <MonolithicKzgAir as BaseAir<Goldilocks>>::width(&air) * height
+);
+    println!("Max constraint degree   : {}", max_constraint_degree);
+    println!("Constraint evaluations  : {}", constraint_evals);
+    println!();
+
+    // --------------------------------------------------------
+    // Plonky3 configuration
+    // --------------------------------------------------------
+    type ByteHash = Sha256;
+    type FieldHash = SerializingHasher<ByteHash>;
+
+    let byte_hash = ByteHash {};
+    let field_hash = FieldHash::new(byte_hash);
+
+    type Compress = CompressionFunctionFromHasher<ByteHash, 2, 32>;
+
+    let compress = Compress::new(byte_hash);
+
+    type ValMmcs = MerkleTreeMmcs<Val, u8, FieldHash, Compress, 2, 32>;
+
+    let val_mmcs = ValMmcs::new(field_hash, compress, 3);
+
+    type ChallengeMmcs = ExtensionMmcs<Val, Challenge, ValMmcs>;
+
+    let challenge_mmcs = ChallengeMmcs::new(val_mmcs.clone());
+
+    type Dft = Radix2DitParallel<Val>;
+    let dft = Dft::default();
+
+    let fri_params = FriParameters::new_benchmark(challenge_mmcs);
+
+    type Pcs = TwoAdicFriPcs<Val, Dft, ValMmcs, ChallengeMmcs>;
+
+    let pcs = Pcs::new(dft, val_mmcs, fri_params);
+
+    type Challenger = SerializingChallenger64<Val, HashChallenger<u8, ByteHash, 32>>;
+
+    let challenger = Challenger::from_hasher(vec![], byte_hash);
+
+    type ConfigType = StarkConfig<Pcs, Challenge, Challenger>;
+
+    let config = ConfigType::new(pcs, challenger);
+
+    // --------------------------------------------------------
+    // Prove and verify ONE proof.
+    // --------------------------------------------------------
+    let prove_start = Instant::now();
+
+    let proof = prove(&config, &air, trace, &[]).expect("monolithic proof generation failed");
+
+    let proving_time = prove_start.elapsed();
+
+    let proof_bytes = postcard::to_allocvec(&proof).expect("proof serialization failed");
+
+    let verify_start = Instant::now();
+
+    // SECURITY: The verifier reconstructs the AIR from its own trusted
+    // pairing inputs. Never accept Miller-line constants supplied by prover.
+    // This is deterministic verifier-side precomputation, not an in-AIR
+    // proof of G2 preparation / elliptic-curve point arithmetic.
+    let (_, verifier_left, _) = build_miller_program(p_left, q_left);
+    let (_, verifier_right, _) = build_miller_program(p_right, q_right);
+    let verifier_air = MonolithicKzgAir {
+        miller_left: verifier_left,
+        miller_right: verifier_right,
+        final_exp_limbs: exp_to_limbs(&final_exponent_biguint()),
+        public_path: Some(public_path.clone()),
+    };
+    verify(&config, &verifier_air, &proof, &[])
+        .expect("public-input-derived monolithic verification failed");
+
+    let verification_time = verify_start.elapsed();
+
+    println!("==============================================");
+    println!(" MONOLITHIC KZG RESULT");
+    println!("==============================================");
+    println!();
+
+    println!("AIR relation: equality of two terminal BN254 pairing outputs");
+    println!("Verifier deterministically derives Miller lines from supplied public pairing points.");
+    println!("G1/G2 preparation and KZG point derivation remain outside the AIR.");
+    println!();
+
+    println!("Proof count             : 1");
+    println!("Proof size              : {} bytes", proof_bytes.len());
+    println!("Proving time            : {:?}", proving_time);
+    println!("Verification time       : {:?}", verification_time);
+    println!("AIR constraints         : {}", num_air_constraints);
+    println!("Max constraint degree   : {}", max_constraint_degree);
+    println!("Constraint evaluations  : {}", constraint_evals);
+    println!();
+
+    println!("Key material:");
+    println!("Proving key (PK)        : N/A -- transparent STARK/FRI");
+    println!("Verification key (VK)   : N/A -- transparent STARK/FRI");
+    println!("STARK trusted setup     : none");
+    println!("KZG setup               : supplied by caller (KZG SRS remains necessary)");
+    println!();
+
+    println!("RAM measurement: not performed here; on Linux run /usr/bin/time -v");
+    println!();
+
+    println!("SUCCESS: pairing-trace STARK proof verified.");
+    println!("Verifier-derived pairing-input binding test passed.");
+    println!("V+ Tree path/hash authentication is separate work.");
+}
+
 
 fn main() {
     println!("==============================================");

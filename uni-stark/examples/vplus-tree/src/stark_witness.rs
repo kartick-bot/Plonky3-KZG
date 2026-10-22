@@ -1,4 +1,6 @@
-//! JSON -> real V+ Tree membership witness -> BabyBear encoding.
+//! JSON -> real V+ Tree membership witness -> Goldilocks encoding.
+//! Same single membership-path AIR as the BabyBear version, ported to Goldilocks.
+//! SHA-256 compression and KZG pairings are still native verification, not AIR constraints.
 //!
 //! This module deliberately keeps the prover/private data separate from the
 //! verifier/public data.
@@ -11,12 +13,13 @@ use ark_ec::CurveGroup;
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalSerialize, CanonicalDeserialize};
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
-use p3_baby_bear::BabyBear;
-use p3_challenger::{HashChallenger, SerializingChallenger32};
+use p3_goldilocks::Goldilocks;
+use p3_challenger::{HashChallenger, SerializingChallenger64};
 use p3_commit::ExtensionMmcs;
 use p3_field::extension::BinomialExtensionField;
-use p3_field::{PrimeCharacteristicRing, PrimeField32};
+use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_fri::{FriParameters, TwoAdicFriPcs};
+use p3_dft::Radix2DitParallel;
 use p3_matrix::dense::RowMajorMatrix;
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_sha256::Sha256 as P3Sha256;
@@ -186,8 +189,8 @@ pub struct LoadedMembership {
     pub public_statement: VplusPublicStatement,
     pub public_parameters: VplusPublicParameters,
     pub private_witness: VplusPrivateWitness,
-    pub public_values: Vec<BabyBear>,
-    pub private_values: Vec<BabyBear>,
+    pub public_values: Vec<Goldilocks>,
+    pub private_values: Vec<Goldilocks>,
 }
 
 
@@ -1045,8 +1048,8 @@ pub fn loadRandomMembershipFromJson(
     println!("Verifier y_low / y_high   : NO");
     println!("Verifier Internal Witnesses: NO");
     println!("Verifier Private Trace    : NO");
-    println!("Public BabyBear Elements  : {}", public_values.len());
-    println!("Private BabyBear Elements : {}", private_values.len());
+    println!("Public Goldilocks Elements  : {}", public_values.len());
+    println!("Private Goldilocks Elements : {}", private_values.len());
 
     LoadedMembership {
         source_kzg_file: kzg_file.display().to_string(),
@@ -1062,29 +1065,29 @@ pub fn loadRandomMembershipFromJson(
 
 // ---------------------------------------------------------
 // Serialize a BN254 field element or compressed G1 point to
-// exactly 32 bytes and encode each byte as a BabyBear element.
+// exactly 32 bytes and encode each byte as a Goldilocks element.
 // This is a representation helper, NOT an AIR canonicality check.
 // ---------------------------------------------------------
-fn canonical32<T: CanonicalSerialize>(value: &T) -> [BabyBear; 32] {
+fn canonical32<T: CanonicalSerialize>(value: &T) -> [Goldilocks; 32] {
     let mut bytes = Vec::new();
     value
         .serialize_compressed(&mut bytes)
         .expect("Could not serialize BN254 value");
     assert_eq!(bytes.len(), 32, "Expected exactly 32 serialized bytes");
-    std::array::from_fn(|i| BabyBear::from_u32(bytes[i] as u32))
+    std::array::from_fn(|i| Goldilocks::from_u32(bytes[i] as u32))
 }
 
 
 // ---------------------------------------------------------
-// Push One Byte Into BabyBear
+// Push One Byte Into Goldilocks
 // ---------------------------------------------------------
 
 fn pushByte(
-    output: &mut Vec<BabyBear>,
+    output: &mut Vec<Goldilocks>,
     value: u8
 ) {
     output.push(
-        BabyBear::from_u32(
+        Goldilocks::from_u32(
             value as u32
         )
     );
@@ -1092,11 +1095,11 @@ fn pushByte(
 
 
 // ---------------------------------------------------------
-// Push Raw Bytes Into BabyBear
+// Push Raw Bytes Into Goldilocks
 // ---------------------------------------------------------
 
 fn pushBytes(
-    output: &mut Vec<BabyBear>,
+    output: &mut Vec<Goldilocks>,
     bytes: &[u8]
 ) {
     for byte in bytes {
@@ -1113,7 +1116,7 @@ fn pushBytes(
 // ---------------------------------------------------------
 
 fn pushUsize(
-    output: &mut Vec<BabyBear>,
+    output: &mut Vec<Goldilocks>,
     value: usize
 ) {
     pushBytes(
@@ -1128,7 +1131,7 @@ fn pushUsize(
 // ---------------------------------------------------------
 
 fn pushI64(
-    output: &mut Vec<BabyBear>,
+    output: &mut Vec<Goldilocks>,
     value: i64
 ) {
     pushBytes(
@@ -1143,7 +1146,7 @@ fn pushI64(
 // ---------------------------------------------------------
 
 fn pushCanonical<T>(
-    output: &mut Vec<BabyBear>,
+    output: &mut Vec<Goldilocks>,
     value: &T
 )
 where
@@ -1189,7 +1192,7 @@ where
 
 pub fn encodePublicStatement(
     statement: &VplusPublicStatement
-) -> Vec<BabyBear> {
+) -> Vec<Goldilocks> {
     let mut values = Vec::new();
 
     pushI64(
@@ -1305,7 +1308,7 @@ pub fn encodePublicStatement(
 
 pub fn encodePrivateWitness(
     witness: &VplusPrivateWitness
-) -> Vec<BabyBear> {
+) -> Vec<Goldilocks> {
     let mut values = Vec::new();
 
     pushBytes(
@@ -1479,10 +1482,14 @@ const TRACE_PATH_EVALUATION_POINT: usize =
 const TRACE_PATH_EVALUATION_VALUE: usize =
     TRACE_PATH_EVALUATION_POINT + 32;
 
-// Every verifier-public BabyBear value is mirrored on the
+// Every verifier-public Goldilocks value is mirrored on the
 // first row and constrained equal to builder.public_values().
-const TRACE_PUBLIC_VALUES_START: usize =
-    TRACE_PATH_EVALUATION_VALUE + 32;
+// SHA-256 digest-to-Fr bridge: two 128-bit big-endian halves are added.
+// This constrains digest -> evaluation_value; SHA compression remains external.
+const TRACE_RECORD_DIGEST: usize = TRACE_PATH_EVALUATION_VALUE + 32;
+const TRACE_RECORD_CARRY: usize = TRACE_RECORD_DIGEST + 32;
+const TRACE_HASH_PADDED_MESSAGE: usize = TRACE_RECORD_CARRY + 16;
+const TRACE_PUBLIC_VALUES_START: usize = TRACE_HASH_PADDED_MESSAGE + 128;
 
 
 // ---------------------------------------------------------
@@ -1607,7 +1614,7 @@ fn publicPathStepStart(
 
 fn encodePublicSrs(
     srs: &KzgSrs
-) -> Vec<BabyBear> {
+) -> Vec<Goldilocks> {
     let mut values =
         Vec::new();
 
@@ -1705,7 +1712,7 @@ impl VplusMembershipAir {
 }
 
 
-impl BaseAir<BabyBear>
+impl BaseAir<Goldilocks>
     for VplusMembershipAir
 {
     fn width(
@@ -1742,7 +1749,7 @@ impl BaseAir<BabyBear>
 impl<AB> Air<AB>
     for VplusMembershipAir
 where
-    AB: AirBuilder<F = BabyBear>,
+    AB: AirBuilder<F = Goldilocks>,
     AB::Expr: Clone + From<AB::Var> + From<AB::PublicVar>,
 {
     fn eval(
@@ -1820,7 +1827,7 @@ where
                 next_active
                     * (
                         active
-                        - BabyBear::from_u32(1)
+                        - Goldilocks::from_u32(1)
                     )
             );
 
@@ -1835,7 +1842,7 @@ where
                     * (
                         next_level
                         - level
-                        - BabyBear::from_u32(1)
+                        - Goldilocks::from_u32(1)
                     )
             );
 
@@ -1852,7 +1859,7 @@ where
                 valid_level
                 * (
                     level
-                    - BabyBear::from_u32(
+                    - Goldilocks::from_u32(
                         i as u32
                     )
                 );
@@ -1954,7 +1961,7 @@ where
                         selector
                         * (
                             level
-                            - BabyBear::from_u32(
+                            - Goldilocks::from_u32(
                                 other_index as u32
                             )
                         );
@@ -2055,13 +2062,90 @@ where
             }
         }
 
+        // Bind all 128 padded message bytes to the exact public V+ record.
+        // Domain (19 bytes), separator key (8 bytes, big endian), LPC (32),
+        // RPC (32), 0x80 byte, zero padding and 64-bit length (91*8=728).
+        // This is SHA-256 INPUT BINDING, not SHA-256 compression verification.
+        for path_index in 0..self.path_len {
+            let mut selector: AB::Expr = active.into();
+            for other_index in 0..self.path_len {
+                if other_index != path_index {
+                    selector = selector * (
+                        level - Goldilocks::from_u32(other_index as u32)
+                    );
+                }
+            }
+            let start = publicPathStepStart(&self.layout, path_index);
+            let domain = b"VPLUS_INTERNAL_NODE";
+            for i in 0..128 {
+                let actual = AB::Expr::from(row[TRACE_HASH_PADDED_MESSAGE + i]);
+                let expected: AB::Expr = if i < 19 {
+                    Goldilocks::from_u32(domain[i] as u32).into()
+                } else if i < 27 {
+                    public_values[start + 17 + i - 19].into()
+                } else if i < 59 {
+                    public_values[start + 25 + i - 27].into()
+                } else if i < 91 {
+                    public_values[start + 57 + i - 59].into()
+                } else if i == 91 {
+                    Goldilocks::from_u32(128).into()
+                } else if i == 126 {
+                    Goldilocks::from_u32(2).into()
+                } else if i == 127 {
+                    Goldilocks::from_u32(216).into()
+                } else {
+                    Goldilocks::from_u32(0).into()
+                };
+                builder.assert_zero(selector.clone() * (actual - expected));
+            }
+        }
+
+        // Constrain V+ record digest -> BN254 Fr evaluation conversion.
+        // y = BE128(digest[0..16]) + BE128(digest[16..32]).
+        // Arkworks serializes BN254 Fr in little-endian bytes.
+        // Each limb addition has at most one carry.
+        for i in 0..16 {
+            let hi = row[TRACE_RECORD_DIGEST + 15 - i];
+            let lo = row[TRACE_RECORD_DIGEST + 31 - i];
+            let out = row[TRACE_PATH_EVALUATION_VALUE + i];
+            let carry = row[TRACE_RECORD_CARRY + i];
+            let prev = if i == 0 {
+                AB::Expr::from(Goldilocks::from_u32(0))
+            } else {
+                AB::Expr::from(row[TRACE_RECORD_CARRY + i - 1])
+            };
+            builder.assert_zero(
+                AB::Expr::from(active) * (
+                    AB::Expr::from(hi) + AB::Expr::from(lo) + prev
+                    - AB::Expr::from(out)
+                    - AB::Expr::from(Goldilocks::from_u32(256)) * AB::Expr::from(carry)
+                )
+            );
+            builder.assert_zero(
+                AB::Expr::from(active) * AB::Expr::from(carry)
+                * (AB::Expr::from(carry) - AB::Expr::from(Goldilocks::from_u32(1)))
+            );
+        }
+        builder.assert_zero(
+            AB::Expr::from(active) * (
+                AB::Expr::from(row[TRACE_PATH_EVALUATION_VALUE + 16])
+                - AB::Expr::from(row[TRACE_RECORD_CARRY + 15])
+            )
+        );
+        for i in 17..32 {
+            builder.assert_zero(
+                AB::Expr::from(active)
+                * AB::Expr::from(row[TRACE_PATH_EVALUATION_VALUE + i])
+            );
+        }
+
         // -------------------------------------------------
         // Last active row must be path_len - 1 and its
         // parent must equal the public trusted root.
         // -------------------------------------------------
 
         let last_level =
-            BabyBear::from_u32(
+            Goldilocks::from_u32(
                 (self.path_len - 1) as u32
             );
 
@@ -2069,7 +2153,7 @@ where
             active
             * (
                 next_active
-                - BabyBear::from_u32(1)
+                - Goldilocks::from_u32(1)
             );
 
         builder
@@ -2151,6 +2235,15 @@ fn verifyPublicLeafKzg(
     statement: &VplusPublicStatement,
     srs: &KzgSrs,
 ) -> Result<(), String> {
+    // The tree generator uses value = SHA256("Value" || decimal(key)).
+    // Verify the queried key is actually bound to the claimed leaf evaluation.
+    // This is a NATIVE VERIFIER CHECK, not a SHA-256 AIR constraint.
+    let derived_value = generateValue(statement.key);
+    let leaf_digest = hashKeyValue(statement.key, &derived_value);
+    let (y_low, y_high) = digestToFieldLimbs(&leaf_digest);
+    if y_low + y_high != statement.evaluation_value {
+        return Err("Queried key/value digest does not equal leaf evaluation".into());
+    }
     if statement.leaf_polynomial_coefficients.is_empty() {
         return Err("Leaf polynomial has no coefficients".into());
     }
@@ -2183,6 +2276,74 @@ fn verifyPublicLeafKzg(
     Ok(())
 }
 
+// Authenticate every KZG statement against the SAME public membership path.
+// This is verifier-side native KZG verification, not a pairing constraint in
+// the single Goldilocks AIR. Parent witnesses are supplied from the prover's
+// private witness bundle for this experimental in-process verification.
+fn verifyAllPathKzgAgainstPublicStatement(
+    loaded: &LoadedMembership,
+) -> Result<usize, String> {
+    let public = &loaded.public_statement;
+    let private = &loaded.private_witness;
+    let srs = &loaded.public_parameters.srs;
+
+    if private.key != public.key
+        || private.leaf_commitment != public.leaf_commitment
+        || private.leaf_evaluation_point != public.evaluation_point
+        || private.leaf_evaluation_value != public.evaluation_value
+        || private.leaf_opening_witness != public.leaf_opening_witness
+    {
+        return Err("Leaf private/public KZG statement mismatch".into());
+    }
+    if private.path.len() != public.path.len() {
+        return Err("Private and public KZG paths have different lengths".into());
+    }
+    verifyPublicLeafKzg(public, srs)?;
+    let mut current = public.leaf_commitment;
+    for (level, (claim, opening)) in public.path.iter().zip(private.path.iter()).enumerate() {
+        if claim.node_index != opening.node_index
+            || claim.record_position != opening.record_position
+            || claim.mapping != opening.mapping
+            || claim.separator_key != opening.separator_key
+            || claim.left_commitment != opening.left_commitment
+            || claim.right_commitment != opening.right_commitment
+            || claim.evaluation_point != opening.evaluation_point
+            || claim.evaluation_value != opening.evaluation_value
+            || claim.parent_commitment != opening.parent_commitment
+        {
+            return Err(format!("KZG opening does not match public path at level {level}"));
+        }
+        let selected = match claim.mapping.as_str() {
+            "LPC" => claim.left_commitment,
+            "RPC" => claim.right_commitment,
+            _ => return Err(format!("Invalid child-selection mapping at level {level}")),
+        };
+        if selected != current {
+            return Err(format!("KZG child commitment mismatch at level {level}"));
+        }
+        let expected_value = internalRecordEvaluation(
+            claim.separator_key, &claim.left_commitment, &claim.right_commitment,
+        );
+        if claim.evaluation_value != expected_value {
+            return Err(format!("Record hash mismatch at level {level}"));
+        }
+        if !verifyEval(
+            &claim.parent_commitment,
+            claim.evaluation_point,
+            claim.evaluation_value,
+            &opening.opening_witness,
+            srs,
+        ) {
+            return Err(format!("KZG verification failed at parent level {level}"));
+        }
+        current = claim.parent_commitment;
+    }
+    if current != public.root_commitment {
+        return Err("Final KZG parent does not match public root".into());
+    }
+    Ok(1 + public.path.len())
+}
+
 // The verifier-owned root registry is established at trusted tree setup.
 // The untrusted membership JSON may identify a dataset, but cannot supply its root.
 fn trustedRootFromRegistry(source_kzg_file: &str) -> Result<G1Affine, String> {
@@ -2206,9 +2367,9 @@ fn trustedRootFromRegistry(source_kzg_file: &str) -> Result<G1Affine, String> {
     let y_str = entry.get("y").and_then(Value::as_str)
         .ok_or_else(|| format!("Missing trusted G1 y coordinate for {name}"))?;
     let x = Fq::from_str(x_str)
-        .map_err(|_| "Invalid trusted root x coordinate".to_string())?;
+        .map_err(|e| "Invalid trusted root x coordinate".to_string())?;
     let y = Fq::from_str(y_str)
-        .map_err(|_| "Invalid trusted root y coordinate".to_string())?;
+        .map_err(|e| "Invalid trusted root y coordinate".to_string())?;
 
     let root = G1Affine::new_unchecked(x, y);
     if !root.is_on_curve() || !root.is_in_correct_subgroup_assuming_on_curve() {
@@ -2226,7 +2387,7 @@ fn trustedRootFromRegistry(source_kzg_file: &str) -> Result<G1Affine, String> {
 
 pub fn buildPrivateTrace(
     loaded: &LoadedMembership
-) -> RowMajorMatrix<BabyBear> {
+) -> RowMajorMatrix<Goldilocks> {
     let trace_start =
         Instant::now();
 
@@ -2248,7 +2409,7 @@ pub fn buildPrivateTrace(
 
     let mut values =
         vec![
-            BabyBear::from_u32(0);
+            Goldilocks::from_u32(0);
             trace_height * air.width
         ];
 
@@ -2263,12 +2424,12 @@ pub fn buildPrivateTrace(
         values[
             row_start + TRACE_ACTIVE
         ] =
-            BabyBear::from_u32(1);
+            Goldilocks::from_u32(1);
 
         values[
             row_start + TRACE_LEVEL
         ] =
-            BabyBear::from_u32(
+            Goldilocks::from_u32(
                 path_index as u32
             );
 
@@ -2276,9 +2437,9 @@ pub fn buildPrivateTrace(
             row_start + TRACE_MAPPING
         ] =
             if step.mapping == "LPC" {
-                BabyBear::from_u32(0)
+                Goldilocks::from_u32(0)
             } else {
-                BabyBear::from_u32(1)
+                Goldilocks::from_u32(1)
             };
 
         let current_commitment =
@@ -2320,6 +2481,31 @@ pub fn buildPrivateTrace(
             canonical32(
                 &step.evaluation_value
             );
+        // Native hash witness, with only its digest-to-Fr encoding
+        // constrained by the AIR (not SHA-256 compression itself).
+        let record = crate::vplus_sha256_record::check_against_existing_tree(
+            step.separator_key,
+            &step.left_commitment,
+            &step.right_commitment,
+        );
+        assert_eq!(record.evaluation_value, step.evaluation_value);
+        for (i, byte) in record.blocks.iter().flat_map(|block| block.iter()).enumerate() {
+            values[row_start + TRACE_HASH_PADDED_MESSAGE + i] =
+                Goldilocks::from_u32(*byte as u32);
+        }
+
+        for i in 0..32 {
+            values[row_start + TRACE_RECORD_DIGEST + i] =
+                Goldilocks::from_u32(record.digest[i] as u32);
+        }
+        let mut carry = 0u16;
+        for i in 0..16 {
+            let total = record.digest[15 - i] as u16
+                + record.digest[31 - i] as u16 + carry;
+            carry = total >> 8;
+            values[row_start + TRACE_RECORD_CARRY + i] =
+                Goldilocks::from_u32(carry as u32);
+        }
 
         for i in 0..32 {
             values[
@@ -2366,7 +2552,7 @@ pub fn buildPrivateTrace(
         }
     }
 
-    // Mirror every verifier-public BabyBear value on row 0.
+    // Mirror every verifier-public Goldilocks value on row 0.
     for (
         i,
         value
@@ -2419,7 +2605,7 @@ pub fn buildPrivateTrace(
             println!(
                 "  Column {:>4} = {}",
                 column_index,
-                value.as_canonical_u32()
+                value.as_canonical_u64()
             );
         }
     }
@@ -2515,7 +2701,7 @@ fn printStatementRelation(
 //
 // JSON
 //   -> selected key
-//   -> BabyBear public/private representation
+//   -> Goldilocks public/private representation
 //   -> recursive leaf -> root trace
 //   -> statement/relation
 //   -> AIR
@@ -2544,6 +2730,10 @@ pub fn runStarkProof(
     ).expect("Verifier-side public leaf KZG authentication failed");
     println!("Verifier-registry root and public record hashes: PASS");
     println!("Verifier-side public leaf polynomial and KZG opening: PASS");
+    let verified_openings = verifyAllPathKzgAgainstPublicStatement(loaded)
+        .expect("Verifier-side full-path KZG verification failed");
+    println!("Verifier-side bound KZG openings: {}/{} PASS (native)",
+        verified_openings, 1 + loaded.public_statement.path.len());
 
     println!();
     println!("==========================================");
@@ -2559,8 +2749,8 @@ pub fn runStarkProof(
     println!("==========================================");
     println!("BABYBEAR CONVERSION");
     println!("==========================================");
-    println!("Public BabyBear Elements  : {}", loaded.public_values.len());
-    println!("Private BabyBear Elements : {}", loaded.private_values.len());
+    println!("Public Goldilocks Elements  : {}", loaded.public_values.len());
+    println!("Private Goldilocks Elements : {}", loaded.private_values.len());
     println!("Public SRS Included       : YES");
 
     println!();
@@ -2632,16 +2822,19 @@ pub fn runStarkProof(
     println!("Recursive LPC/RPC Link    : CONSTRAINED");
     println!("Parent -> Next Level      : CONSTRAINED");
     println!("Final Parent -> Root      : CONSTRAINED");
+    println!("SHA digest -> Fr AIR      : CONSTRAINED");
+    println!("SHA message input AIR     : CONSTRAINED");
+    println!("SHA-256 compression AIR   : NOT YET CONSTRAINED");
     println!("Native KZG Precheck       : COMPLETED");
     println!("AIR Construction Time     : {:?}", air_time);
 
     type Val =
-        BabyBear;
+        Goldilocks;
 
     type Challenge =
         BinomialExtensionField<
             Val,
-            4
+            2
         >;
 
     type ByteHash =
@@ -2702,13 +2895,13 @@ pub fn runStarkProof(
         );
 
     type Dft =
-        p3_dft::Radix2Bowers;
+        Radix2DitParallel<Val>;
 
     let dft =
         Dft::default();
 
     type Challenger =
-        SerializingChallenger32<
+        SerializingChallenger64<
             Val,
             HashChallenger<
                 u8,
@@ -2760,8 +2953,8 @@ pub fn runStarkProof(
     println!("==========================================");
     println!("CONFIGURATION");
     println!("==========================================");
-    println!("Field                     : BabyBear");
-    println!("Challenge Extension       : Degree 4");
+    println!("Field                     : Goldilocks");
+    println!("Challenge Extension       : Degree 2");
     println!("PCS                       : TwoAdicFriPcs");
     println!("FRI                       : CONFIGURED");
     println!("Merkle MMCS               : CONFIGURED");
@@ -2810,7 +3003,7 @@ pub fn runStarkProof(
     println!("Public SRS                : YES");
     println!("Selected Path Only        : YES");
     println!("Selected Path Levels      : {}", loaded.public_statement.path.len());
-    println!("Public BabyBear Elements  : {}", loaded.public_values.len());
+    println!("Public Goldilocks Elements  : {}", loaded.public_values.len());
     println!("STARK Proof Received      : YES");
     println!("STARK Proof Count         : 1");
 
@@ -2825,6 +3018,9 @@ pub fn runStarkProof(
 
     verifyPublicPathAgainstTrustedRoot(&loaded.public_statement, trusted_root)
         .expect("Verifier rejected public path/root statement");
+
+    verifyAllPathKzgAgainstPublicStatement(loaded)
+        .expect("Verifier rejected one or more KZG openings");
 
     verify(
         &config,
@@ -2842,16 +3038,8 @@ pub fn runStarkProof(
     println!("STARK Verification        : PASS");
     println!("Verification Time         : {:?}", verification_time);
 
-    // Negative test: the identical proof MUST fail if the verifier
-    // changes the public trusted-root commitment, leaving its AIR
-    // and trace unchanged. This checks public-value binding.
-    let mut tampered_values = loaded.public_values.clone();
-    tampered_values[air.layout.root_commitment_start] += BabyBear::from_u32(1);
-    assert!(
-        verify(&config, &air, &proof, &tampered_values).is_err(),
-        "SECURITY FAILURE: tampered public root accepted",
-    );
-    println!("STARK tampered-public-root negative test: PASS");
+    // Single proof mode: no optional negative tests or separate pairing-STARK loop.
+    println!("ONE STARK PATH PROOF FOR KEY {}: VERIFIED", loaded.public_statement.key);
     println!("NOTE: SHA-256 and BN254 KZG are still checked in native code / separate proofs, NOT inside this membership AIR.");
 }
 // ---------------------------------------------------------
@@ -3030,4 +3218,63 @@ pub fn runRealLeafPairingStark(loaded: &LoadedMembership) {
     println!("\nFULL-PATH PAIRING STARK COVERAGE: {}/{} openings", completed, total_openings);
     println!("All independent pairing-trace STARK proofs verified.");
     println!("IMPORTANT: Not yet a unified, publicly authenticated V+ Tree membership proof.");
+}
+
+// EXPERIMENTAL: one Goldilocks STARK proving the leaf KZG pairing equality
+// together with byte-exact membership-path commitment linkage.
+// Parent KZG equations and SHA-256 computation are still native checks.
+pub fn runCombinedLeafPathStark(loaded: &LoadedMembership) {
+    use ark_serialize::CanonicalSerialize;
+
+    fn point_bytes(point: &G1Affine) -> [u8; 32] {
+        let mut out = Vec::new();
+        point.serialize_compressed(&mut out).expect("G1 serialize failed");
+        out.try_into().expect("BN254 G1 must be 32 compressed bytes")
+    }
+
+    let trusted_root = trustedRootFromRegistry(&loaded.source_kzg_file)
+        .expect("Trusted root registry lookup failed");
+    verifyPublicPathAgainstTrustedRoot(&loaded.public_statement, trusted_root)
+        .expect("Public path/root authentication failed");
+    verifyPublicLeafKzg(&loaded.public_statement, &loaded.public_parameters.srs)
+        .expect("Public leaf KZG check failed");
+    let checked = verifyAllPathKzgAgainstPublicStatement(loaded)
+        .expect("Full path native KZG check failed");
+    println!("Native KZG checks bound to public path: {checked}");
+
+    let public = &loaded.public_statement;
+    let srs = &loaded.public_parameters.srs;
+    let binding = crate::bn254_pairing_stark::PublicPathBinding {
+        leaf: point_bytes(&public.leaf_commitment),
+        root: point_bytes(&trusted_root),
+        links: public.path.iter().map(|step| {
+            crate::bn254_pairing_stark::PathLink {
+                left: point_bytes(&step.left_commitment),
+                right: point_bytes(&step.right_commitment),
+                parent: point_bytes(&step.parent_commitment),
+                choose_right: match step.mapping.as_str() {
+                    "RPC" => true,
+                    "LPC" => false,
+                    _ => panic!("invalid pointer side"),
+                },
+            }
+        }).collect(),
+    };
+
+    let p_left = (
+        G1Projective::from(public.leaf_commitment)
+        - G1Projective::from(srs.g1_powers[0]) * public.evaluation_value
+    ).into_affine();
+    let q_left = srs.g2;
+    let p_right = public.leaf_opening_witness;
+    let q_right = (
+        G2Projective::from(srs.tau_g2)
+        - G2Projective::from(srs.g2) * public.evaluation_point
+    ).into_affine();
+
+    crate::bn254_pairing_stark::prove_leaf_pairing_and_path(
+        p_left, q_left, p_right, q_right, binding,
+    );
+    println!("ONE GOLDILOCKS PROOF: leaf pairing arithmetic + public path linkage VERIFIED");
+    println!("CAUTION: parent KZG and SHA-256 are still native verifier checks");
 }

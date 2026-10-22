@@ -6,7 +6,7 @@ mod bn254_pairing_stark;
 mod node;
 mod verify_eval;
 mod vplustree;
-
+mod vplus_sha256_record;
 use verify_eval::verifyEval;
 use vplustree::VplusTree;
 
@@ -2453,11 +2453,10 @@ fn main() {
     println!("\nVERIFICATION MODE: using existing V+ Tree/KZG JSON files.");
 
     let loaded = stark_witness::loadRandomMembershipFromJson(".");
-    stark_witness::runStarkProof(&loaded);
+    stark_witness::runCombinedLeafPathStark(&loaded);
 
-    if std::env::var("VPLUS_PAIRING_STARK").as_deref() == Ok("1") {
-        stark_witness::runRealLeafPairingStark(&loaded);
-    }
+    println!("\nCOMBINED LEAF-PAIRING/PATH STARK COMPLETE for key {}", loaded.public_statement.key);
+    println!("Parent KZG pairings and SHA-256 remain native verifier checks.");
 }
 
 // ---------------------------------------------------------
